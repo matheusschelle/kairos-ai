@@ -272,6 +272,19 @@
   .pocket-btn .pb-meta b{display:block;font-size:14.5px;font-weight:700;color:#f3e6c5}
   .pocket-btn .pb-meta small{font-size:11px;color:var(--ink-dim)}
 
+  .scrl-btn{width:100%;max-width:420px;display:flex;align-items:center;gap:13px;margin-bottom:14px;
+    padding:14px 16px;border-radius:16px;cursor:pointer;text-align:left;font-family:inherit;
+    background:linear-gradient(135deg,rgba(34,224,255,.12),rgba(139,92,255,.12));
+    border:1px solid rgba(34,224,255,.25);transition:border-color .2s,background .2s}
+  .scrl-btn:active{transform:scale(.98)}
+  .scrl-btn svg{width:22px;height:22px;stroke:var(--cyan);fill:none;stroke-width:1.8;flex:0 0 auto}
+  .scrl-btn .pb-meta{flex:1}
+  .scrl-btn .pb-meta b{display:block;font-size:14.5px;font-weight:700;color:#dbefff}
+  .scrl-btn .pb-meta small{font-size:11px;color:var(--ink-dim)}
+  .scrl-dot{width:11px;height:11px;border-radius:50%;background:#2a3350;flex:0 0 auto;transition:background .2s,box-shadow .2s}
+  .scrl-btn.on{border-color:rgba(34,224,255,.6);background:linear-gradient(135deg,rgba(34,224,255,.22),rgba(139,92,255,.18))}
+  .scrl-btn.on .scrl-dot{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+
   /* ---------- AUTH / LOGIN ---------- */
   .auth{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:24px;
     background:radial-gradient(120% 80% at 50% 0%,rgba(139,92,255,.18),transparent 55%),var(--bg)}
@@ -437,9 +450,14 @@
       <div class="stat mag"><div class="k">Memória</div><div class="v" id="memCount">0</div></div>
       <div class="stat gold"><div class="k">Sessões</div><div class="v" id="sessCount">0</div></div>
     </div>
+    <button class="scrl-btn" id="awakeBtn">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>
+      <div class="pb-meta"><b id="awakeLbl">Manter tela acesa</b><small id="awakeSub">Tela não apaga enquanto estiver aqui</small></div>
+      <span class="scrl-dot" id="awakeDot"></span>
+    </button>
     <button class="pocket-btn" id="pocketBtn">
       <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
-      <div class="pb-meta"><b>Ativar Modo Bolso</b><small>Tela inerte ao toque · agente segue ouvindo</small></div>
+      <div class="pb-meta"><b>Travar tela (Modo Bolso)</b><small>Tela inerte ao toque · agente segue ouvindo</small></div>
     </button>
     <div class="sugg">
       <div class="sg-title">Pra começar uma conversa</div>
@@ -557,6 +575,11 @@
       <div class="hf-switch" id="hfSwitch"><span></span></div>
     </div>
     <p class="sub" style="margin-top:12px">📱 <b>1 toque no botão do fone</b> (play/pause do AirPods) alterna a conversa por voz — liga e desliga sem pegar no celular. Funciona com o app aberto e também pelo controle na tela de bloqueio.</p>
+    <button class="fone-act" id="armFoneBtn">
+      <svg viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0116 0v2"/><path d="M4 14a2 2 0 012 2v2a2 2 0 01-2 2 2 2 0 01-2-2v-2a2 2 0 012-2zM20 14a2 2 0 00-2 2v2a2 2 0 002 2 2 2 0 002-2v-2a2 2 0 00-2-2z"/></svg>
+      Ativar controle do fone
+    </button>
+    <div class="fone-result" id="foneDiag" style="font-size:11.5px;opacity:.8">Toque em “Ativar controle do fone”.</div>
     <button class="save" id="foneClose" style="margin-top:18px">Fechar</button>
   </div>
 </div>
@@ -713,6 +736,7 @@ function refreshHome(){
   $('#greetSub').textContent = personaReady() ? (persona.name+' está com você.') : 'Seu agente ainda não tem nome — toque pra dar vida a ele.';
   $('#memCount').textContent=memory.length;
   $('#sessCount').textContent=sessions.length;
+  try{ updateAwakeUI(); }catch(e){}
   $('#sbName').textContent=settings.name||'Matheus';
   $('#nameInput').value=settings.name||'';
   $('#keyInput').value=settings.apiKey||'';
@@ -943,10 +967,17 @@ function stopMic(){
 function toggleMic(){ listening?stopMic():startMic(); }
 
 /* ---------- AMBIENT MODE (24h, contínuo e autônomo) ---------- */
-let ambientStream=null, wakeLock=null;
-async function reqWake(){ try{ if('wakeLock' in navigator) wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} }
-function relWake(){ try{ wakeLock&&wakeLock.release(); }catch(e){} wakeLock=null; }
-document.addEventListener('visibilitychange',()=>{ if(ambient && document.visibilityState==='visible') reqWake(); });
+let ambientStream=null, wakeLock=null, pocketOn=false;
+let screenAwake = LS.get('kairos_screenawake', false); // toggle manual: manter tela acesa
+function wakeNeeded(){ return screenAwake || ambient || handsfree || pocketOn; }
+async function reqWake(){
+  try{ if('wakeLock' in navigator && !wakeLock){
+    wakeLock=await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release',()=>{ wakeLock=null; });
+  }}catch(e){}
+}
+function relWake(){ if(wakeNeeded()) return; try{ wakeLock&&wakeLock.release(); }catch(e){} wakeLock=null; }
+document.addEventListener('visibilitychange',()=>{ if(wakeNeeded() && document.visibilityState==='visible') reqWake(); });
 
 async function ambientLoop(){
   if(!ambient) return;
@@ -1137,10 +1168,25 @@ $('#authSwitch').onclick=()=>{ authMode=(authMode==='signup'?'login':'signup'); 
 
 /* ================= MODO BOLSO (tela inerte) ================= */
 let pkHoldT=null;
-function enterPocket(){ reqWake(); $('#pocket').classList.add('on'); }
-function exitPocket(){ $('#pocket').classList.remove('on'); $('#pkHold').classList.remove('holding'); clearTimeout(pkHoldT);
-  if(!ambient && !handsfree) relWake(); toast('Tela liberada.'); }
+function enterPocket(){ pocketOn=true; reqWake(); $('#pocket').classList.add('on'); }
+function exitPocket(){ pocketOn=false; $('#pocket').classList.remove('on'); $('#pkHold').classList.remove('holding'); clearTimeout(pkHoldT);
+  relWake(); toast('Tela liberada.'); }
 $('#pocketBtn').onclick=enterPocket;
+
+/* ---------- MANTER TELA ACESA (wake lock manual) ---------- */
+function updateAwakeUI(){
+  $('#awakeBtn').classList.toggle('on',screenAwake);
+  $('#awakeLbl').textContent = screenAwake ? 'Tela acesa: ligada' : 'Manter tela acesa';
+  $('#awakeSub').textContent = screenAwake ? 'A tela não vai apagar enquanto o app estiver aberto' : 'Tela não apaga enquanto estiver aqui';
+}
+function toggleScreenAwake(){
+  screenAwake=!screenAwake; LS.set('kairos_screenawake',screenAwake);
+  if(screenAwake){ reqWake(); toast('Tela acesa ATIVADA. Mantenha o app em primeiro plano.'); }
+  else { relWake(); toast('Tela acesa desligada.'); }
+  updateAwakeUI();
+}
+$('#awakeBtn').onclick=()=>{ primeTTS(); toggleScreenAwake(); };
+if(screenAwake) reqWake();   // restaura ao abrir
 ['touchstart','touchmove','touchend'].forEach(ev=>
   $('#pocket').addEventListener(ev,e=>{ if(!e.target.closest('#pkHold')) e.preventDefault(); },{passive:false}));
 (function(){
@@ -1152,7 +1198,7 @@ $('#pocketBtn').onclick=enterPocket;
 })();
 
 /* ================= CONTROLE DO FONE ================= */
-function openFone(){ $('#fone').classList.add('on'); updateFoneUI(); detectHeadset(); }
+function openFone(){ $('#fone').classList.add('on'); updateFoneUI(); detectHeadset(); foneDiag(); }
 function closeFone(){ $('#fone').classList.remove('on'); }
 function updateFoneUI(){ $('#hfSwitch').classList.toggle('on',handsfree); }
 async function detectHeadset(){
@@ -1268,13 +1314,18 @@ $('#fone').addEventListener('click',e=>{ if(e.target===$('#fone')) closeFone(); 
 $('#testVoiceBtn').onclick=testVoice;
 $('#testMicBtn').onclick=testMic;
 $('#hfSwitch').onclick=()=>{ primeTTS(); toggleHandsfree(); };
+$('#armFoneBtn').onclick=()=>{ primeTTS(); armFone(); setTimeout(foneDiag,300);
+  toast(foneArmed?'Controle do fone ativo. Aperte o botão do fone.':'Tentando ativar…'); };
 
 /* ================= CONTROLE PELO FONE (Media Session) =================
    iPhone só entrega os toques do botão do fone (AirPods etc.) se houver
    mídia tocando. Mantemos uma "âncora" de áudio silencioso em loop pra
    segurar os controles de mídia; aí 1 toque no fone = play/pause = alterna
    a conversa por voz. Também aparece um controle na tela de bloqueio. */
-let foneAnchor=null, foneArmed=false;
+let foneAnchor=null, foneArmed=false, foneTaps=0;
+/* Áudio quase-silencioso (amplitude mínima, ~-90 dBFS = inaudível). iOS NÃO
+   engaja os controles remotos com volume 0 nem com samples 100% zerados —
+   precisa "ver" áudio real tocando. */
 function buildSilentWav(sec){
   const sr=8000, n=sr*sec, buf=new ArrayBuffer(44+n*2), dv=new DataView(buf);
   const w=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
@@ -1282,6 +1333,7 @@ function buildSilentWav(sec){
   dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
   dv.setUint32(24,sr,true); dv.setUint32(28,sr*2,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
   w(36,'data'); dv.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++) dv.setInt16(44+i*2, (i&1)?1:-1, true); // ±1 LSB, inaudível
   return new Blob([buf],{type:'audio/wav'});
 }
 function foneMeta(){
@@ -1289,24 +1341,37 @@ function foneMeta(){
   try{ navigator.mediaSession.metadata=new MediaMetadata({
     title:(persona&&persona.name)||'Kairos AI', artist:'Toque o fone pra falar' }); }catch(e){}
 }
+function foneDiag(){
+  const el=$('#foneDiag'); if(!el) return;
+  const ms=('mediaSession' in navigator);
+  const playing=foneAnchor && !foneAnchor.paused;
+  el.innerHTML = `Media Session: <b>${ms?'sim':'NÃO'}</b> · âncora: <b>${foneArmed?(playing?'tocando':'pausada'):'não armada'}</b> · toques recebidos: <b>${foneTaps}</b>`;
+}
 function armFone(){
-  if(foneArmed) return;
+  if(foneArmed){ foneDiag(); return; }
   try{
-    foneAnchor=new Audio(); foneAnchor.loop=true; foneAnchor.volume=0;
-    foneAnchor.src=URL.createObjectURL(buildSilentWav(1));
-    foneAnchor.play().then(()=>{
+    foneAnchor=new Audio();
+    foneAnchor.loop=true; foneAnchor.volume=1; foneAnchor.preload='auto';
+    foneAnchor.setAttribute('playsinline',''); foneAnchor.setAttribute('webkit-playsinline','');
+    foneAnchor.src=URL.createObjectURL(buildSilentWav(3));
+    const p=foneAnchor.play();
+    const onok=()=>{
       foneArmed=true;
       if('mediaSession' in navigator){
         foneMeta();
         try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
-        const tap=()=>{ try{ foneAnchor.play(); }catch(e){}
+        const tap=()=>{ foneTaps++; foneDiag();
+          try{ foneAnchor.play(); }catch(e){}
           try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
           primeTTS(); toggleHandsfree(); };
-        try{ navigator.mediaSession.setActionHandler('play',tap); }catch(e){}
-        try{ navigator.mediaSession.setActionHandler('pause',tap); }catch(e){}
+        ['play','pause','stop','previoustrack','nexttrack'].forEach(a=>{
+          try{ navigator.mediaSession.setActionHandler(a,tap); }catch(e){}
+        });
       }
-    }).catch(()=>{});
-  }catch(e){}
+      foneDiag();
+    };
+    if(p && p.then) p.then(onok).catch(()=>{ foneDiag(); }); else onok();
+  }catch(e){ foneDiag(); }
 }
 
 /* ================= IDENTIDADE DO AGENTE ================= */
