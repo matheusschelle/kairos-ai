@@ -576,6 +576,7 @@
     </div>
     <div class="field"><label>Voz nativa (fallback, sem ElevenLabs)</label><select id="voiceInput"></select></div>
     <button class="save" id="saveBtn">Salvar</button>
+    <div style="text-align:center;font-size:10.5px;color:#5a6296;margin-top:10px" id="buildTag">versão —</div>
   </div>
 </div>
 
@@ -695,11 +696,18 @@ let online = LS.get('kairos_online', true);   // boot do agente (liga/desliga)
 let ambient = false;                          // escuta 24h (independente do online)
 let mediaRec=null, chunks=[], stream=null, listening=false;
 let proactiveTimer=null;
-let proactiveOn = LS.get('kairos_proactive', true); // agente fala por vontade própria
+let proactiveOn = LS.get('kairos_proactive', false); // agente fala por vontade própria (default OFF)
 let handsfree=false;                          // modo conversa por voz (ao vivo)
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
+const APP_BUILD = 'v8 · 17/06 21h';           // mostrado nas Configurações pra confirmar a versão
+/* Migração única: desliga proatividade e zera velocidade que ficaram salvas e incomodando */
+if(!LS.get('kairos_mig2', false)){
+  proactiveOn=false; LS.set('kairos_proactive', false);
+  settings.rate=1; LS.set('kairos_settings', settings);
+  LS.set('kairos_mig2', true);
+}
 
 /* A chave Groq NUNCA é embutida no app (red line). É inserida em Configurações
    e guardada só neste aparelho (localStorage). Na primeira abertura, o app pede a chave. */
@@ -1181,6 +1189,8 @@ async function reqWake(){
 }
 function relWake(){ if(wakeNeeded()) return; try{ wakeLock&&wakeLock.release(); }catch(e){} wakeLock=null; }
 document.addEventListener('visibilitychange',()=>{ if(wakeNeeded() && document.visibilityState==='visible') reqWake(); });
+// re-adquire o wake lock periodicamente (iOS pode soltar sozinho → tela apagava)
+setInterval(()=>{ if(wakeNeeded() && !wakeLock && document.visibilityState==='visible') reqWake(); }, 12000);
 
 async function ambientLoop(){
   if(!ambient) return;
@@ -1300,7 +1310,7 @@ function updateProactiveUI(){
 }
 
 /* ---------- SETTINGS ---------- */
-function openSettings(){ refreshHome(); loadVoices(); $('#settings').classList.add('on'); }
+function openSettings(){ refreshHome(); loadVoices(); $('#buildTag').textContent='versão '+APP_BUILD; $('#settings').classList.add('on'); }
 function closeSettings(){ $('#settings').classList.remove('on'); }
 function saveSettings(){
   settings.name=$('#nameInput').value.trim()||'Matheus';
