@@ -782,7 +782,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v14 · 17/06';              // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v15 · 17/06';              // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -1106,18 +1106,29 @@ function populateElevenSelect(){
   sel.innerHTML=html; sel.value=settings.elevenVoice||'';
 }
 async function loadElevenVoices(){
-  const key=($('#elevenKeyInput')&&$('#elevenKeyInput').value.trim())||settings.elevenKey;
-  if(!key){ toast('Cole a chave ElevenLabs primeiro.',true); return; }
-  const btn=$('#loadElevenVoicesBtn');
-  if(btn){ btn.textContent='Carregando…'; btn.disabled=true; }
+  // Prioriza a chave já salva; fallback pro campo digitado mas não salvo
+  const key=settings.elevenKey||($('#elevenKeyInput')?$('#elevenKeyInput').value.trim():'');
+  if(!key){ toast('Configure e salve a chave ElevenLabs primeiro.',true); return; }
+  const btn=$('#loadElevenVoicesBtn'), sel=$('#elevenVoiceSelect');
+  if(btn){ btn.textContent='Buscando…'; btn.disabled=true; }
+  if(sel) sel.innerHTML='<option>⏳ Buscando vozes…</option>';
   try{
-    const r=await fetch('https://api.elevenlabs.io/v1/voices',{headers:{'xi-api-key':key}});
-    if(!r.ok) throw new Error('HTTP '+r.status);
+    const r=await fetch('https://api.elevenlabs.io/v1/voices',{
+      headers:{'xi-api-key':key,'Accept':'application/json'}
+    });
+    if(!r.ok){
+      let detail=''; try{ const j=await r.json(); detail=j.detail&&(j.detail.message||j.detail)||''; }catch(e2){}
+      throw new Error('HTTP '+r.status+(detail?' — '+detail:''));
+    }
     const j=await r.json();
     elevenVoices=(j.voices||[]).sort((a,b)=>a.name.localeCompare(b.name));
+    if(!elevenVoices.length){ if(sel) sel.innerHTML='<option value="">Nenhuma voz na conta</option>'; return; }
     populateElevenSelect();
-    toast('✅ '+elevenVoices.length+' vozes carregadas.');
-  }catch(e){ toast('Erro ElevenLabs: '+e.message,true); }
+    toast('✅ '+elevenVoices.length+' vozes carregadas. Escolha e toque Ouvir.');
+  }catch(e){
+    if(sel) sel.innerHTML='<option value="">⚠ Erro — toque em Carregar de novo</option>';
+    toast('Erro ElevenLabs: '+e.message,true);
+  }
   if(btn){ btn.textContent='↻ Carregar vozes do ElevenLabs'; btn.disabled=false; }
 }
 
@@ -1541,23 +1552,34 @@ $('#previewVoiceBtn').onclick=()=>{
   speechSynthesis.cancel(); speechSynthesis.speak(u);
 };
 $('#loadElevenVoicesBtn').onclick=()=>{ loadElevenVoices(); };
+let previewAudio=null;
 $('#elevenVoicePreviewBtn').onclick=async()=>{
-  primeTTS();
   const sel=$('#elevenVoiceSelect'); const voiceId=sel?sel.value:'';
   const voice=elevenVoices.find(v=>v.voice_id===voiceId);
+  // Para qualquer fala em curso
+  stopSpeaking();
+  try{ if(previewAudio){ previewAudio.pause(); previewAudio.src=''; } }catch(e){}
+
   if(voice&&voice.preview_url){
-    // Amostra gratuita — não consome créditos
-    stopSpeaking();
-    const a=getTtsAudio(); a.src=voice.preview_url;
-    const pr=a.play(); if(pr&&pr.catch) pr.catch(()=>toast('Não foi possível tocar o preview.',true));
-    toast('Prévia: '+voice.name);
-  } else if(settings.elevenKey){
-    const key=settings.elevenKey; const vid=voiceId||'21m00Tcm4TlvDq8ikWAM';
-    toast('Gerando prévia…');
-    const prevVoice=settings.elevenVoice; settings.elevenVoice=vid;
-    await speakAsync('Olá! Esta é a minha voz. Posso ser o seu assistente pessoal.');
-    settings.elevenVoice=prevVoice;
-  } else { toast('Carregue as vozes primeiro.',true); }
+    // Novo <audio> criado no clique = gesto iOS válido; sem conflito com getTtsAudio()
+    previewAudio=new Audio();
+    previewAudio.setAttribute('playsinline','');
+    previewAudio.setAttribute('webkit-playsinline','');
+    previewAudio.src=voice.preview_url;
+    const pr=previewAudio.play();
+    if(pr&&pr.catch) pr.catch(err=>toast('Erro no preview: '+(err&&err.message||err),true));
+    toast('▶ Prévia: '+voice.name);
+  } else if(voice&&settings.elevenKey){
+    // Voz custom sem preview_url → gera via API (gasta crédito)
+    toast('Gerando prévia (crédito)…');
+    const prev=settings.elevenVoice; settings.elevenVoice=voiceId||'21m00Tcm4TlvDq8ikWAM';
+    primeTTS(); await speakAsync('Olá! Esta é a minha voz.');
+    settings.elevenVoice=prev;
+  } else if(!elevenVoices.length){
+    toast('Clique em "Carregar vozes" primeiro.',true);
+  } else {
+    toast('Selecione uma voz para ouvir.',true);
+  }
 };
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ primeTTS(); send(c.dataset.q); });
 $('#photoInput').addEventListener('change',e=>{
