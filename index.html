@@ -142,6 +142,14 @@
   .msg.ai{align-self:flex-start;background:var(--glass);border:1px solid var(--glass-brd);
     border-bottom-left-radius:6px;color:#dfe6ff;backdrop-filter:blur(14px)}
   .msg.ai .who{font-size:9px;letter-spacing:2px;color:var(--cyan);font-weight:700;margin-bottom:5px}
+  .msg-actions{display:flex;align-items:center;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .ma-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:9px;cursor:pointer;
+    font-family:inherit;font-size:11.5px;font-weight:600;color:#aeb8e0;
+    background:rgba(255,255,255,.04);border:1px solid var(--glass-brd)}
+  .ma-btn:active{transform:scale(.95)}
+  .ma-btn svg{width:13px;height:13px;stroke:var(--cyan);fill:none;stroke-width:1.8}
+  .ma-rate{min-width:34px;justify-content:center}
+  .ma-rate.on{color:#021018;background:var(--cyan);border-color:var(--cyan)}
   .typing{display:flex;gap:5px;padding:4px 0}
   .typing i{width:7px;height:7px;border-radius:50%;background:var(--cyan);opacity:.6;
     animation:blink 1.2s infinite}
@@ -665,7 +673,7 @@ const LS = {
 
 /* ---------- STATE ---------- */
 let settings = LS.get('kairos_settings',{
-  name:'Matheus', photo:'', apiKey:'', model:'llama-3.3-70b-versatile', voice:''
+  name:'Matheus', photo:'', apiKey:'', model:'llama-3.3-70b-versatile', voice:'', rate:1
 });
 let sessions = LS.get('kairos_sessions',[]);      // [{id,title,date,msgs:[{role,content}]}]
 let memory   = LS.get('kairos_memory',[]);        // [string fact]
@@ -813,10 +821,25 @@ function addBubble(role,text,animate){
   const m=document.createElement('div');
   m.className='msg '+(role==='user'?'user':'ai');
   m.innerHTML=(role==='user'?'':'<div class="who">KAIROS</div>')+escapeHtml(text).replace(/\n/g,'<br>');
+  if(role!=='user' && text && text.trim()){
+    const act=document.createElement('div'); act.className='msg-actions';
+    const replay=document.createElement('button'); replay.className='ma-btn ma-replay';
+    replay.innerHTML='<svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7M19 5a9 9 0 010 14"/></svg>Ouvir';
+    replay.onclick=()=>{ primeTTS(); speak(text); };
+    act.appendChild(replay);
+    [1,1.5,2].forEach(r=>{ const b=document.createElement('button'); b.className='ma-btn ma-rate'; b.dataset.r=r; b.textContent=r+'x';
+      b.onclick=()=>{ primeTTS(); setRate(r); markRate(); speak(text); };
+      act.appendChild(b); });
+    m.appendChild(act);
+  }
   $('#msgs').appendChild(m);
   $('#msgs').scrollTop=$('#msgs').scrollHeight;
+  if(role!=='user') markRate();
   return m;
 }
+function setRate(r){ settings.rate=r; LS.set('kairos_settings',settings); }
+function markRate(){ const cur=settings.rate||1;
+  document.querySelectorAll('.ma-rate').forEach(b=>b.classList.toggle('on', parseFloat(b.dataset.r)===cur)); }
 
 /* ---------- GROQ API ---------- */
 async function groqChat(messages,model){
@@ -866,7 +889,7 @@ function speakAsync(text){
       parts.forEach((p,idx)=>{
         const u=new SpeechSynthesisUtterance(p);
         if(v){u.voice=v;u.lang=v.lang;} else u.lang='pt-BR';
-        u.rate=1.03;u.pitch=1;u.volume=1;
+        u.rate=(settings.rate||1)*1.03;u.pitch=1;u.volume=1;
         if(idx===parts.length-1){ u.onend=finish; u.onerror=finish; }
         speechSynthesis.speak(u);
       });
@@ -1360,38 +1383,47 @@ function foneMeta(){
   try{ navigator.mediaSession.metadata=new MediaMetadata({
     title:(persona&&persona.name)||'Kairos AI', artist:'Toque o fone pra falar' }); }catch(e){}
 }
+let foneErr='';
 function foneDiag(){
   const el=$('#foneDiag'); if(!el) return;
   const ms=('mediaSession' in navigator);
   const playing=foneAnchor && !foneAnchor.paused;
-  el.innerHTML = `Media Session: <b>${ms?'sim':'NÃO'}</b> · âncora: <b>${foneArmed?(playing?'tocando':'pausada'):'não armada'}</b> · toques recebidos: <b>${foneTaps}</b>`;
+  el.innerHTML = `Media Session: <b>${ms?'sim':'NÃO'}</b> · âncora: <b>${foneArmed?(playing?'tocando':'pausada'):'não armada'}</b> · toques: <b>${foneTaps}</b>`
+    + (foneErr?` · <span style="color:#ff9b9b">${foneErr}</span>`:'');
+}
+function onFoneTap(src){
+  foneTaps++; foneErr=''; foneDiag();
+  try{ if(navigator.vibrate) navigator.vibrate(60); }catch(e){}
+  try{ if(foneAnchor) foneAnchor.play(); }catch(e){}
+  try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
+  toast('🎧 Toque do fone recebido'+(src?' ('+src+')':''));
+  primeTTS(); toggleHandsfree();
 }
 function armFone(){
-  if(foneArmed){ foneDiag(); return; }
+  if(foneArmed){ try{ foneAnchor && foneAnchor.play(); }catch(e){} foneDiag(); return; }
   try{
     foneAnchor=new Audio();
     foneAnchor.loop=true; foneAnchor.volume=1; foneAnchor.preload='auto';
     foneAnchor.setAttribute('playsinline',''); foneAnchor.setAttribute('webkit-playsinline','');
-    foneAnchor.src=URL.createObjectURL(buildSilentWav(3));
+    foneAnchor.src=URL.createObjectURL(buildSilentWav(5));
+    try{ foneAnchor.style.display='none'; document.body.appendChild(foneAnchor); }catch(e){}
     const p=foneAnchor.play();
     const onok=()=>{
-      foneArmed=true;
+      foneArmed=true; foneErr='';
       if('mediaSession' in navigator){
         foneMeta();
         try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
-        const tap=()=>{ foneTaps++; foneDiag();
-          try{ foneAnchor.play(); }catch(e){}
-          try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
-          primeTTS(); toggleHandsfree(); };
         ['play','pause','stop','previoustrack','nexttrack'].forEach(a=>{
-          try{ navigator.mediaSession.setActionHandler(a,tap); }catch(e){}
+          try{ navigator.mediaSession.setActionHandler(a,()=>onFoneTap(a)); }catch(e){}
         });
-      }
+      } else { foneErr='sem Media Session neste navegador'; }
       foneDiag();
     };
-    if(p && p.then) p.then(onok).catch(()=>{ foneDiag(); }); else onok();
-  }catch(e){ foneDiag(); }
+    if(p && p.then) p.then(onok).catch(err=>{ foneErr='áudio bloqueado: '+(err&&err.name||'?'); foneDiag(); }); else onok();
+  }catch(e){ foneErr='falha ao armar'; foneDiag(); }
 }
+/* mantém a âncora viva ao voltar pro app */
+document.addEventListener('visibilitychange',()=>{ if(foneArmed && document.visibilityState==='visible'){ try{ foneAnchor.play(); navigator.mediaSession.playbackState='playing'; }catch(e){} } });
 
 /* ================= IDENTIDADE DO AGENTE ================= */
 function showPersona(){
