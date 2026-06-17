@@ -418,6 +418,9 @@
   .ft-sub{font-size:11.5px;color:var(--ink-dim);margin-top:5px}
   .ft-stop{margin-top:13px;padding:9px 18px;border-radius:11px;font-family:inherit;font-size:12.5px;font-weight:600;
     color:#ffb4b4;background:rgba(255,90,90,.12);border:1px solid rgba(255,120,120,.4);cursor:pointer}
+  .ma-pause.on{color:var(--cyan);border-color:rgba(34,224,255,.4);background:rgba(34,224,255,.08)}
+  .ma-stop{color:#ffb0b0;border-color:rgba(255,100,100,.25)}
+  .ma-actions-sep{flex-basis:100%;height:0}
 
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
@@ -728,10 +731,10 @@ const LS = {
 let settings = LS.get('kairos_settings',{
   name:'Matheus', photo:'', apiKey:'', model:'llama-3.3-70b-versatile', voice:'', rate:1
 });
-// normaliza velocidades antigas (1.25/1.5 eram rápidas demais) pros novos valores suaves
-if(settings.rate===1.25) settings.rate=1.2;
-else if(settings.rate>1.4) settings.rate=1.4;
-if(!settings.rate || ![1,1.2,1.4].includes(settings.rate)) settings.rate=1;
+// normaliza velocidades antigas para os três valores suportados
+if(settings.rate===1.2) settings.rate=1.25;
+else if(settings.rate===1.4) settings.rate=1.5;
+if(!settings.rate || ![1,1.25,1.5].includes(settings.rate)) settings.rate=1;
 let sessions = LS.get('kairos_sessions',[]);      // [{id,title,date,msgs:[{role,content}]}]
 let memory   = LS.get('kairos_memory',[]);        // [string fact]
 let currentId = null;
@@ -741,15 +744,14 @@ let mediaRec=null, chunks=[], stream=null, listening=false;
 let proactiveTimer=null;
 let proactiveOn = LS.get('kairos_proactive', false); // agente fala por vontade própria (default OFF)
 let handsfree=false;                          // modo conversa por voz (ao vivo)
+let speechState='idle';                       // 'idle'|'speaking'|'paused'
+let currentSpeechText='';                     // texto que está sendo falado agora
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v10 · 17/06';              // mostrado nas Configurações pra confirmar a versão
-/* Botões de velocidade da fala: [rótulo mostrado, velocidade real]. O 1.5x do app
-   ficava rápido DEMAIS — agora o número é só rótulo e a velocidade real é mais suave,
-   parecida com a do WhatsApp. */
-const RATE_STEPS = [['1x',1],['1.25x',1.2],['1.5x',1.4]];
-/* Migração única: desliga proatividade e zera velocidade que ficaram salvas e incomodando */
+const APP_BUILD = 'v11 · 17/06';              // mostrado nas Configurações pra confirmar a versão
+const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
+/* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
   proactiveOn=false; LS.set('kairos_proactive', false);
   settings.rate=1; LS.set('kairos_settings', settings);
@@ -899,15 +901,28 @@ function addBubble(role,text,animate){
   m.innerHTML=(role==='user'?'':'<div class="who">KAIROS</div>')+escapeHtml(text).replace(/\n/g,'<br>');
   if(role!=='user' && text && text.trim()){
     const act=document.createElement('div'); act.className='msg-actions';
+    // — player: Ouvir · Pausar/Continuar · Parar · Voltar · Adiantar
     const replay=document.createElement('button'); replay.className='ma-btn ma-replay';
     replay.innerHTML='<svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7M19 5a9 9 0 010 14"/></svg>Ouvir';
     replay.onclick=()=>{ primeTTS(); speak(text); };
     act.appendChild(replay);
-    // rótulo que o Matheus vê × velocidade REAL aplicada (mais suave que o número, tipo WhatsApp)
+    const pauseBtn=document.createElement('button'); pauseBtn.className='ma-btn ma-pause'; pauseBtn.textContent='Pausar';
+    pauseBtn.onclick=()=>{ if(speechState==='paused') resumeSpeech(); else pauseSpeech(); };
+    act.appendChild(pauseBtn);
+    const stopBtn=document.createElement('button'); stopBtn.className='ma-btn ma-stop'; stopBtn.textContent='Parar';
+    stopBtn.onclick=()=>{ stopSpeaking(); };
+    act.appendChild(stopBtn);
+    const rewindBtn=document.createElement('button'); rewindBtn.className='ma-btn'; rewindBtn.textContent='Voltar';
+    rewindBtn.onclick=()=>{ currentSpeechText=text; rewindSpeech(); };
+    act.appendChild(rewindBtn);
+    const fwdBtn=document.createElement('button'); fwdBtn.className='ma-btn'; fwdBtn.textContent='Adiantar';
+    fwdBtn.onclick=()=>{ forwardSpeech(); };
+    act.appendChild(fwdBtn);
+    // — velocidade
     RATE_STEPS.forEach(([label,r])=>{ const b=document.createElement('button'); b.className='ma-btn ma-rate'; b.dataset.r=r; b.textContent=label;
       b.onclick=()=>{ primeTTS(); setRate(r); markRate(); speak(text); };
       act.appendChild(b); });
-    // botão de salvar: arquivo de código (se houver bloco) e PDF
+    // — downloads
     const code=extractCode(text);
     if(code){ const cb=document.createElement('button'); cb.className='ma-btn'; cb.textContent='⬇ '+code.label;
       cb.onclick=()=>downloadFile(code.name,code.content,code.mime); act.appendChild(cb); }
@@ -922,7 +937,7 @@ function addBubble(role,text,animate){
 }
 function setRate(r){ settings.rate=r; LS.set('kairos_settings',settings); }
 function markRate(){ const cur=settings.rate||1;
-  document.querySelectorAll('.ma-rate').forEach(b=>b.classList.toggle('on', parseFloat(b.dataset.r)===cur)); }
+  document.querySelectorAll('.ma-rate').forEach(b=>b.classList.toggle('on', Math.abs(parseFloat(b.dataset.r)-cur)<0.01)); }
 
 /* ================= CRIAÇÃO DE CONTEÚDO ================= */
 /* Imagens/banners: extrai tags [IMAGEM: ...] e gera grátis via Pollinations.ai */
@@ -1039,9 +1054,37 @@ function getTtsAudio(){
   if(!ttsAudio){ ttsAudio=new Audio(); ttsAudio.setAttribute('playsinline',''); ttsAudio.setAttribute('webkit-playsinline',''); }
   return ttsAudio;
 }
+function setSpeechState(s){
+  speechState=s;
+  document.querySelectorAll('.ma-pause').forEach(btn=>{
+    btn.textContent=(s==='paused')?'Continuar':'Pausar';
+    btn.classList.toggle('on',s==='paused');
+  });
+}
+function pauseSpeech(){
+  if(settings.elevenKey&&ttsAudio&&!ttsAudio.paused){ ttsAudio.pause(); setSpeechState('paused'); }
+  else { try{ speechSynthesis.pause(); setSpeechState('paused'); }catch(e){} }
+}
+function resumeSpeech(){
+  if(settings.elevenKey&&ttsAudio&&ttsAudio.paused){ ttsAudio.play(); setSpeechState('speaking'); }
+  else { try{ speechSynthesis.resume(); setSpeechState('speaking'); }catch(e){} }
+}
+function rewindSpeech(){
+  const t=currentSpeechText; if(!t) return;
+  try{ speechSynthesis.cancel(); }catch(e){}
+  try{ if(ttsAudio){ ttsAudio.pause(); ttsAudio.currentTime=0; } }catch(e){}
+  setSpeechState('idle');
+  setTimeout(()=>{ primeTTS(); speak(t); },150);
+}
+function forwardSpeech(){
+  if(settings.elevenKey&&ttsAudio&&ttsAudio.src&&!isNaN(ttsAudio.duration)){
+    ttsAudio.currentTime=Math.min(ttsAudio.duration-0.1,ttsAudio.currentTime+15);
+  } else { stopSpeaking(); }
+}
 function stopSpeaking(){
   try{ speechSynthesis.cancel(); }catch(e){}
-  try{ if(ttsAudio){ ttsAudio.pause(); } }catch(e){}
+  try{ if(ttsAudio){ ttsAudio.pause(); ttsAudio.currentTime=0; } }catch(e){}
+  setSpeechState('idle');
 }
 async function speakEleven(text){
   const key=settings.elevenKey;
@@ -1102,7 +1145,15 @@ async function speakAsync(text){
     if(anchorWasOn){ try{ foneAnchor.play(); navigator.mediaSession.playbackState='playing'; }catch(e){} }
   }
 }
-function speak(text){ speakAsync(text); }
+function speak(text){
+  if(!text) return;
+  currentSpeechText=text;
+  setSpeechState('speaking');
+  speakAsync(text).finally(()=>{
+    if(speechState==='speaking') setSpeechState('idle');
+    if(handsfree && !listening) setStatus('🎧 Aguardando toque no fone…');
+  });
+}
 
 /* ---------- SOM DE ATIVAÇÃO (tipo Siri) ---------- */
 let audioCtx=null;
@@ -1299,6 +1350,7 @@ function updateAmbientUI(){
 }
 function toggleAmbient(){
   if(!online){ toast('Ligue o agente primeiro.'); return; }
+  if(!ambient && !proactiveOn){ toast('Ative "Resposta autônoma" na tela inicial para usar a Escuta 24h.', true); return; }
   ambient=!ambient; updateAmbientUI();
   if(ambient){ reqWake(); toast('Escuta 24h ATIVA — ouvindo tudo em volta. Mantenha o app aberto.'); ambientLoop(); }
   else { relWake(); toast('Escuta 24h desligada. O agente continua online.'); }
@@ -1496,7 +1548,7 @@ function refreshHfTalk(){
     if(mic) mic.innerHTML='<span class="hf-mic-dot"></span><b>Gravando</b> · toque pra enviar';
   } else {
     btn.classList.remove('live'); if(lbl) lbl.textContent='Toque pra falar';
-    if(mic) mic.innerHTML='<span class="hf-mic-dot"></span><b>Microfone ativo</b> · pronto, é só você mandar';
+    if(mic) mic.innerHTML='<span class="hf-mic-dot"></span><b>Aguardando</b> · toque no fone para começar';
   }
 }
 async function detectHeadset(){
@@ -1602,8 +1654,8 @@ function toggleHandsfree(){
     // SÓ ARMA — microfone fica PRONTO, mas NÃO começa a ouvir sozinho.
     // A conversa só inicia quando VOCÊ tocar (botão "Toque pra falar" ou o fone).
     handsfree=true; reqWake(); updateFoneUI(); try{ armFone(); }catch(e){}
-    setStatus('🎧 Microfone ativo — toque pra falar quando quiser');
-    toast('🎤 Microfone ativo. Você decide quando falar.');
+    setStatus('🎧 Aguardando toque no fone…');
+    toast('🎧 Mãos-livres ativo. Toque o fone para começar a falar.');
   } else {
     handsfree=false; if(listening) stopMic(); updateFoneUI(); if(!ambient) relWake();
     setState(''); setStatus(''); toast('Mãos-livres desligado.');
@@ -1699,11 +1751,11 @@ function onFoneTap(src){
   try{ if(foneAnchor) foneAnchor.play(); }catch(e){}
   if(foneTestMode){ foneTestHit(src); return; }   // em modo teste, o toque só confirma o sensor
   try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
-  if(listening){ playChime('send'); toast('🎧 Enviando…'); stopMic(); return; }  // 2º toque: para e envia
+  if(listening){ playChime('send'); toast('🎧 Enviando…'); setStatus('Transcrevendo…'); stopMic(); return; }  // 2º toque: para e envia
   if(!online){ toast('Ligue o agente primeiro.'); return; }
   if(!settings.apiKey){ toast('Configure a chave Groq.'); openSettings(); return; }
   stopSpeaking();      // não grava a própria fala
-  primeTTS(); playChime('listen'); toast('🎧 Pode falar — toque de novo pra enviar'); startMic();
+  primeTTS(); playChime('listen'); toast('🎧 Ouvindo… toque de novo pra enviar'); setStatus('🎧 Ouvindo… toque de novo pra enviar'); startMic();
 }
 function armFone(){
   if(foneArmed){ try{ foneAnchor && foneAnchor.play(); }catch(e){} foneDiag(); return; }
