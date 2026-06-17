@@ -596,7 +596,7 @@
     </button>
     <div class="fone-result" id="foneResult"></div>
     <div class="fone-hf">
-      <div class="hf-meta"><b>Modo mãos-livres</b><small>Conversa contínua pelo fone, sem tocar no celular</small></div>
+      <div class="hf-meta"><b>Modo mãos-livres</b><small>Fica armado em silêncio. Toque o fone pra falar; toque de novo pra enviar.</small></div>
       <div class="hf-switch" id="hfSwitch"><span></span></div>
     </div>
     <p class="sub" style="margin-top:12px">📱 <b>1 toque no botão do fone</b> (play/pause do AirPods) alterna a conversa por voz — liga e desliga sem pegar no celular. Funciona com o app aberto e também pelo controle na tela de bloqueio.</p>
@@ -1519,11 +1519,13 @@ function toggleHandsfree(){
     if(!online){ toast('Ligue o agente primeiro.'); return; }
     if(!settings.apiKey){ toast('Configure a chave Groq.'); openSettings(); return; }
     if(ambient) toggleAmbient();
+    // SÓ ARMA — não começa a ouvir. O mic só abre quando tocar no fone (push-to-talk).
     handsfree=true; reqWake(); updateFoneUI(); try{ armFone(); }catch(e){}
-    toast('Conversa por voz ATIVA — pode falar.'); handsfreeLoop();
+    setStatus('🎧 Mãos-livres ativo — toque o fone pra falar');
+    toast('Mãos-livres ativo. Toque o fone pra falar.');
   } else {
-    handsfree=false; updateFoneUI(); if(!ambient) relWake();
-    setState(''); setStatus(''); toast('Conversa por voz encerrada.');
+    handsfree=false; if(listening) stopMic(); updateFoneUI(); if(!ambient) relWake();
+    setState(''); setStatus(''); toast('Mãos-livres desligado.');
   }
 }
 $('#foneBtn').onclick=()=>{ closeSidebar(); openFone(); };
@@ -1574,7 +1576,6 @@ function onFoneTap(src){
   try{ if(navigator.vibrate) navigator.vibrate(60); }catch(e){}
   try{ if(foneAnchor) foneAnchor.play(); }catch(e){}
   try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
-  if(handsfree){ toggleHandsfree(); }            // sai do modo contínuo, se estiver
   if(listening){ playChime('send'); toast('🎧 Enviando…'); stopMic(); return; }  // 2º toque: para e envia
   if(!online){ toast('Ligue o agente primeiro.'); return; }
   if(!settings.apiKey){ toast('Configure a chave Groq.'); openSettings(); return; }
