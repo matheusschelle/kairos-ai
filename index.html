@@ -878,6 +878,9 @@ speechSynthesis.onvoiceschanged=loadVoices;
 function speakAsync(text){
   return new Promise(res=>{
     if(!text){ res(); return; }
+    // Pausa a âncora do fone enquanto fala — senão ela atrapalha o áudio sair no Bluetooth
+    const anchorWasOn = foneAnchor && !foneAnchor.paused;
+    if(anchorWasOn){ try{ foneAnchor.pause(); }catch(e){} }
     try{
       if(!voices.length) voices=speechSynthesis.getVoices();
       speechSynthesis.cancel();
@@ -885,7 +888,9 @@ function speakAsync(text){
       // iOS corta falas longas → quebra em frases curtas
       const parts=(text.replace(/[⚡*_#`>]/g,'').match(/[^.!?\n]+[.!?\n]?/g)||[text]).map(p=>p.trim()).filter(Boolean);
       if(!parts.length){ res(); return; }
-      let done=false; const finish=()=>{ if(!done){ done=true; res(); } };
+      let done=false; const finish=()=>{ if(!done){ done=true;
+        if(anchorWasOn){ try{ foneAnchor.play(); navigator.mediaSession.playbackState='playing'; }catch(e){} }
+        res(); } };
       parts.forEach((p,idx)=>{
         const u=new SpeechSynthesisUtterance(p);
         if(v){u.voice=v;u.lang=v.lang;} else u.lang='pt-BR';
@@ -906,7 +911,6 @@ function primeTTS(){
     const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u);
     if(!voices.length) voices=speechSynthesis.getVoices();
   }catch(e){}
-  try{ if(typeof armFone==='function') armFone(); }catch(e){}
 }
 
 /* ---------- MEMORY EXTRACTION ---------- */
@@ -1343,7 +1347,7 @@ function toggleHandsfree(){
     if(!online){ toast('Ligue o agente primeiro.'); return; }
     if(!settings.apiKey){ toast('Configure a chave Groq.'); openSettings(); return; }
     if(ambient) toggleAmbient();
-    handsfree=true; reqWake(); updateFoneUI();
+    handsfree=true; reqWake(); updateFoneUI(); try{ armFone(); }catch(e){}
     toast('Conversa por voz ATIVA — pode falar.'); handsfreeLoop();
   } else {
     handsfree=false; updateFoneUI(); if(!ambient) relWake();
