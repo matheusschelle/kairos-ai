@@ -556,6 +556,7 @@
       <div class="hf-meta"><b>Modo mãos-livres</b><small>Conversa contínua pelo fone, sem tocar no celular</small></div>
       <div class="hf-switch" id="hfSwitch"><span></span></div>
     </div>
+    <p class="sub" style="margin-top:12px">📱 <b>1 toque no botão do fone</b> (play/pause do AirPods) alterna a conversa por voz — liga e desliga sem pegar no celular. Funciona com o app aberto e também pelo controle na tela de bloqueio.</p>
     <button class="save" id="foneClose" style="margin-top:18px">Fechar</button>
   </div>
 </div>
@@ -852,6 +853,7 @@ function primeTTS(){
     const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u);
     if(!voices.length) voices=speechSynthesis.getVoices();
   }catch(e){}
+  try{ if(typeof armFone==='function') armFone(); }catch(e){}
 }
 
 /* ---------- MEMORY EXTRACTION ---------- */
@@ -1267,6 +1269,46 @@ $('#testVoiceBtn').onclick=testVoice;
 $('#testMicBtn').onclick=testMic;
 $('#hfSwitch').onclick=()=>{ primeTTS(); toggleHandsfree(); };
 
+/* ================= CONTROLE PELO FONE (Media Session) =================
+   iPhone só entrega os toques do botão do fone (AirPods etc.) se houver
+   mídia tocando. Mantemos uma "âncora" de áudio silencioso em loop pra
+   segurar os controles de mídia; aí 1 toque no fone = play/pause = alterna
+   a conversa por voz. Também aparece um controle na tela de bloqueio. */
+let foneAnchor=null, foneArmed=false;
+function buildSilentWav(sec){
+  const sr=8000, n=sr*sec, buf=new ArrayBuffer(44+n*2), dv=new DataView(buf);
+  const w=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
+  w(0,'RIFF'); dv.setUint32(4,36+n*2,true); w(8,'WAVE'); w(12,'fmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+  dv.setUint32(24,sr,true); dv.setUint32(28,sr*2,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
+  w(36,'data'); dv.setUint32(40,n*2,true);
+  return new Blob([buf],{type:'audio/wav'});
+}
+function foneMeta(){
+  if(!('mediaSession' in navigator)) return;
+  try{ navigator.mediaSession.metadata=new MediaMetadata({
+    title:(persona&&persona.name)||'Kairos AI', artist:'Toque o fone pra falar' }); }catch(e){}
+}
+function armFone(){
+  if(foneArmed) return;
+  try{
+    foneAnchor=new Audio(); foneAnchor.loop=true; foneAnchor.volume=0;
+    foneAnchor.src=URL.createObjectURL(buildSilentWav(1));
+    foneAnchor.play().then(()=>{
+      foneArmed=true;
+      if('mediaSession' in navigator){
+        foneMeta();
+        try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
+        const tap=()=>{ try{ foneAnchor.play(); }catch(e){}
+          try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
+          primeTTS(); toggleHandsfree(); };
+        try{ navigator.mediaSession.setActionHandler('play',tap); }catch(e){}
+        try{ navigator.mediaSession.setActionHandler('pause',tap); }catch(e){}
+      }
+    }).catch(()=>{});
+  }catch(e){}
+}
+
 /* ================= IDENTIDADE DO AGENTE ================= */
 function showPersona(){
   if(persona){ if(persona.name) $('#pName').value=persona.name; if(persona.personality) $('#pPers').value=persona.personality; }
@@ -1281,6 +1323,7 @@ async function createPersona(){
   persona={ name, personality: pers || 'Um parceiro de pensamento livre, curioso e criativo, que troca ideia de igual pra igual.', created:true, createdAt:Date.now() };
   LS.set('kairos_persona',persona);
   try{ speechSynthesis.cancel(); }catch(e){}
+  foneMeta();
   hidePersona(); refreshHome();
   toast(name+' ganhou vida.');
   if(!settings.apiKey){ setTimeout(()=>{ toast('Agora cole sua chave Groq pra ele falar.'); openSettings(); },500); return; }
