@@ -682,6 +682,7 @@ const LS = {
 let settings = LS.get('kairos_settings',{
   name:'Matheus', photo:'', apiKey:'', model:'llama-3.3-70b-versatile', voice:'', rate:1
 });
+if(!settings.rate || settings.rate>1.5) settings.rate=1;  // velocidade máx 1.5x
 let sessions = LS.get('kairos_sessions',[]);      // [{id,title,date,msgs:[{role,content}]}]
 let memory   = LS.get('kairos_memory',[]);        // [string fact]
 let currentId = null;
@@ -836,7 +837,7 @@ function addBubble(role,text,animate){
     replay.innerHTML='<svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7M19 5a9 9 0 010 14"/></svg>Ouvir';
     replay.onclick=()=>{ primeTTS(); speak(text); };
     act.appendChild(replay);
-    [1,1.5,2].forEach(r=>{ const b=document.createElement('button'); b.className='ma-btn ma-rate'; b.dataset.r=r; b.textContent=r+'x';
+    [1,1.25,1.5].forEach(r=>{ const b=document.createElement('button'); b.className='ma-btn ma-rate'; b.dataset.r=r; b.textContent=r+'x';
       b.onclick=()=>{ primeTTS(); setRate(r); markRate(); speak(text); };
       act.appendChild(b); });
     m.appendChild(act);
@@ -911,6 +912,7 @@ async function speakEleven(text){
   const a=getTtsAudio();
   return new Promise(resolve=>{
     try{ a.src=URL.createObjectURL(blob); }catch(e){ resolve(); return; }
+    try{ a.preservesPitch=true; a.mozPreservesPitch=true; a.webkitPreservesPitch=true; }catch(e){}
     a.playbackRate=settings.rate||1;
     a.onended=()=>resolve(); a.onerror=()=>resolve();
     a.play().catch(()=>resolve());
@@ -928,7 +930,7 @@ function speakNative(text){
       parts.forEach((p,idx)=>{
         const u=new SpeechSynthesisUtterance(p);
         if(v){u.voice=v;u.lang=v.lang;} else u.lang='pt-BR';
-        u.rate=(settings.rate||1)*1.03;u.pitch=1;u.volume=1;
+        u.rate=(settings.rate||1);u.pitch=1;u.volume=1;
         if(idx===parts.length-1){ u.onend=finish; u.onerror=finish; }
         speechSynthesis.speak(u);
       });
