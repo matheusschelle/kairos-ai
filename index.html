@@ -395,6 +395,17 @@
   .hf-switch span{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
   .hf-switch.on{background:linear-gradient(135deg,var(--violet),var(--cyan))}
   .hf-switch.on span{left:25px}
+  .hf-live{display:none;margin-top:10px;flex-direction:column;gap:10px}
+  .hf-live.on{display:flex}
+  .hf-mic{display:flex;align-items:center;gap:9px;font-size:12.5px;color:#cfe9ff;
+    padding:11px 13px;border-radius:12px;background:rgba(40,200,160,.10);border:1px solid rgba(40,220,170,.35)}
+  .hf-mic b{font-weight:700;color:#7dfcc8}
+  .hf-mic-dot{width:9px;height:9px;border-radius:50%;background:#3ef0b0;flex:none;
+    box-shadow:0 0 0 0 rgba(62,240,176,.6);animation:micpulse 1.6s infinite}
+  @keyframes micpulse{0%{box-shadow:0 0 0 0 rgba(62,240,176,.55)}70%{box-shadow:0 0 0 9px rgba(62,240,176,0)}100%{box-shadow:0 0 0 0 rgba(62,240,176,0)}}
+  .hf-talk{background:linear-gradient(135deg,rgba(124,92,255,.22),rgba(40,210,255,.18));border-color:rgba(120,160,255,.5)}
+  .hf-talk.live{background:linear-gradient(135deg,rgba(255,80,110,.28),rgba(255,140,90,.22));border-color:rgba(255,120,120,.6)}
+  .hf-talk.live svg{stroke:#ff9bab;animation:pulse 1s infinite}
 
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
@@ -597,8 +608,15 @@
     </button>
     <div class="fone-result" id="foneResult"></div>
     <div class="fone-hf">
-      <div class="hf-meta"><b>Modo mãos-livres</b><small>Fica armado em silêncio. Toque o fone pra falar; toque de novo pra enviar.</small></div>
+      <div class="hf-meta"><b>Modo mãos-livres</b><small>Ativa e deixa o microfone pronto. Você decide quando falar.</small></div>
       <div class="hf-switch" id="hfSwitch"><span></span></div>
+    </div>
+    <div class="hf-live" id="hfLive">
+      <div class="hf-mic" id="hfMic"><span class="hf-mic-dot"></span><b>Microfone ativo</b> · pronto, é só você mandar</div>
+      <button class="fone-act hf-talk" id="hfTalkBtn">
+        <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg>
+        <span id="hfTalkLbl">Toque pra falar</span>
+      </button>
     </div>
     <p class="sub" style="margin-top:12px">📱 <b>1 toque no botão do fone</b> (play/pause do AirPods) alterna a conversa por voz — liga e desliga sem pegar no celular. Funciona com o app aberto e também pelo controle na tela de bloqueio.</p>
     <button class="fone-act" id="armFoneBtn">
@@ -688,7 +706,10 @@ const LS = {
 let settings = LS.get('kairos_settings',{
   name:'Matheus', photo:'', apiKey:'', model:'llama-3.3-70b-versatile', voice:'', rate:1
 });
-if(!settings.rate || settings.rate>1.5) settings.rate=1;  // velocidade máx 1.5x
+// normaliza velocidades antigas (1.25/1.5 eram rápidas demais) pros novos valores suaves
+if(settings.rate===1.25) settings.rate=1.2;
+else if(settings.rate>1.4) settings.rate=1.4;
+if(!settings.rate || ![1,1.2,1.4].includes(settings.rate)) settings.rate=1;
 let sessions = LS.get('kairos_sessions',[]);      // [{id,title,date,msgs:[{role,content}]}]
 let memory   = LS.get('kairos_memory',[]);        // [string fact]
 let currentId = null;
@@ -701,7 +722,11 @@ let handsfree=false;                          // modo conversa por voz (ao vivo)
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v8 · 17/06 21h';           // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v9 · 17/06';               // mostrado nas Configurações pra confirmar a versão
+/* Botões de velocidade da fala: [rótulo mostrado, velocidade real]. O 1.5x do app
+   ficava rápido DEMAIS — agora o número é só rótulo e a velocidade real é mais suave,
+   parecida com a do WhatsApp. */
+const RATE_STEPS = [['1x',1],['1.25x',1.2],['1.5x',1.4]];
 /* Migração única: desliga proatividade e zera velocidade que ficaram salvas e incomodando */
 if(!LS.get('kairos_mig2', false)){
   proactiveOn=false; LS.set('kairos_proactive', false);
@@ -856,7 +881,8 @@ function addBubble(role,text,animate){
     replay.innerHTML='<svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7M19 5a9 9 0 010 14"/></svg>Ouvir';
     replay.onclick=()=>{ primeTTS(); speak(text); };
     act.appendChild(replay);
-    [1,1.25,1.5].forEach(r=>{ const b=document.createElement('button'); b.className='ma-btn ma-rate'; b.dataset.r=r; b.textContent=r+'x';
+    // rótulo que o Matheus vê × velocidade REAL aplicada (mais suave que o número, tipo WhatsApp)
+    RATE_STEPS.forEach(([label,r])=>{ const b=document.createElement('button'); b.className='ma-btn ma-rate'; b.dataset.r=r; b.textContent=label;
       b.onclick=()=>{ primeTTS(); setRate(r); markRate(); speak(text); };
       act.appendChild(b); });
     // botão de salvar: arquivo de código (se houver bloco) e PDF
@@ -1061,19 +1087,26 @@ let audioCtx=null;
 function getCtx(){ try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} return audioCtx; }
 function playChime(kind){
   const ctx=getCtx(); if(!ctx) return;
-  try{ if(ctx.state==='suspended') ctx.resume(); }catch(e){}
-  const now=ctx.currentTime;
-  // 'listen' = duas notas subindo (ativou/ouvindo); 'send' = duas notas descendo (enviado)
-  const notes = kind==='send' ? [[740,0],[523,0.10]] : [[523,0],[784,0.10]];
-  notes.forEach(([f,t])=>{
-    const o=ctx.createOscillator(), g=ctx.createGain();
-    o.type='sine'; o.frequency.value=f;
-    g.gain.setValueAtTime(0.0001, now+t);
-    g.gain.exponentialRampToValueAtTime(0.22, now+t+0.025);
-    g.gain.exponentialRampToValueAtTime(0.0001, now+t+0.20);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(now+t); o.stop(now+t+0.22);
-  });
+  // pequena vibração junto do som ajuda a identificar (principalmente no fone)
+  try{ if(navigator.vibrate) navigator.vibrate(kind==='send'?[30]:[40,30,40]); }catch(e){}
+  const fire=()=>{
+    const now=ctx.currentTime+0.02;
+    // 'listen' = três notas subindo (ouvindo); 'send' = três descendo (enviado)
+    const notes = kind==='send' ? [[784,0],[587,0.12],[392,0.24]] : [[523,0],[659,0.12],[880,0.24]];
+    notes.forEach(([f,t])=>{
+      const o=ctx.createOscillator(), o2=ctx.createOscillator(), g=ctx.createGain();
+      o.type='triangle'; o.frequency.value=f;
+      o2.type='sine'; o2.frequency.value=f*2;          // harmônico → mais brilhante/audível
+      g.gain.setValueAtTime(0.0001, now+t);
+      g.gain.exponentialRampToValueAtTime(0.6, now+t+0.02);   // bem mais alto que antes (0.22)
+      g.gain.exponentialRampToValueAtTime(0.0001, now+t+0.30);
+      o.connect(g); o2.connect(g); g.connect(ctx.destination);
+      o.start(now+t); o.stop(now+t+0.32); o2.start(now+t); o2.stop(now+t+0.32);
+    });
+  };
+  // garante o contexto rodando ANTES de agendar as notas (senão o iOS engole o som)
+  if(ctx.state==='suspended'){ try{ ctx.resume().then(fire).catch(fire); }catch(e){ fire(); } }
+  else fire();
 }
 /* iOS bloqueia fala fora de um gesto → "destrava" a voz a cada toque do usuário */
 function primeTTS(){
@@ -1168,12 +1201,12 @@ async function startMic(){
       }catch(e){ setState('');setStatus(''); toast('Erro STT: '+e.message,true); }
     };
     mediaRec.start();
-    listening=true; setState('listening'); setStatus('Ouvindo… toque para enviar');
+    listening=true; setState('listening'); setStatus('Ouvindo… toque para enviar'); refreshHfTalk();
   }catch(e){ toast('Sem acesso ao microfone. Verifique permissões do Safari.',true); }
 }
 function stopMic(){
   if(mediaRec && mediaRec.state!=='inactive') mediaRec.stop();
-  listening=false; setState('');
+  listening=false; setState(''); refreshHfTalk();
 }
 function toggleMic(){ listening?stopMic():startMic(); }
 
@@ -1428,7 +1461,22 @@ if(screenAwake) reqWake();   // restaura ao abrir
 /* ================= CONTROLE DO FONE ================= */
 function openFone(){ $('#fone').classList.add('on'); updateFoneUI(); detectHeadset(); foneDiag(); }
 function closeFone(){ $('#fone').classList.remove('on'); }
-function updateFoneUI(){ $('#hfSwitch').classList.toggle('on',handsfree); }
+function updateFoneUI(){
+  $('#hfSwitch').classList.toggle('on',handsfree);
+  const live=$('#hfLive'); if(live) live.classList.toggle('on',handsfree);
+  refreshHfTalk();
+}
+/* atualiza o rótulo do botão grande: pronto → "Toque pra falar"; ouvindo → "Enviar agora" */
+function refreshHfTalk(){
+  const btn=$('#hfTalkBtn'), lbl=$('#hfTalkLbl'), mic=$('#hfMic'); if(!btn) return;
+  if(listening){
+    btn.classList.add('live'); if(lbl) lbl.textContent='Ouvindo… toque pra enviar';
+    if(mic) mic.innerHTML='<span class="hf-mic-dot"></span><b>Gravando</b> · toque pra enviar';
+  } else {
+    btn.classList.remove('live'); if(lbl) lbl.textContent='Toque pra falar';
+    if(mic) mic.innerHTML='<span class="hf-mic-dot"></span><b>Microfone ativo</b> · pronto, é só você mandar';
+  }
+}
 async function detectHeadset(){
   const box=$('#foneStatus'), txt=$('#foneStatusTxt'); box.classList.remove('ok','no');
   try{
@@ -1529,10 +1577,11 @@ function toggleHandsfree(){
     if(!online){ toast('Ligue o agente primeiro.'); return; }
     if(!settings.apiKey){ toast('Configure a chave Groq.'); openSettings(); return; }
     if(ambient) toggleAmbient();
-    // SÓ ARMA — não começa a ouvir. O mic só abre quando tocar no fone (push-to-talk).
+    // SÓ ARMA — microfone fica PRONTO, mas NÃO começa a ouvir sozinho.
+    // A conversa só inicia quando VOCÊ tocar (botão "Toque pra falar" ou o fone).
     handsfree=true; reqWake(); updateFoneUI(); try{ armFone(); }catch(e){}
-    setStatus('🎧 Mãos-livres ativo — toque o fone pra falar');
-    toast('Mãos-livres ativo. Toque o fone pra falar.');
+    setStatus('🎧 Microfone ativo — toque pra falar quando quiser');
+    toast('🎤 Microfone ativo. Você decide quando falar.');
   } else {
     handsfree=false; if(listening) stopMic(); updateFoneUI(); if(!ambient) relWake();
     setState(''); setStatus(''); toast('Mãos-livres desligado.');
@@ -1544,6 +1593,7 @@ $('#fone').addEventListener('click',e=>{ if(e.target===$('#fone')) closeFone(); 
 $('#testVoiceBtn').onclick=testVoice;
 $('#testMicBtn').onclick=testMic;
 $('#hfSwitch').onclick=()=>{ primeTTS(); toggleHandsfree(); };
+$('#hfTalkBtn').onclick=()=>{ primeTTS(); onFoneTap('btn'); };
 $('#armFoneBtn').onclick=()=>{ primeTTS(); armFone(); setTimeout(foneDiag,300);
   toast(foneArmed?'Controle do fone ativo. Aperte o botão do fone.':'Tentando ativar…'); };
 
@@ -1583,7 +1633,7 @@ function foneDiag(){
    ele responde UMA vez (sem loop contínuo). */
 function onFoneTap(src){
   foneTaps++; foneErr=''; foneDiag();
-  try{ if(navigator.vibrate) navigator.vibrate(60); }catch(e){}
+  try{ const c=getCtx(); if(c&&c.state==='suspended') c.resume(); }catch(e){}  // destrava o som do chime
   try{ if(foneAnchor) foneAnchor.play(); }catch(e){}
   try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
   if(listening){ playChime('send'); toast('🎧 Enviando…'); stopMic(); return; }  // 2º toque: para e envia
