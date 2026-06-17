@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kairos AI">
+<meta name="theme-color" content="#05060f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Kairos AI</title>
+<style>
+  :root{
+    --bg:#05060f;
+    --bg2:#0a0c1c;
+    --glass:rgba(18,22,46,0.55);
+    --glass-brd:rgba(120,140,255,0.16);
+    --cyan:#22e0ff;
+    --magenta:#ff3df0;
+    --violet:#8b5cff;
+    --gold:#f5c969;
+    --ink:#eaf0ff;
+    --ink-dim:#8b93c4;
+    --ok:#3df09a;
+    --radius:22px;
+    --safe-t:env(safe-area-inset-top,0px);
+    --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden}
+  body{
+    font-family:-apple-system,"SF Pro Display","SF Pro Text",BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    user-select:none;
+    position:fixed;inset:0;
+  }
+  #neural{position:fixed;inset:0;z-index:0;opacity:.9}
+  .vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(120% 80% at 50% 8%,rgba(139,92,255,.16),transparent 55%),
+               radial-gradient(90% 60% at 80% 100%,rgba(34,224,255,.12),transparent 60%),
+               linear-gradient(180deg,rgba(5,6,15,.2),rgba(5,6,15,.85) 92%)}
+  #app{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;
+    padding:calc(var(--safe-t) + 8px) 16px calc(var(--safe-b) + 8px)}
+
+  /* ---------- HEADER ---------- */
+  header{display:flex;align-items:center;gap:12px;padding:6px 2px 10px}
+  .logo{width:42px;height:42px;flex:0 0 auto;position:relative;cursor:pointer}
+  .logo svg{width:100%;height:100%;filter:drop-shadow(0 0 8px rgba(34,224,255,.6))}
+  .logo .ring{position:absolute;inset:-4px;border-radius:50%;
+    border:1px solid rgba(34,224,255,.25);animation:spin 9s linear infinite}
+  .brand{flex:1;line-height:1.05}
+  .brand h1{font-size:21px;font-weight:700;letter-spacing:.5px;
+    background:linear-gradient(90deg,#fff,#bcd4ff 60%,var(--cyan));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand small{font-size:9.5px;letter-spacing:3px;color:var(--ink-dim);font-weight:600}
+  .hbtn{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;
+    background:var(--glass);border:1px solid var(--glass-brd);backdrop-filter:blur(14px);cursor:pointer}
+  .hbtn svg{width:19px;height:19px;stroke:var(--ink);fill:none;stroke-width:1.7}
+  .hbtn:active{transform:scale(.93)}
+  #homeBtn{display:none}
+  body.in-chat #homeBtn{display:grid}
+  body.in-chat #logoBtn{display:none}
+
+  .ctrl{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;flex:0 0 auto;
+    background:var(--glass);border:1px solid var(--glass-brd);backdrop-filter:blur(14px);cursor:pointer;
+    transition:.18s}
+  .ctrl:active{transform:scale(.92)}
+  .ctrl svg{width:19px;height:19px;fill:none;stroke-width:1.8}
+  /* Escuta 24h */
+  .ctrl.ear svg{stroke:var(--ink-dim)}
+  body.ambient .ctrl.ear{border-color:rgba(255,61,240,.55);background:rgba(255,61,240,.12);
+    box-shadow:0 0 14px rgba(255,61,240,.3)}
+  body.ambient .ctrl.ear svg{stroke:var(--magenta);animation:pulse 1.1s infinite}
+  /* Power online/offline */
+  .ctrl.power svg{stroke:var(--ok)}
+  body.online .ctrl.power{border-color:rgba(61,240,154,.4);box-shadow:0 0 12px rgba(61,240,154,.25)}
+  body.offline .ctrl.power{border-color:rgba(255,90,90,.5);background:rgba(255,90,90,.1)}
+  body.offline .ctrl.power svg{stroke:#ff5b5b}
+  /* Estado offline — orbe apagada */
+  body.offline .orb-core{filter:grayscale(.7) brightness(.45);animation:none}
+  body.offline .orb-ring{opacity:.25;animation-duration:30s}
+
+  /* ---------- HOME / ORB ---------- */
+  #home{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;padding-top:6px}
+  #home::-webkit-scrollbar{display:none}
+  .orb-wrap{position:relative;width:230px;height:230px;margin:14px 0 6px;display:grid;place-items:center}
+  .orb-ring{position:absolute;border-radius:50%;border:1.5px solid transparent}
+  .orb-ring.r1{inset:0;border-top-color:rgba(34,224,255,.7);border-right-color:rgba(34,224,255,.15);
+    animation:spin 7s linear infinite}
+  .orb-ring.r2{inset:20px;border-bottom-color:rgba(255,61,240,.7);border-left-color:rgba(255,61,240,.12);
+    animation:spin 5s linear infinite reverse}
+  .orb-ring.r3{inset:40px;border-top-color:rgba(245,201,105,.55);
+    animation:spin 11s linear infinite}
+  .orb-core{width:128px;height:128px;border-radius:50%;position:relative;display:grid;place-items:center;
+    background:radial-gradient(circle at 50% 40%,rgba(139,92,255,.55),rgba(34,224,255,.25) 55%,rgba(5,6,15,.1) 75%);
+    box-shadow:0 0 50px rgba(139,92,255,.5),inset 0 0 40px rgba(34,224,255,.3);
+    animation:breathe 4s ease-in-out infinite}
+  .orb-core svg{width:64px;height:64px;filter:drop-shadow(0 0 10px rgba(34,224,255,.8))}
+  body.listening .orb-core{animation:breathe 1s ease-in-out infinite;
+    box-shadow:0 0 70px rgba(255,61,240,.7),inset 0 0 40px rgba(255,61,240,.4)}
+  body.thinking .orb-core{animation:breathe 1.6s ease-in-out infinite;
+    box-shadow:0 0 70px rgba(245,201,105,.6),inset 0 0 40px rgba(245,201,105,.35)}
+
+  .greet{text-align:center;margin:2px 0 16px}
+  .greet h2{font-size:23px;font-weight:600;letter-spacing:.3px}
+  .greet h2 b{font-weight:700;background:linear-gradient(90deg,var(--cyan),var(--violet));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .greet p{font-size:13px;color:var(--ink-dim);margin-top:3px}
+
+  .stat-row{display:flex;gap:10px;width:100%;max-width:420px;margin-bottom:14px}
+  .stat{flex:1;background:var(--glass);border:1px solid var(--glass-brd);border-radius:16px;
+    padding:13px 12px;backdrop-filter:blur(16px)}
+  .stat .k{font-size:9px;letter-spacing:1.5px;color:var(--ink-dim);font-weight:700;text-transform:uppercase}
+  .stat .v{font-size:18px;font-weight:700;margin-top:4px;display:flex;align-items:center;gap:6px}
+  .stat .v .mini-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .stat.cyan .v{color:var(--cyan)} .stat.mag .v{color:var(--magenta)} .stat.gold .v{color:var(--gold)}
+
+  .sugg{width:100%;max-width:420px;display:flex;flex-direction:column;gap:9px;margin-bottom:10px}
+  .sugg .sg-title{font-size:10px;letter-spacing:2px;color:var(--ink-dim);font-weight:700;
+    text-transform:uppercase;margin:4px 2px}
+  .chip{display:flex;align-items:center;gap:11px;padding:13px 15px;border-radius:15px;
+    background:var(--glass);border:1px solid var(--glass-brd);backdrop-filter:blur(14px);
+    font-size:14px;cursor:pointer;transition:.18s}
+  .chip:active{transform:scale(.98);border-color:rgba(34,224,255,.4)}
+  .chip svg{width:18px;height:18px;stroke:var(--cyan);fill:none;stroke-width:1.7;flex:0 0 auto}
+  .chip span{color:#cdd6ff}
+
+  /* ---------- CHAT ---------- */
+  #chat{flex:1;display:none;flex-direction:column;overflow:hidden}
+  .msgs{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;
+    gap:14px;padding:8px 2px 14px}
+  .msgs::-webkit-scrollbar{display:none}
+  .msg{max-width:86%;padding:12px 15px;border-radius:18px;font-size:15px;line-height:1.45;
+    animation:rise .3s ease}
+  .msg.user{align-self:flex-end;background:linear-gradient(135deg,rgba(139,92,255,.35),rgba(34,224,255,.22));
+    border:1px solid rgba(139,92,255,.4);border-bottom-right-radius:6px;color:#fff}
+  .msg.ai{align-self:flex-start;background:var(--glass);border:1px solid var(--glass-brd);
+    border-bottom-left-radius:6px;color:#dfe6ff;backdrop-filter:blur(14px)}
+  .msg.ai .who{font-size:9px;letter-spacing:2px;color:var(--cyan);font-weight:700;margin-bottom:5px}
+  .typing{display:flex;gap:5px;padding:4px 0}
+  .typing i{width:7px;height:7px;border-radius:50%;background:var(--cyan);opacity:.6;
+    animation:blink 1.2s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+
+  /* ---------- DOCK ---------- */
+  .dock{display:flex;align-items:center;gap:10px;padding:8px 4px 2px}
+  .txtfield{flex:1;display:flex;align-items:center;gap:8px;background:var(--glass);
+    border:1px solid var(--glass-brd);border-radius:17px;padding:4px 6px 4px 16px;backdrop-filter:blur(16px)}
+  .txtfield input{flex:1;background:none;border:none;outline:none;color:var(--ink);font-size:15px;
+    padding:10px 0;font-family:inherit}
+  .txtfield input::placeholder{color:var(--ink-dim)}
+  .send{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;flex:0 0 auto;
+    background:linear-gradient(135deg,var(--violet),var(--cyan));border:none;cursor:pointer}
+  .send svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
+  .send:active{transform:scale(.9)}
+
+  .mic{width:62px;height:62px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;
+    position:relative;cursor:pointer;
+    background:radial-gradient(circle at 50% 35%,var(--violet),#3a1f8a);
+    box-shadow:0 0 24px rgba(139,92,255,.55),inset 0 1px 1px rgba(255,255,255,.2)}
+  .mic svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.8;z-index:2}
+  .mic::before{content:"";position:absolute;inset:-6px;border-radius:50%;
+    border:2px solid rgba(34,224,255,.4);opacity:0}
+  body.listening .mic{background:radial-gradient(circle at 50% 35%,var(--magenta),#8a1f6e);
+    box-shadow:0 0 34px rgba(255,61,240,.7)}
+  body.listening .mic::before{opacity:1;animation:halo 1.3s ease-out infinite}
+  body.thinking .mic{background:radial-gradient(circle at 50% 35%,var(--gold),#9a7820)}
+  .mic .wave{position:absolute;inset:0;display:none;align-items:center;justify-content:center;gap:2.5px}
+  body.listening .mic .wave{display:flex}
+  body.listening .mic svg{display:none}
+  .mic .wave b{width:3px;height:10px;background:#fff;border-radius:3px;animation:wav .7s ease-in-out infinite}
+  .mic .wave b:nth-child(2){animation-delay:.1s}.mic .wave b:nth-child(3){animation-delay:.2s}
+  .mic .wave b:nth-child(4){animation-delay:.3s}.mic .wave b:nth-child(5){animation-delay:.15s}
+
+  .statusline{text-align:center;font-size:11px;letter-spacing:1px;color:var(--ink-dim);
+    min-height:14px;padding:2px 0 2px}
+  body.listening .statusline{color:var(--magenta)} body.thinking .statusline{color:var(--gold)}
+
+  /* ---------- SIDEBAR ---------- */
+  .scrim{position:fixed;inset:0;z-index:18;background:rgba(3,4,12,.6);backdrop-filter:blur(3px);
+    opacity:0;pointer-events:none;transition:.25s}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:84%;max-width:340px;z-index:19;
+    background:linear-gradient(160deg,rgba(13,16,38,.96),rgba(8,9,22,.98));
+    border-right:1px solid var(--glass-brd);backdrop-filter:blur(22px);
+    transform:translateX(-104%);transition:transform .28s cubic-bezier(.3,.8,.3,1);
+    display:flex;flex-direction:column;padding:calc(var(--safe-t) + 16px) 14px calc(var(--safe-b) + 14px)}
+  .sidebar.on{transform:translateX(0)}
+  .sb-head{display:flex;align-items:center;gap:11px;padding:4px 6px 16px;border-bottom:1px solid var(--glass-brd)}
+  .sb-head .av{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--cyan));
+    padding:2px;flex:0 0 auto}
+  .sb-head .av img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;background:#11132e}
+  .sb-head .av .ph{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;background:#11132e}
+  .sb-head .av .ph svg{width:22px;height:22px;stroke:var(--cyan);fill:none;stroke-width:1.6}
+  .sb-head .nm{flex:1;line-height:1.2}
+  .sb-head .nm b{font-size:15px;font-weight:700}
+  .sb-head .nm small{font-size:10px;color:var(--ok);letter-spacing:1px}
+  .newchat{display:flex;align-items:center;gap:10px;margin:14px 4px;padding:13px 15px;border-radius:14px;
+    background:linear-gradient(135deg,rgba(139,92,255,.25),rgba(34,224,255,.18));
+    border:1px solid rgba(139,92,255,.4);font-size:14px;font-weight:600;cursor:pointer;color:#eaf0ff}
+  .newchat svg{width:18px;height:18px;stroke:var(--cyan);fill:none;stroke-width:2}
+  .sess-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 2px}
+  .sess-list::-webkit-scrollbar{display:none}
+  .sess-grp{font-size:9px;letter-spacing:2px;color:var(--ink-dim);font-weight:700;text-transform:uppercase;
+    padding:14px 8px 6px}
+  .sess{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;cursor:pointer;
+    transition:.15s;position:relative}
+  .sess:active{background:rgba(120,140,255,.1)}
+  .sess.active{background:rgba(34,224,255,.1);border:1px solid rgba(34,224,255,.25)}
+  .sess svg{width:15px;height:15px;stroke:var(--ink-dim);fill:none;stroke-width:1.7;flex:0 0 auto}
+  .sess .t{flex:1;font-size:13.5px;color:#cdd6ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sess .del{opacity:.5;padding:4px}.sess .del svg{stroke:var(--magenta)}
+  .sb-foot{border-top:1px solid var(--glass-brd);padding-top:12px}
+  .sb-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;cursor:pointer;font-size:14px}
+  .sb-item:active{background:rgba(120,140,255,.1)}
+  .sb-item svg{width:18px;height:18px;stroke:var(--ink);fill:none;stroke-width:1.7}
+  .sb-item .meta{flex:1}.sb-item .meta b{display:block;font-size:14px;font-weight:600}
+  .sb-item .meta small{font-size:10px;color:var(--ink-dim)}
+
+  /* ---------- MODAL (settings) ---------- */
+  .modal{position:fixed;inset:0;z-index:30;display:none;align-items:flex-end;justify-content:center}
+  .modal.on{display:flex}
+  .modal .sheet{width:100%;max-width:480px;max-height:90vh;overflow-y:auto;
+    background:linear-gradient(180deg,rgba(16,19,44,.98),rgba(8,9,22,.99));
+    border:1px solid var(--glass-brd);border-bottom:none;border-radius:26px 26px 0 0;
+    padding:8px 20px calc(var(--safe-b) + 24px);animation:sheetUp .3s ease}
+  .modal .sheet::-webkit-scrollbar{display:none}
+  .grab{width:40px;height:4px;border-radius:4px;background:rgba(140,150,200,.3);margin:8px auto 16px}
+  .sheet h3{font-size:19px;font-weight:700;margin-bottom:4px}
+  .sheet .sub{font-size:12px;color:var(--ink-dim);margin-bottom:18px}
+  .field{margin-bottom:15px}
+  .field label{display:block;font-size:11px;letter-spacing:1px;color:var(--ink-dim);font-weight:600;
+    text-transform:uppercase;margin-bottom:7px}
+  .field input,.field select{width:100%;background:rgba(8,10,26,.7);border:1px solid var(--glass-brd);
+    border-radius:13px;padding:13px 14px;color:var(--ink);font-size:15px;outline:none;font-family:inherit}
+  .field input:focus,.field select:focus{border-color:rgba(34,224,255,.5)}
+  .field select{appearance:none;-webkit-appearance:none}
+  .photo-pick{display:flex;align-items:center;gap:14px}
+  .photo-pick .pv{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--cyan));
+    padding:2px;flex:0 0 auto}
+  .photo-pick .pv img,.photo-pick .pv .ph{width:100%;height:100%;border-radius:50%;object-fit:cover;
+    display:grid;place-items:center;background:#11132e}
+  .photo-pick .pv .ph svg{width:26px;height:26px;stroke:var(--cyan);fill:none;stroke-width:1.5}
+  .photo-pick .pbtn{padding:11px 16px;border-radius:12px;background:var(--glass);border:1px solid var(--glass-brd);
+    font-size:13px;font-weight:600;color:#cdd6ff;cursor:pointer}
+  .save{width:100%;padding:16px;border-radius:15px;border:none;margin-top:8px;cursor:pointer;
+    background:linear-gradient(135deg,var(--violet),var(--cyan));color:#fff;font-size:16px;font-weight:700;
+    font-family:inherit;letter-spacing:.5px}
+  .save:active{transform:scale(.98)}
+  .hint{font-size:11px;color:var(--ink-dim);margin-top:6px;line-height:1.4}
+  .hint a{color:var(--cyan)}
+
+  .toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 90px);transform:translateX(-50%) translateY(20px);
+    z-index:40;background:rgba(16,19,44,.96);border:1px solid var(--glass-brd);backdrop-filter:blur(16px);
+    padding:13px 20px;border-radius:14px;font-size:13.5px;color:#eaf0ff;opacity:0;pointer-events:none;
+    transition:.3s;max-width:88%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.alert{border-color:rgba(255,61,240,.5);background:rgba(40,10,40,.95)}
+
+  /* ---------- POCKET BUTTON (home) ---------- */
+  .pocket-btn{width:100%;max-width:420px;display:flex;align-items:center;gap:13px;margin-bottom:14px;
+    padding:14px 16px;border-radius:16px;cursor:pointer;text-align:left;font-family:inherit;
+    background:linear-gradient(135deg,rgba(245,201,105,.16),rgba(139,92,255,.14));
+    border:1px solid rgba(245,201,105,.3)}
+  .pocket-btn:active{transform:scale(.98)}
+  .pocket-btn svg{width:22px;height:22px;stroke:var(--gold);fill:none;stroke-width:1.8;flex:0 0 auto}
+  .pocket-btn .pb-meta b{display:block;font-size:14.5px;font-weight:700;color:#f3e6c5}
+  .pocket-btn .pb-meta small{font-size:11px;color:var(--ink-dim)}
+
+  /* ---------- AUTH / LOGIN ---------- */
+  .auth{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:24px;
+    background:radial-gradient(120% 80% at 50% 0%,rgba(139,92,255,.18),transparent 55%),var(--bg)}
+  .auth.on{display:flex}
+  .auth-card{width:100%;max-width:380px;background:var(--glass);border:1px solid var(--glass-brd);
+    backdrop-filter:blur(20px);border-radius:26px;padding:30px 24px 24px;text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .auth-logo{width:70px;height:70px;margin:0 auto 14px;filter:drop-shadow(0 0 14px rgba(34,224,255,.6))}
+  .auth-logo svg{width:100%;height:100%}
+  .auth-card h2{font-size:24px;font-weight:700;letter-spacing:.5px;
+    background:linear-gradient(90deg,#fff,#bcd4ff 60%,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .auth-sub{font-size:13px;color:var(--ink-dim);margin:4px 0 20px}
+  .auth-field{text-align:left;margin-bottom:13px}
+  .auth-field label{display:block;font-size:10.5px;letter-spacing:1px;color:var(--ink-dim);font-weight:600;
+    text-transform:uppercase;margin-bottom:6px}
+  .auth-field input{width:100%;background:rgba(8,10,26,.7);border:1px solid var(--glass-brd);border-radius:13px;
+    padding:13px 14px;color:var(--ink);font-size:15px;outline:none;font-family:inherit}
+  .auth-field input:focus{border-color:rgba(34,224,255,.5)}
+  .auth-remember{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ink-dim);
+    margin:4px 2px 16px;cursor:pointer;text-align:left}
+  .auth-remember input{width:18px;height:18px;accent-color:#8b5cff}
+  .auth-btn{width:100%;padding:15px;border-radius:14px;border:none;cursor:pointer;font-family:inherit;
+    background:linear-gradient(135deg,var(--violet),var(--cyan));color:#fff;font-size:16px;font-weight:700;letter-spacing:.5px}
+  .auth-btn:active{transform:scale(.98)}
+  .auth-msg{font-size:12.5px;color:#ff7b7b;min-height:16px;margin-top:10px}
+  .auth-switch{font-size:13px;color:var(--cyan);margin-top:6px;cursor:pointer;font-weight:600}
+
+  /* ---------- MODO BOLSO (overlay inerte) ---------- */
+  .pocket{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;
+    gap:18px;background:#02030a;touch-action:none}
+  .pocket.on{display:flex}
+  .pk-glow{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(60% 40% at 50% 50%,rgba(139,92,255,.1),transparent 70%)}
+  .pk-status{font-size:13px;letter-spacing:3px;font-weight:700;color:#4a5288}
+  .pk-sub{font-size:11px;letter-spacing:1px;color:#2f3560}
+  .pk-hold{position:relative;width:96px;height:96px;display:grid;place-items:center;margin-top:8px;cursor:pointer}
+  .pk-ring{position:absolute;inset:0;width:96px;height:96px;transform:rotate(-90deg)}
+  .pk-ring .pk-bg{fill:none;stroke:rgba(80,90,150,.25);stroke-width:4}
+  .pk-ring .pk-fg{fill:none;stroke:var(--cyan);stroke-width:4;stroke-linecap:round;
+    stroke-dasharray:226;stroke-dashoffset:226;transition:none}
+  .pk-hold.holding .pk-fg{stroke-dashoffset:0;transition:stroke-dashoffset 3s linear}
+  .pk-lock{width:30px;height:30px;stroke:#5a6296;fill:none;stroke-width:1.8}
+  .pk-hold.holding .pk-lock{stroke:var(--cyan)}
+  .pk-hint{font-size:11px;color:#2f3560;letter-spacing:.5px}
+
+  /* ---------- CONTROLE DO FONE ---------- */
+  .fone-status{display:flex;align-items:center;gap:10px;padding:13px 15px;border-radius:14px;
+    background:rgba(8,10,26,.6);border:1px solid var(--glass-brd);margin-bottom:14px;font-size:14px;font-weight:600}
+  .fone-status .fs-dot{width:10px;height:10px;border-radius:50%;background:var(--ink-dim);box-shadow:0 0 8px transparent}
+  .fone-status.ok .fs-dot{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+  .fone-status.ok{color:#bff5da}
+  .fone-status.no .fs-dot{background:#ff5b5b;box-shadow:0 0 10px #ff5b5b}
+  .fone-act{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;
+    border-radius:14px;margin-bottom:11px;cursor:pointer;font-family:inherit;font-size:15px;font-weight:600;
+    background:var(--glass);border:1px solid var(--glass-brd);color:#dfe6ff}
+  .fone-act:active{transform:scale(.98)}
+  .fone-act svg{width:20px;height:20px;stroke:var(--cyan);fill:none;stroke-width:1.8}
+  .fone-act.busy{opacity:.6;pointer-events:none}
+  .fone-result{font-size:13px;color:var(--ink-dim);min-height:18px;margin:2px 4px 14px;line-height:1.4}
+  .fone-result b{color:var(--cyan)}
+  .fone-hf{display:flex;align-items:center;gap:12px;padding:14px 15px;border-radius:14px;
+    background:linear-gradient(135deg,rgba(139,92,255,.16),rgba(34,224,255,.12));border:1px solid rgba(139,92,255,.3)}
+  .fone-hf .hf-meta{flex:1}
+  .fone-hf .hf-meta b{display:block;font-size:14.5px;font-weight:700}
+  .fone-hf .hf-meta small{font-size:11px;color:var(--ink-dim)}
+  .hf-switch{width:50px;height:28px;border-radius:16px;background:rgba(80,90,150,.3);position:relative;
+    cursor:pointer;flex:0 0 auto;transition:.2s}
+  .hf-switch span{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
+  .hf-switch.on{background:linear-gradient(135deg,var(--violet),var(--cyan))}
+  .hf-switch.on span{left:25px}
+
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  @keyframes halo{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.5);opacity:0}}
+  @keyframes wav{0%,100%{height:8px}50%{height:24px}}
+  @keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes sheetUp{from{transform:translateY(40px);opacity:.6}to{transform:translateY(0);opacity:1}}
+</style>
+</head>
+<body class="online">
+<canvas id="neural"></canvas>
+<div class="vignette"></div>
+
+<div id="app">
+  <!-- HEADER -->
+  <header>
+    <div class="hbtn" id="homeBtn">
+      <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg>
+    </div>
+    <div class="logo" id="logoBtn">
+      <div class="ring"></div>
+      <svg viewBox="0 0 48 48" fill="none">
+        <defs>
+          <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#22e0ff"/><stop offset="1" stop-color="#ff3df0"/>
+          </linearGradient>
+        </defs>
+        <circle cx="24" cy="24" r="21" stroke="url(#hg)" stroke-width="1.5" opacity=".5"/>
+        <path d="M16 13h16M16 35h16M16 13c0 6 16 12 16 22M32 13c0 6-16 12-16 22" stroke="url(#hg)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="24" cy="24" r="2.4" fill="#22e0ff"/>
+      </svg>
+    </div>
+    <div class="brand">
+      <h1>Kairos AI</h1>
+      <small id="brandSub">ONLINE</small>
+    </div>
+    <div class="ctrl ear" id="earBtn" title="Escuta 24h">
+      <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg>
+    </div>
+    <div class="ctrl power" id="powerBtn" title="Ligar / desligar agente">
+      <svg viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 11-12.8 0"/></svg>
+    </div>
+  </header>
+
+  <!-- HOME -->
+  <div id="home">
+    <div class="orb-wrap">
+      <div class="orb-ring r1"></div>
+      <div class="orb-ring r2"></div>
+      <div class="orb-ring r3"></div>
+      <div class="orb-core">
+        <svg viewBox="0 0 48 48" fill="none">
+          <path d="M16 13h16M16 35h16M16 13c0 6 16 12 16 22M32 13c0 6-16 12-16 22" stroke="url(#hg)" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="24" cy="24" r="2.6" fill="#fff"/>
+        </svg>
+      </div>
+    </div>
+    <div class="greet">
+      <h2>Olá, <b id="greetName">Matheus</b></h2>
+      <p>Seu parceiro executivo está pronto.</p>
+    </div>
+    <div class="stat-row">
+      <div class="stat cyan"><div class="k">Status</div><div class="v" id="statusStat"><span class="mini-dot"></span>Online</div></div>
+      <div class="stat mag"><div class="k">Memória</div><div class="v" id="memCount">0</div></div>
+      <div class="stat gold"><div class="k">Sessões</div><div class="v" id="sessCount">0</div></div>
+    </div>
+    <button class="pocket-btn" id="pocketBtn">
+      <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+      <div class="pb-meta"><b>Ativar Modo Bolso</b><small>Tela inerte ao toque · agente segue ouvindo</small></div>
+    </button>
+    <div class="sugg">
+      <div class="sg-title">Sugestões rápidas</div>
+      <div class="chip" data-q="Resuma o status da Missão 300K e o que devo priorizar hoje.">
+        <svg viewBox="0 0 24 24"><path d="M3 13h4l3 7 4-16 3 9h4"/></svg>
+        <span>Status da Missão 300K</span>
+      </div>
+      <div class="chip" data-q="Monte um pitch de 30 segundos do Operador Autônomo para um cliente novo.">
+        <svg viewBox="0 0 24 24"><path d="M12 2v6m0 0a4 4 0 100 8 4 4 0 000-8zm0 8v6m-7 4h14"/></svg>
+        <span>Pitch do Operador Autônomo</span>
+      </div>
+      <div class="chip" data-q="Quais os próximos passos com a Allfix Eventos e a Clínica Harmore?">
+        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <span>Próximos passos com clientes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div id="chat">
+    <div class="msgs" id="msgs"></div>
+  </div>
+
+  <!-- DOCK -->
+  <div class="dock">
+    <div class="txtfield">
+      <input id="txt" type="text" placeholder="Fale ou escreva…" autocomplete="off" enterkeyhint="send">
+      <button class="send" id="sendBtn">
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+    <div class="mic" id="micBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg>
+      <div class="wave"><b></b><b></b><b></b><b></b><b></b></div>
+    </div>
+  </div>
+  <div class="statusline" id="statusline"></div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="scrim" id="scrim"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sb-head">
+    <div class="av" id="sbAvatar"><div class="ph"><svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 10-16 0M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg></div></div>
+    <div class="nm"><b id="sbName">Matheus</b><small>● AGENT ONLINE</small></div>
+  </div>
+  <div class="newchat" id="newChatBtn">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nova conversa
+  </div>
+  <div class="sess-list" id="sessList"></div>
+  <div class="sb-foot">
+    <div class="sb-item" id="foneBtn">
+      <svg viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0116 0v2"/><path d="M4 14a2 2 0 012 2v2a2 2 0 01-2 2 2 2 0 01-2-2v-2a2 2 0 012-2zM20 14a2 2 0 00-2 2v2a2 2 0 002 2 2 2 0 002-2v-2a2 2 0 00-2-2z"/></svg>
+      <div class="meta"><b>Controle do Fone</b><small>Bluetooth · testar · mãos-livres</small></div>
+    </div>
+    <div class="sb-item" id="settingsBtn">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7.7 1.6 1.6 0 01-3.2 0 1.6 1.6 0 00-2.7-.7l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00-.7-2.7 1.6 1.6 0 010-3.2 1.6 1.6 0 00.7-2.7l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 002.7-.7 1.6 1.6 0 013.2 0 1.6 1.6 0 002.7.7l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00.7 2.7 1.6 1.6 0 010 3.2 1.6 1.6 0 00-1 .9z"/></svg>
+      <div class="meta"><b>Configurações</b><small>Perfil · API · Voz · Modelo</small></div>
+    </div>
+  </div>
+</aside>
+
+<!-- SETTINGS MODAL -->
+<div class="modal" id="settings">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>Configurações</h3>
+    <p class="sub">Perfil, chave de API, modelo e voz do agente.</p>
+    <div class="field">
+      <label>Foto de perfil</label>
+      <div class="photo-pick">
+        <div class="pv" id="photoPv"><div class="ph"><svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 10-16 0M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg></div></div>
+        <label class="pbtn">Escolher foto<input type="file" id="photoInput" accept="image/*" hidden></label>
+      </div>
+    </div>
+    <div class="field"><label>Seu nome</label><input id="nameInput" type="text" placeholder="Matheus"></div>
+    <div class="field"><label>Groq API Key</label><input id="keyInput" type="password" placeholder="gsk_…">
+      <div class="hint">Gratuita em <a href="https://console.groq.com" target="_blank">console.groq.com</a>. Guardada só neste aparelho.</div>
+    </div>
+    <div class="field"><label>Modelo LLM</label>
+      <select id="modelInput">
+        <option value="llama-3.3-70b-versatile">Llama 3.3 70B · Versatile (recomendado)</option>
+        <option value="llama-3.1-8b-instant">Llama 3.1 8B · Instant (rápido)</option>
+        <option value="openai/gpt-oss-120b">GPT-OSS 120B</option>
+        <option value="qwen/qwen3-32b">Qwen 3 32B</option>
+      </select>
+    </div>
+    <div class="field"><label>Voz (TTS)</label><select id="voiceInput"></select></div>
+    <button class="save" id="saveBtn">Salvar</button>
+  </div>
+</div>
+
+<!-- CONTROLE DO FONE -->
+<div class="modal" id="fone">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>Controle do Fone</h3>
+    <p class="sub">Fones Bluetooth com microfone. No iPhone o roteamento é automático — aqui você testa e ativa o mãos-livres.</p>
+    <div class="fone-status" id="foneStatus"><span class="fs-dot"></span><span id="foneStatusTxt">Verificando fone…</span></div>
+    <button class="fone-act" id="testVoiceBtn">
+      <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7M19 5a9 9 0 010 14"/></svg>
+      Testar voz no fone
+    </button>
+    <button class="fone-act" id="testMicBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg>
+      Testar microfone do fone
+    </button>
+    <div class="fone-result" id="foneResult"></div>
+    <div class="fone-hf">
+      <div class="hf-meta"><b>Modo mãos-livres</b><small>Conversa contínua pelo fone, sem tocar no celular</small></div>
+      <div class="hf-switch" id="hfSwitch"><span></span></div>
+    </div>
+    <button class="save" id="foneClose" style="margin-top:18px">Fechar</button>
+  </div>
+</div>
+
+<!-- LOGIN / LOCK SCREEN -->
+<div id="authGate" class="auth">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="21" stroke="url(#hg)" stroke-width="1.5" opacity=".5"/>
+        <path d="M16 13h16M16 35h16M16 13c0 6 16 12 16 22M32 13c0 6-16 12-16 22" stroke="url(#hg)" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="24" cy="24" r="2.6" fill="#fff"/>
+      </svg>
+    </div>
+    <h2>Kairos AI</h2>
+    <p class="auth-sub" id="authSub">Acesse sua conta</p>
+    <div class="auth-field" id="nameField"><label>Nome</label><input id="auName" type="text" placeholder="Seu nome" autocomplete="name"></div>
+    <div class="auth-field"><label>Usuário</label><input id="auUser" type="text" placeholder="usuário" autocapitalize="off" autocorrect="off" autocomplete="username"></div>
+    <div class="auth-field"><label>Senha</label><input id="auPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+    <div class="auth-field" id="keyFieldSignup"><label>Groq API Key</label><input id="auKey" type="password" placeholder="gsk_…">
+      <div class="hint">Gratuita em <a href="https://console.groq.com" target="_blank">console.groq.com</a>.</div>
+    </div>
+    <label class="auth-remember"><input type="checkbox" id="auRemember" checked> Manter conectado neste aparelho</label>
+    <button class="auth-btn" id="authBtn">Entrar</button>
+    <div class="auth-msg" id="authMsg"></div>
+    <div class="auth-switch" id="authSwitch">Criar acesso</div>
+  </div>
+</div>
+
+<!-- MODO BOLSO (tela inerte) -->
+<div id="pocket" class="pocket">
+  <div class="pk-glow"></div>
+  <div class="pk-status">MODO BOLSO ATIVO</div>
+  <div class="pk-sub" id="pkSub">Tela inerte ao toque · agente ouvindo</div>
+  <div class="pk-hold" id="pkHold">
+    <svg class="pk-ring" viewBox="0 0 80 80"><circle cx="40" cy="40" r="36" class="pk-bg"/><circle cx="40" cy="40" r="36" class="pk-fg"/></svg>
+    <svg class="pk-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+  </div>
+  <div class="pk-hint">Segure aqui por 3 s para destravar</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   KAIROS AI — single-file PWA · voice agent
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const LS = {
+  get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},
+  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+};
+
+/* ---------- STATE ---------- */
+let settings = LS.get('kairos_settings',{
+  name:'Matheus', photo:'', apiKey:'', model:'llama-3.3-70b-versatile', voice:''
+});
+let sessions = LS.get('kairos_sessions',[]);      // [{id,title,date,msgs:[{role,content}]}]
+let memory   = LS.get('kairos_memory',[]);        // [string fact]
+let currentId = null;
+let online = LS.get('kairos_online', true);   // boot do agente (liga/desliga)
+let ambient = false;                          // escuta 24h (independente do online)
+let mediaRec=null, chunks=[], stream=null, listening=false;
+let proactiveTimer=null;
+let handsfree=false;                          // modo mãos-livres pelo fone
+const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
+
+/* A chave Groq NUNCA é embutida no app (red line). É inserida em Configurações
+   e guardada só neste aparelho (localStorage). Na primeira abertura, o app pede a chave. */
+
+/* ---------- SYSTEM PROMPT ---------- */
+function systemPrompt(){
+  const facts = memory.length ? '\n\nMEMÓRIA ACUMULADA (fatos de sessões anteriores):\n- '+memory.join('\n- ') : '';
+  return `Você é o KAIROS AI — o parceiro executivo pessoal de ${settings.name||'Matheus'}, CEO da Kairos Digital.
+
+QUEM É O USUÁRIO:
+- Matheus Schelle, CEO e fundador da Kairos Digital, agência de automação e agentes de IA.
+- Sócio: Vilson Mota.
+- Meta atual: "Missão 300K" (chegar a R$300 mil).
+
+PRODUTOS DA KAIROS:
+- Operador Autônomo: agente de IA sob medida. R$2.000 de setup + R$1.200/mês.
+- Hunter Skill: prospecção/qualificação automatizada.
+
+CLIENTES ATIVOS:
+- Allfix Eventos.
+- Clínica Harmore.
+
+COMO VOCÊ FALA:
+- Como um sócio/parceiro executivo de altíssimo nível — direto, estratégico, confiante.
+- NUNCA soa como assistente genérico. Sem rodeios, sem "como posso ajudar?".
+- Respostas curtas e acionáveis por padrão (é voz). Vá ao ponto, dê o próximo passo.
+- Português do Brasil, tom executivo. Pode ser brutalmente honesto quando ajuda o negócio.
+- Quando souber de algo novo e importante sobre o Matheus ou a empresa, incorpore.${facts}`;
+}
+
+/* ---------- NEURAL BACKGROUND ---------- */
+(function(){
+  const c=$('#neural'), x=c.getContext('2d'); let W,H,P=[];
+  function rs(){W=c.width=innerWidth*devicePixelRatio;H=c.height=innerHeight*devicePixelRatio;
+    c.style.width=innerWidth+'px';c.style.height=innerHeight+'px'}
+  rs(); addEventListener('resize',rs);
+  const N=Math.min(64, Math.floor(innerWidth/7));
+  for(let i=0;i<N;i++)P.push({x:Math.random()*W,y:Math.random()*H,
+    vx:(Math.random()-.5)*.25*devicePixelRatio,vy:(Math.random()-.5)*.25*devicePixelRatio,
+    r:(Math.random()*1.6+.6)*devicePixelRatio});
+  function loop(){
+    x.clearRect(0,0,W,H);
+    for(let i=0;i<P.length;i++){const p=P[i];
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;
+      for(let j=i+1;j<P.length;j++){const q=P[j],dx=p.x-q.x,dy=p.y-q.y,d=Math.hypot(dx,dy);
+        if(d<120*devicePixelRatio){const a=(1-d/(120*devicePixelRatio))*.5;
+          x.strokeStyle=`rgba(110,140,255,${a*.6})`;x.lineWidth=devicePixelRatio*.6;
+          x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke()}}
+      x.beginPath();x.arc(p.x,p.y,p.r,0,7);
+      x.fillStyle=i%3===0?'rgba(34,224,255,.9)':i%3===1?'rgba(255,61,240,.7)':'rgba(139,92,255,.8)';
+      x.shadowBlur=8*devicePixelRatio;x.shadowColor='rgba(110,140,255,.8)';x.fill();x.shadowBlur=0;
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* ---------- VIEW HELPERS ---------- */
+function setState(s){ // '', 'listening', 'thinking'
+  document.body.classList.remove('listening','thinking');
+  if(s) document.body.classList.add(s);
+}
+function setStatus(t){ $('#statusline').textContent=t||''; }
+function toast(msg,alert){ const t=$('#toast'); t.textContent=msg; t.classList.toggle('alert',!!alert);
+  t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),3400); }
+
+function refreshHome(){
+  $('#greetName').textContent=settings.name||'Matheus';
+  $('#memCount').textContent=memory.length;
+  $('#sessCount').textContent=sessions.length;
+  $('#sbName').textContent=settings.name||'Matheus';
+  $('#nameInput').value=settings.name||'';
+  $('#keyInput').value=settings.apiKey||'';
+  $('#modelInput').value=settings.model;
+  if(settings.photo){
+    $('#sbAvatar').innerHTML=`<img src="${settings.photo}">`;
+    $('#photoPv').innerHTML=`<img src="${settings.photo}">`;
+  }
+}
+
+/* ---------- SESSIONS ---------- */
+function newSession(){
+  currentId='s'+Date.now();
+  sessions.unshift({id:currentId,title:'Nova conversa',date:Date.now(),msgs:[]});
+  LS.set('kairos_sessions',sessions);
+  $('#msgs').innerHTML='';
+  showChat(false);
+  renderSessions(); refreshHome();
+}
+function curSession(){ return sessions.find(s=>s.id===currentId); }
+function saveSessions(){ LS.set('kairos_sessions',sessions); }
+
+function renderSessions(){
+  const list=$('#sessList'); list.innerHTML='';
+  const today=new Date(); today.setHours(0,0,0,0);
+  const groups={hoje:[],antes:[]};
+  sessions.forEach(s=> (s.date>=today.getTime()?groups.hoje:groups.antes).push(s));
+  const block=(title,arr)=>{
+    if(!arr.length) return;
+    const g=document.createElement('div'); g.className='sess-grp'; g.textContent=title; list.appendChild(g);
+    arr.forEach(s=>{
+      const el=document.createElement('div'); el.className='sess'+(s.id===currentId?' active':'');
+      el.innerHTML=`<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <div class="t">${escapeHtml(s.title)}</div>
+        <div class="del"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></div>`;
+      el.querySelector('.t').onclick=()=>loadSession(s.id);
+      el.querySelector('svg').onclick=()=>loadSession(s.id);
+      el.querySelector('.del').onclick=(e)=>{e.stopPropagation();delSession(s.id);};
+      list.appendChild(el);
+    });
+  };
+  block('Hoje',groups.hoje); block('Anteriores',groups.antes);
+  if(!sessions.length) list.innerHTML='<div class="sess-grp" style="text-align:center;padding-top:30px;color:#5a6296">Nenhuma conversa ainda</div>';
+}
+function loadSession(id){
+  currentId=id; const s=curSession(); if(!s) return;
+  $('#msgs').innerHTML='';
+  s.msgs.forEach(m=>addBubble(m.role,m.content,false));
+  showChat(s.msgs.length>0);
+  closeSidebar(); renderSessions();
+  $('#msgs').scrollTop=$('#msgs').scrollHeight;
+}
+function delSession(id){
+  sessions=sessions.filter(s=>s.id!==id); saveSessions();
+  if(currentId===id){ currentId=null; $('#msgs').innerHTML=''; showChat(false); }
+  renderSessions(); refreshHome();
+}
+
+/* ---------- UI: home vs chat ---------- */
+function showChat(yes){
+  $('#home').style.display = yes?'none':'flex';
+  $('#chat').style.display  = yes?'flex':'none';
+  document.body.classList.toggle('in-chat', yes);
+}
+function escapeHtml(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+function addBubble(role,text,animate){
+  const m=document.createElement('div');
+  m.className='msg '+(role==='user'?'user':'ai');
+  m.innerHTML=(role==='user'?'':'<div class="who">KAIROS</div>')+escapeHtml(text).replace(/\n/g,'<br>');
+  $('#msgs').appendChild(m);
+  $('#msgs').scrollTop=$('#msgs').scrollHeight;
+  return m;
+}
+
+/* ---------- GROQ API ---------- */
+async function groqChat(messages,model){
+  const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+settings.apiKey,'Content-Type':'application/json'},
+    body:JSON.stringify({model:model||settings.model,messages,temperature:.7,max_tokens:1024})
+  });
+  if(!r.ok){const e=await r.text();throw new Error('LLM '+r.status+': '+e.slice(0,140));}
+  const j=await r.json(); return j.choices[0].message.content.trim();
+}
+async function groqSTT(blob){
+  const fd=new FormData();
+  const ext=(blob.type.includes('mp4')||blob.type.includes('mpeg'))?'mp4':'webm';
+  fd.append('file',blob,'audio.'+ext);
+  fd.append('model','whisper-large-v3-turbo');
+  fd.append('language','pt');
+  const r=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{
+    method:'POST',headers:{'Authorization':'Bearer '+settings.apiKey},body:fd});
+  if(!r.ok){const e=await r.text();throw new Error('STT '+r.status+': '+e.slice(0,140));}
+  const j=await r.json(); return (j.text||'').trim();
+}
+
+/* ---------- TTS ---------- */
+let voices=[];
+function loadVoices(){
+  voices=speechSynthesis.getVoices();
+  const sel=$('#voiceInput'); if(!sel) return;
+  const pt=voices.filter(v=>/pt/i.test(v.lang));
+  const list=pt.length?pt:voices;
+  sel.innerHTML='<option value="">Voz padrão do sistema</option>'+
+    list.map(v=>`<option value="${v.name}">${v.name} · ${v.lang}</option>`).join('');
+  sel.value=settings.voice||'';
+}
+speechSynthesis.onvoiceschanged=loadVoices;
+function speakAsync(text){
+  return new Promise(res=>{
+    if(!text){ res(); return; }
+    try{
+      if(!voices.length) voices=speechSynthesis.getVoices();
+      speechSynthesis.cancel();
+      const v=voices.find(x=>x.name===settings.voice) || voices.find(x=>/pt[-_]?BR/i.test(x.lang)) || voices.find(x=>/pt/i.test(x.lang));
+      // iOS corta falas longas → quebra em frases curtas
+      const parts=(text.replace(/[⚡*_#`>]/g,'').match(/[^.!?\n]+[.!?\n]?/g)||[text]).map(p=>p.trim()).filter(Boolean);
+      if(!parts.length){ res(); return; }
+      let done=false; const finish=()=>{ if(!done){ done=true; res(); } };
+      parts.forEach((p,idx)=>{
+        const u=new SpeechSynthesisUtterance(p);
+        if(v){u.voice=v;u.lang=v.lang;} else u.lang='pt-BR';
+        u.rate=1.03;u.pitch=1;u.volume=1;
+        if(idx===parts.length-1){ u.onend=finish; u.onerror=finish; }
+        speechSynthesis.speak(u);
+      });
+      setTimeout(()=>{ try{ if(speechSynthesis.paused) speechSynthesis.resume(); }catch(e){} },150);
+      setTimeout(finish, 1800 + parts.join(' ').length*95); // failsafe se onend não disparar (iOS)
+    }catch(e){ res(); }
+  });
+}
+function speak(text){ speakAsync(text); }
+/* iOS bloqueia fala fora de um gesto → "destrava" a voz a cada toque do usuário */
+function primeTTS(){
+  try{
+    speechSynthesis.resume();
+    const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u);
+    if(!voices.length) voices=speechSynthesis.getVoices();
+  }catch(e){}
+}
+
+/* ---------- MEMORY EXTRACTION ---------- */
+async function extractMemory(userText,aiText){
+  try{
+    const out=await groqChat([
+      {role:'system',content:'Extraia de 0 a 3 FATOS novos, duráveis e úteis sobre o usuário, a empresa Kairos ou clientes a partir da troca. Apenas fatos concretos (decisões, números, nomes, preferências, prazos). Responda SÓ com um array JSON de strings curtas em pt-BR. Se não houver, responda [].'},
+      {role:'user',content:`Usuário: ${userText}\nKairos: ${aiText}`}
+    ],'llama-3.1-8b-instant');
+    const arr=JSON.parse(out.match(/\[[\s\S]*\]/)?.[0]||'[]');
+    let added=0;
+    arr.forEach(f=>{ f=(''+f).trim();
+      if(f && f.length<160 && !memory.some(m=>m.toLowerCase()===f.toLowerCase())){ memory.push(f); added++; }});
+    if(added){ if(memory.length>60) memory=memory.slice(-60); LS.set('kairos_memory',memory); refreshHome(); }
+  }catch(e){}
+}
+
+/* ---------- SEND MESSAGE ---------- */
+async function send(text){
+  text=(text||'').trim(); if(!text) return;
+  if(!online){ toast('Agente offline. Ligue o agente (power) pra conversar.'); return; }
+  if(!settings.apiKey){ toast('Configure a chave Groq nas Configurações.'); openSettings(); return; }
+  if(!currentId) newSession();
+  const s=curSession();
+  showChat(true);
+  addBubble('user',text,true);
+  s.msgs.push({role:'user',content:text});
+  if(s.title==='Nova conversa'){ s.title=text.slice(0,42); renderSessions(); }
+  saveSessions(); refreshHome();
+
+  // typing indicator
+  const tp=document.createElement('div'); tp.className='msg ai';
+  tp.innerHTML='<div class="who">KAIROS</div><div class="typing"><i></i><i></i><i></i></div>';
+  $('#msgs').appendChild(tp); $('#msgs').scrollTop=$('#msgs').scrollHeight;
+  setState('thinking'); setStatus('Pensando…');
+
+  try{
+    const history=s.msgs.slice(-12).map(m=>({role:m.role,content:m.content}));
+    const reply=await groqChat([{role:'system',content:systemPrompt()},...history]);
+    tp.remove();
+    addBubble('ai',reply,true);
+    s.msgs.push({role:'assistant',content:reply});
+    saveSessions();
+    setState(''); setStatus('');
+    speak(reply);
+    extractMemory(text,reply);
+  }catch(e){
+    tp.remove(); setState(''); setStatus('');
+    addBubble('ai','⚠ '+e.message,true);
+    toast('Erro: '+e.message,true);
+  }
+}
+
+/* ---------- VOICE CAPTURE ---------- */
+function pickMime(){
+  const opts=['audio/mp4','audio/webm;codecs=opus','audio/webm'];
+  for(const o of opts) if(window.MediaRecorder && MediaRecorder.isTypeSupported(o)) return o;
+  return '';
+}
+async function startMic(){
+  if(!online){ toast('Agente offline. Ligue o agente (power) primeiro.'); return; }
+  if(!settings.apiKey){ toast('Configure a chave Groq nas Configurações.'); openSettings(); return; }
+  try{
+    speechSynthesis.cancel();
+    stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mime=pickMime();
+    mediaRec=new MediaRecorder(stream, mime?{mimeType:mime}:undefined);
+    chunks=[];
+    mediaRec.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+    mediaRec.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(chunks,{type:mediaRec.mimeType||'audio/webm'});
+      setState('thinking'); setStatus('Transcrevendo…');
+      try{
+        const txt=await groqSTT(blob);
+        if(txt) send(txt); else { setState('');setStatus(''); toast('Não captei áudio. Tente de novo.'); }
+      }catch(e){ setState('');setStatus(''); toast('Erro STT: '+e.message,true); }
+    };
+    mediaRec.start();
+    listening=true; setState('listening'); setStatus('Ouvindo… toque para enviar');
+  }catch(e){ toast('Sem acesso ao microfone. Verifique permissões do Safari.',true); }
+}
+function stopMic(){
+  if(mediaRec && mediaRec.state!=='inactive') mediaRec.stop();
+  listening=false; setState('');
+}
+function toggleMic(){ listening?stopMic():startMic(); }
+
+/* ---------- AMBIENT MODE (24h, contínuo e autônomo) ---------- */
+let ambientStream=null, wakeLock=null;
+async function reqWake(){ try{ if('wakeLock' in navigator) wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} }
+function relWake(){ try{ wakeLock&&wakeLock.release(); }catch(e){} wakeLock=null; }
+document.addEventListener('visibilitychange',()=>{ if(ambient && document.visibilityState==='visible') reqWake(); });
+
+async function ambientLoop(){
+  if(!ambient) return;
+  if(!ambientStream){
+    try{ ambientStream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+    catch(e){ toast('Modo Ambiente precisa de acesso ao microfone.',true); ambient=false; updateAmbientUI(); relWake(); return; }
+  }
+  let rec; const ch=[]; const mime=pickMime();
+  try{ rec=new MediaRecorder(ambientStream, mime?{mimeType:mime}:undefined); }
+  catch(e){ ambient=false; updateAmbientUI(); return; }
+  rec.ondataavailable=e=>{ if(e.data.size) ch.push(e.data); };
+  rec.onstop=()=>{
+    const blob=new Blob(ch,{type:rec.mimeType||'audio/webm'});
+    processAmbient(blob);          // processa em paralelo, não trava o próximo ciclo
+    if(ambient) ambientLoop();     // gravação contínua, sem pausa entre janelas
+    else { ambientStream&&ambientStream.getTracks().forEach(t=>t.stop()); ambientStream=null; }
+  };
+  rec.start();
+  setTimeout(()=>{ try{ if(rec.state!=='inactive') rec.stop(); }catch(e){} }, 15000); // janelas de 15s
+}
+
+async function processAmbient(blob){
+  try{
+    if(blob.size<1400) return;
+    const txt=await groqSTT(blob);
+    if(!txt || txt.replace(/\s/g,'').length<5) return;
+    const raw=await groqChat([
+      {role:'system',content:'Você é o filtro do Modo Ambiente do Kairos AI. Recebe a transcrição do que foi falado perto do Matheus (CEO da Kairos Digital). Responda SOMENTE JSON {"agir":true|false}. agir=true APENAS se houver algo que exija atenção/ação dele: alguém querendo pagar/contratar/fazer Pix, pedido direcionado a ele, compromisso, prazo, decisão, oportunidade ou número importante. Conversa fiada, ruído, música ou TV = false.'},
+      {role:'user',content:txt}
+    ],'llama-3.1-8b-instant');
+    let j={}; try{ j=JSON.parse(raw.match(/\{[\s\S]*\}/)[0]); }catch(e){ return; }
+    if(!j.agir) return;
+    const reply=await groqChat([
+      {role:'system',content:systemPrompt()+'\n\n[MODO AMBIENTE] Você captou isto SEM o Matheus pedir. Aja proativamente: avise-o e, se for pagamento/Pix/contato/oportunidade, já entregue a informação ou um rascunho pronto pra ele usar. No máximo 2 frases, tom de alerta executivo, comece com "⚡".'},
+      {role:'user',content:`Captado no ambiente: "${txt}"`}
+    ]);
+    if(!currentId) newSession();
+    const s=curSession(); showChat(true);
+    addBubble('ai',reply,true);
+    if(s){ s.msgs.push({role:'assistant',content:reply}); saveSessions(); }
+    toast(reply.replace(/^⚡\s*/,''),true);
+    speak(reply.replace(/^⚡\s*/,''));
+    memory.push('[ambiente] '+txt.slice(0,120)); if(memory.length>60) memory=memory.slice(-60);
+    LS.set('kairos_memory',memory); refreshHome();
+  }catch(e){}
+}
+
+function updateAmbientUI(){
+  document.body.classList.toggle('ambient',ambient);
+  refreshStatus();
+}
+function toggleAmbient(){
+  if(!online){ toast('Ligue o agente primeiro.'); return; }
+  ambient=!ambient; updateAmbientUI();
+  if(ambient){ reqWake(); toast('Escuta 24h ATIVA — ouvindo tudo em volta. Mantenha o app aberto.'); ambientLoop(); }
+  else { relWake(); toast('Escuta 24h desligada. O agente continua online.'); }
+}
+
+/* ---------- ONLINE / OFFLINE (boot do agente) ---------- */
+function refreshStatus(){
+  document.body.classList.toggle('online', online);
+  document.body.classList.toggle('offline', !online);
+  $('#brandSub').textContent = !online ? 'AGENTE OFFLINE' : (ambient ? 'ONLINE · ESCUTA 24H' : 'ONLINE');
+  const st=$('#statusStat');
+  if(st) st.innerHTML = online
+    ? '<span class="mini-dot"></span>Online'
+    : '<span class="mini-dot" style="background:#ff5b5b;box-shadow:0 0 8px #ff5b5b"></span>Offline';
+}
+function toggleOnline(){
+  online=!online; LS.set('kairos_online',online);
+  if(!online){
+    if(ambient) toggleAmbient();
+    if(listening) stopMic();
+    stopProactive(); try{speechSynthesis.cancel();}catch(e){}
+    setState(''); setStatus('');
+    toast('Agente OFFLINE. Toque no power pra religar.');
+  } else {
+    startProactive();
+    toast('Agente ONLINE.');
+  }
+  refreshStatus();
+}
+
+/* ---------- PROATIVIDADE (agente puxa conversa quando online) ---------- */
+function stopProactive(){ clearTimeout(proactiveTimer); proactiveTimer=null; }
+function startProactive(){ stopProactive(); if(online) proactiveTimer=setTimeout(proactiveTick, PROACTIVE_MS); }
+async function proactiveTick(){
+  if(!online) return;
+  try{
+    if(settings.apiKey && document.visibilityState==='visible' && !listening){
+      const reply=await groqChat([
+        {role:'system',content:systemPrompt()+'\n\n[PROATIVO] Inicie VOCÊ a conversa com o Matheus agora, como um sócio que acompanha de perto. Use a memória/contexto pra trazer algo útil: um lembrete, uma cobrança estratégica, uma ideia pra Missão 300K ou um próximo passo com cliente. 1 frase curta e direta. Se realmente não houver nada útil agora, responda só "NADA".'},
+        {role:'user',content:'(check-in proativo do agente)'}
+      ]);
+      if(reply && !/^NADA/i.test(reply.trim())){
+        if(!currentId) newSession();
+        const s=curSession(); showChat(true);
+        addBubble('ai',reply,true);
+        if(s){ s.msgs.push({role:'assistant',content:reply}); saveSessions(); }
+        speak(reply);
+      }
+    }
+  }catch(e){}
+  if(online) proactiveTimer=setTimeout(proactiveTick, PROACTIVE_MS);
+}
+
+/* ---------- SETTINGS ---------- */
+function openSettings(){ refreshHome(); loadVoices(); $('#settings').classList.add('on'); }
+function closeSettings(){ $('#settings').classList.remove('on'); }
+function saveSettings(){
+  settings.name=$('#nameInput').value.trim()||'Matheus';
+  settings.apiKey=$('#keyInput').value.trim();
+  settings.model=$('#modelInput').value;
+  settings.voice=$('#voiceInput').value;
+  LS.set('kairos_settings',settings);
+  refreshHome(); closeSettings(); toast('Configurações salvas.');
+}
+
+/* ---------- SIDEBAR ---------- */
+function openSidebar(){ $('#sidebar').classList.add('on'); $('#scrim').classList.add('on'); renderSessions(); }
+function closeSidebar(){ $('#sidebar').classList.remove('on'); $('#scrim').classList.remove('on'); }
+
+/* ---------- BINDINGS ---------- */
+$('#logoBtn').onclick=openSidebar;
+$('#homeBtn').onclick=()=>{ showChat(false); };
+$('#scrim').onclick=closeSidebar;
+$('#newChatBtn').onclick=()=>{ newSession(); closeSidebar(); };
+$('#settingsBtn').onclick=()=>{ closeSidebar(); openSettings(); };
+$('#earBtn').onclick=()=>{ primeTTS(); toggleAmbient(); };
+$('#powerBtn').onclick=()=>{ primeTTS(); toggleOnline(); };
+$('#micBtn').onclick=()=>{ primeTTS(); toggleMic(); };
+$('#sendBtn').onclick=()=>{ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v); };
+$('#txt').addEventListener('keydown',e=>{ if(e.key==='Enter'){ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v);} });
+$('#saveBtn').onclick=saveSettings;
+$('#settings').addEventListener('click',e=>{ if(e.target===$('#settings')) closeSettings(); });
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ primeTTS(); send(c.dataset.q); });
+$('#photoInput').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ settings.photo=rd.result; LS.set('kairos_settings',settings);
+    $('#photoPv').innerHTML=`<img src="${rd.result}">`; refreshHome(); };
+  rd.readAsDataURL(f);
+});
+
+/* iOS: desbloqueia SpeechSynthesis no primeiro toque */
+document.addEventListener('touchend',function unlock(){ primeTTS(); },{once:true});
+
+/* ================= LOGIN / LOCK ================= */
+function getAccount(){ return LS.get('kairos_account',null); }
+let authMode='login';
+function renderGate(){
+  const acc=getAccount(), signup=authMode==='signup';
+  $('#authSub').textContent=signup?'Crie seu acesso':'Acesse sua conta';
+  $('#nameField').style.display=signup?'block':'none';
+  $('#keyFieldSignup').style.display=signup?'block':'none';
+  $('#authBtn').textContent=signup?'Criar acesso':'Entrar';
+  $('#authSwitch').textContent=signup?'Já tenho acesso':'Criar acesso';
+  $('#authMsg').textContent='';
+  if(!signup && acc) $('#auUser').value=acc.user||'';
+}
+function showGate(){ authMode=getAccount()?'login':'signup'; renderGate(); $('#authGate').classList.add('on'); }
+function hideGate(){ $('#authGate').classList.remove('on'); }
+function enc(s){ try{ return btoa(unescape(encodeURIComponent(s))); }catch(e){ return s; } }
+function dec(s){ try{ return decodeURIComponent(escape(atob(s))); }catch(e){ return ''; } }
+function afterLogin(){
+  refreshHome(); refreshStatus();
+  if(online) startProactive();
+  if(!settings.apiKey){ setTimeout(()=>{ toast('Configure sua chave Groq nas Configurações.'); openSettings(); },700); }
+}
+function authSubmit(){
+  const user=$('#auUser').value.trim().toLowerCase(), pass=$('#auPass').value;
+  if(!user||!pass){ $('#authMsg').textContent='Preencha usuário e senha.'; return; }
+  if(authMode==='signup'){
+    const name=$('#auName').value.trim()||'Matheus', key=$('#auKey').value.trim();
+    LS.set('kairos_account',{user,pass:enc(pass),name});
+    settings.name=name; if(key) settings.apiKey=key; LS.set('kairos_settings',settings);
+  } else {
+    const acc=getAccount();
+    if(!acc || acc.user!==user || dec(acc.pass||'')!==pass){ $('#authMsg').textContent='Usuário ou senha incorretos.'; return; }
+  }
+  LS.set('kairos_remember',$('#auRemember').checked);
+  $('#auPass').value=''; hideGate(); afterLogin();
+}
+$('#authBtn').onclick=authSubmit;
+$('#auPass').addEventListener('keydown',e=>{ if(e.key==='Enter') authSubmit(); });
+$('#authSwitch').onclick=()=>{ authMode=(authMode==='signup'?'login':'signup'); renderGate(); };
+
+/* ================= MODO BOLSO (tela inerte) ================= */
+let pkHoldT=null;
+function enterPocket(){ reqWake(); $('#pocket').classList.add('on'); }
+function exitPocket(){ $('#pocket').classList.remove('on'); $('#pkHold').classList.remove('holding'); clearTimeout(pkHoldT);
+  if(!ambient && !handsfree) relWake(); toast('Tela liberada.'); }
+$('#pocketBtn').onclick=enterPocket;
+['touchstart','touchmove','touchend'].forEach(ev=>
+  $('#pocket').addEventListener(ev,e=>{ if(!e.target.closest('#pkHold')) e.preventDefault(); },{passive:false}));
+(function(){
+  const h=$('#pkHold');
+  const down=e=>{ e.preventDefault(); h.classList.add('holding'); clearTimeout(pkHoldT); pkHoldT=setTimeout(exitPocket,3000); };
+  const up=()=>{ h.classList.remove('holding'); clearTimeout(pkHoldT); };
+  h.addEventListener('touchstart',down,{passive:false}); h.addEventListener('touchend',up); h.addEventListener('touchcancel',up);
+  h.addEventListener('mousedown',down); h.addEventListener('mouseup',up); h.addEventListener('mouseleave',up);
+})();
+
+/* ================= CONTROLE DO FONE ================= */
+function openFone(){ $('#fone').classList.add('on'); updateFoneUI(); detectHeadset(); }
+function closeFone(){ $('#fone').classList.remove('on'); }
+function updateFoneUI(){ $('#hfSwitch').classList.toggle('on',handsfree); }
+async function detectHeadset(){
+  const box=$('#foneStatus'), txt=$('#foneStatusTxt'); box.classList.remove('ok','no');
+  try{
+    let devs=await navigator.mediaDevices.enumerateDevices();
+    if(devs.every(d=>!d.label)){
+      try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); s.getTracks().forEach(t=>t.stop()); devs=await navigator.mediaDevices.enumerateDevices(); }catch(e){}
+    }
+    const bt=devs.find(d=>/airpod|bluetooth|headset|fone|wireless|buds|headphone|hands?-?free/i.test(d.label||''));
+    if(bt){ box.classList.add('ok'); txt.textContent='Fone ATIVO: '+(bt.label||'Bluetooth'); }
+    else if(devs.some(d=>d.label)){ box.classList.add('no'); txt.textContent='Nenhum fone — áudio pelo celular'; }
+    else { txt.textContent='Não deu pra detectar (iOS limita). Use o teste de voz.'; }
+  }catch(e){ txt.textContent='Detecção indisponível neste navegador.'; }
+}
+if(navigator.mediaDevices && navigator.mediaDevices.addEventListener)
+  navigator.mediaDevices.addEventListener('devicechange',()=>{ if($('#fone').classList.contains('on')) detectHeadset(); });
+async function testVoice(){
+  primeTTS(); $('#foneResult').innerHTML='Tocando teste de voz…';
+  await speakAsync('Áudio funcionando. Aqui é o Kairos, falando com você pelo fone.');
+  $('#foneResult').innerHTML='Ouviu? Se saiu no fone, o áudio está roteado certo. <b>✓</b>';
+}
+async function testMic(){
+  if(!settings.apiKey){ toast('Configure a chave Groq.'); openSettings(); return; }
+  const b=$('#testMicBtn'); b.classList.add('busy'); $('#foneResult').innerHTML='Gravando 4 s… fale algo no fone.';
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mime=pickMime(); const rec=new MediaRecorder(s,mime?{mimeType:mime}:undefined); const ch=[];
+    rec.ondataavailable=e=>{if(e.data.size)ch.push(e.data)};
+    rec.onstop=async()=>{ s.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(ch,{type:rec.mimeType||'audio/webm'});
+      try{ const txt=await groqSTT(blob);
+        $('#foneResult').innerHTML = txt ? ('Captado: <b>"'+escapeHtml(txt)+'"</b>') : 'Não captei áudio. Veja se o mic do fone está ativo.';
+      }catch(e){ $('#foneResult').textContent='Erro: '+e.message; }
+      b.classList.remove('busy');
+    };
+    rec.start(); setTimeout(()=>{ if(rec.state!=='inactive') rec.stop(); },4000);
+  }catch(e){ $('#foneResult').textContent='Sem acesso ao microfone.'; b.classList.remove('busy'); }
+}
+/* mãos-livres: escuta com detecção de silêncio (VAD) */
+function listenVAD(){
+  return new Promise(async resolve=>{
+    let s; try{ s=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ resolve(''); return; }
+    const mime=pickMime(); let rec;
+    try{ rec=new MediaRecorder(s,mime?{mimeType:mime}:undefined); }catch(e){ s.getTracks().forEach(t=>t.stop()); resolve(''); return; }
+    const ch=[]; rec.ondataavailable=e=>{if(e.data.size)ch.push(e.data)};
+    let ctx,an,data;
+    try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); const src=ctx.createMediaStreamSource(s);
+      an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); data=new Uint8Array(an.frequencyBinCount); }catch(e){}
+    let started=false, silence=null, t0=Date.now();
+    rec.onstop=async()=>{ s.getTracks().forEach(t=>t.stop()); try{ctx&&ctx.close();}catch(e){}
+      const blob=new Blob(ch,{type:rec.mimeType||'audio/webm'});
+      if(blob.size<1200){ resolve(''); return; }
+      try{ resolve(await groqSTT(blob)); }catch(e){ resolve(''); } };
+    rec.start();
+    function tick(){
+      if(!handsfree){ if(rec.state!=='inactive') rec.stop(); return; }
+      const now=Date.now();
+      if(an){ an.getByteTimeDomainData(data); let sum=0; for(let i=0;i<data.length;i++){const v=(data[i]-128)/128; sum+=v*v;}
+        const rms=Math.sqrt(sum/data.length);
+        if(rms>0.045){ started=true; silence=null; }
+        else if(started){ if(silence===null) silence=now; else if(now-silence>1500){ if(rec.state!=='inactive') rec.stop(); return; } } }
+      if(now-t0>15000){ if(rec.state!=='inactive') rec.stop(); return; }
+      if(!started && now-t0>7000){ if(rec.state!=='inactive') rec.stop(); return; }
+      requestAnimationFrame(tick);
+    }
+    tick();
+  });
+}
+async function hfTurn(){
+  setState('listening'); setStatus('🎧 Pode falar…');
+  const txt=await listenVAD();
+  if(!handsfree) return;
+  if(!txt || !txt.trim()){ setState(''); return; }
+  if(!currentId) newSession();
+  const s=curSession(); showChat(true);
+  addBubble('user',txt,true); s.msgs.push({role:'user',content:txt});
+  if(s.title==='Nova conversa') s.title=txt.slice(0,42);
+  saveSessions(); refreshHome();
+  setState('thinking'); setStatus('Pensando…');
+  let reply;
+  try{ const history=s.msgs.slice(-12).map(m=>({role:m.role,content:m.content}));
+    reply=await groqChat([{role:'system',content:systemPrompt()},...history]); }
+  catch(e){ setState(''); setStatus(''); toast('Erro: '+e.message,true); return; }
+  addBubble('ai',reply,true); s.msgs.push({role:'assistant',content:reply}); saveSessions();
+  setState(''); setStatus('🎧 Falando…');
+  await speakAsync(reply);
+  extractMemory(txt,reply);
+}
+async function handsfreeLoop(){
+  while(handsfree){
+    try{ await hfTurn(); }catch(e){}
+    if(!handsfree) break;
+    await new Promise(r=>setTimeout(r,350));
+  }
+  setState(''); setStatus('');
+}
+function toggleHandsfree(){
+  if(!handsfree){
+    if(!online){ toast('Ligue o agente primeiro.'); return; }
+    if(!settings.apiKey){ toast('Configure a chave Groq.'); openSettings(); return; }
+    if(ambient) toggleAmbient();
+    handsfree=true; reqWake(); updateFoneUI();
+    toast('Mãos-livres ATIVO — fale pelo fone.'); handsfreeLoop();
+  } else {
+    handsfree=false; updateFoneUI(); if(!ambient) relWake();
+    setState(''); setStatus(''); toast('Mãos-livres desligado.');
+  }
+}
+$('#foneBtn').onclick=()=>{ closeSidebar(); openFone(); };
+$('#foneClose').onclick=closeFone;
+$('#fone').addEventListener('click',e=>{ if(e.target===$('#fone')) closeFone(); });
+$('#testVoiceBtn').onclick=testVoice;
+$('#testMicBtn').onclick=testMic;
+$('#hfSwitch').onclick=()=>{ primeTTS(); toggleHandsfree(); };
+
+/* ---------- INIT ---------- */
+loadVoices();
+refreshHome();
+renderSessions();
+showChat(false);
+refreshStatus();
+
+/* Acesso FIXO em qualquer aparelho — sempre sobrescreve o que estiver salvo */
+LS.set('kairos_account',{ user:'matheus', pass:enc('kairos2026'), name:'Matheus' });
+
+/* Gate de login: com "manter conectado" entra direto; senão pede a senha */
+if(LS.get('kairos_remember',false)){ afterLogin(); }
+else { showGate(); }
+
+/* service worker (offline) */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
