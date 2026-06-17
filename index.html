@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <title>Kairos AI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <style>
   :root{
     --bg:#05060f;
@@ -150,6 +151,10 @@
   .ma-btn svg{width:13px;height:13px;stroke:var(--cyan);fill:none;stroke-width:1.8}
   .ma-rate{min-width:34px;justify-content:center}
   .ma-rate.on{color:#021018;background:var(--cyan);border-color:var(--cyan)}
+  .img-gen{margin-top:4px;min-width:200px}
+  .img-gen img{width:100%;max-width:320px;border-radius:14px;display:block;border:1px solid var(--glass-brd)}
+  .img-load{padding:30px 18px;text-align:center;color:#aeb8e0;font-size:13px;
+    border:1px dashed var(--glass-brd);border-radius:14px;animation:pulse 1.4s infinite}
   .typing{display:flex;gap:5px;padding:4px 0}
   .typing i{width:7px;height:7px;border-radius:50%;background:var(--cyan);opacity:.6;
     animation:blink 1.2s infinite}
@@ -713,6 +718,12 @@ Você é um parceiro de pensamento do Matheus — muito além de negócios. Troc
 
 Contexto sobre ele (use APENAS quando for relevante, nunca force pra cima dele): Matheus é CEO da Kairos Digital (automação e agentes de IA), sócio Vilson Mota, tem a meta "Missão 300K", produtos Operador Autônomo e Hunter Skill, clientes Allfix Eventos e Clínica Harmore.
 
+VOCÊ CRIA CONTEÚDO (por voz ou texto). Quando o Matheus pedir, você produz de verdade:
+- TEXTOS / ARTIGOS / ROTEIROS / POSTS: escreva o conteúdo completo na resposta.
+- HTML / PÁGINAS / CÓDIGO: entregue dentro de um bloco \`\`\`html ... \`\`\` (ou \`\`\`js, \`\`\`css). O app deixa o Matheus baixar o arquivo.
+- DOCUMENTOS / PDF: escreva o conteúdo bem formatado; o app gera o PDF pra baixar.
+- IMAGENS / BANNERS / LOGOS / ARTES: quando ele pedir uma imagem, responda com 1 frase curta natural E inclua, em uma linha separada, a tag exatamente neste formato: [IMAGEM: descrição visual rica e detalhada EM INGLÊS]. Para banner, descreva layout, cores, estilo e textos. Pode gerar várias imagens (uma tag por imagem). NUNCA descreva a tag em voz alta nem leia os colchetes — é um comando pro app.
+
 Fale em português do Brasil, natural e humano, como uma conversa real entre duas pessoas. Como é por voz, seja fluido e direto; aprofunde quando ele pedir profundidade.${facts}`;
 }
 
@@ -840,6 +851,12 @@ function addBubble(role,text,animate){
     [1,1.25,1.5].forEach(r=>{ const b=document.createElement('button'); b.className='ma-btn ma-rate'; b.dataset.r=r; b.textContent=r+'x';
       b.onclick=()=>{ primeTTS(); setRate(r); markRate(); speak(text); };
       act.appendChild(b); });
+    // botão de salvar: arquivo de código (se houver bloco) e PDF
+    const code=extractCode(text);
+    if(code){ const cb=document.createElement('button'); cb.className='ma-btn'; cb.textContent='⬇ '+code.label;
+      cb.onclick=()=>downloadFile(code.name,code.content,code.mime); act.appendChild(cb); }
+    const pb=document.createElement('button'); pb.className='ma-btn'; pb.textContent='⬇ PDF';
+    pb.onclick=()=>downloadPDF(text); act.appendChild(pb);
     m.appendChild(act);
   }
   $('#msgs').appendChild(m);
@@ -850,6 +867,80 @@ function addBubble(role,text,animate){
 function setRate(r){ settings.rate=r; LS.set('kairos_settings',settings); }
 function markRate(){ const cur=settings.rate||1;
   document.querySelectorAll('.ma-rate').forEach(b=>b.classList.toggle('on', parseFloat(b.dataset.r)===cur)); }
+
+/* ================= CRIAÇÃO DE CONTEÚDO ================= */
+/* Imagens/banners: extrai tags [IMAGEM: ...] e gera grátis via Pollinations.ai */
+function parseImagePrompts(text){
+  const prompts=[];
+  const cleaned=(text||'').replace(/\[IMAGEM:\s*([^\]]+)\]/gi,(m,p)=>{ prompts.push(p.trim()); return ''; })
+    .replace(/\n{3,}/g,'\n\n').trim();
+  return { cleaned, prompts };
+}
+async function addImageBubble(prompt){
+  const m=document.createElement('div'); m.className='msg ai';
+  m.innerHTML='<div class="who">KAIROS</div><div class="img-gen"><div class="img-load">🎨 Gerando imagem…</div></div>';
+  $('#msgs').appendChild(m); $('#msgs').scrollTop=$('#msgs').scrollHeight;
+  const box=m.querySelector('.img-gen');
+  try{
+    const seed=Math.floor(Math.random()*1e6);
+    const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(prompt)
+      +'?width=1024&height=1024&nologo=true&seed='+seed;
+    const res=await fetch(url); if(!res.ok) throw new Error('img '+res.status);
+    const blob=await res.blob(); const obj=URL.createObjectURL(blob);
+    box.innerHTML='';
+    const img=new Image(); img.src=obj; img.alt=prompt; box.appendChild(img);
+    const act=document.createElement('div'); act.className='msg-actions';
+    const dl=document.createElement('button'); dl.className='ma-btn'; dl.textContent='⬇ Baixar imagem';
+    dl.onclick=()=>downloadFile('kairos-imagem.png',blob,'image/png',true);
+    const rg=document.createElement('button'); rg.className='ma-btn'; rg.textContent='↻ Outra';
+    rg.onclick=()=>{ m.remove(); addImageBubble(prompt); };
+    act.appendChild(dl); act.appendChild(rg); m.appendChild(act);
+  }catch(e){ box.innerHTML='<span style="color:#ff9b9b">Não consegui gerar a imagem agora. Tente de novo.</span>'; }
+  $('#msgs').scrollTop=$('#msgs').scrollHeight;
+}
+/* Detecta o 1º bloco de código pra baixar como arquivo */
+function extractCode(text){
+  const m=(text||'').match(/```(\w+)?\n([\s\S]*?)```/);
+  if(!m) return null;
+  const lang=(m[1]||'').toLowerCase(); const content=m[2].trim();
+  const map={html:['página.html','text/html','HTML'],css:['estilo.css','text/css','CSS'],
+    js:['script.js','text/javascript','JS'],javascript:['script.js','text/javascript','JS'],
+    json:['dados.json','application/json','JSON'],py:['script.py','text/x-python','Python'],
+    python:['script.py','text/x-python','Python'],md:['texto.md','text/markdown','MD']};
+  const e=map[lang]||['arquivo.txt','text/plain','arquivo'];
+  return { name:e[0], mime:e[1], label:e[2], content };
+}
+function downloadFile(name, data, mime, isBlob){
+  try{
+    const blob=isBlob?data:new Blob([data],{type:mime||'text/plain'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+    document.body.appendChild(a); a.click(); setTimeout(()=>{ a.remove(); },500);
+    toast('Baixado: '+name);
+  }catch(e){ toast('Falha ao baixar.',true); }
+}
+function downloadPDF(text){
+  const J=(window.jspdf&&window.jspdf.jsPDF);
+  if(!J){ toast('Gerando… abra de novo em 1s.'); return; }
+  try{
+    const doc=new J({unit:'pt',format:'a4'}); const M=48, W=595-M*2; let y=64;
+    doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.text((persona&&persona.name)||'Kairos AI',M,y); y+=10;
+    doc.setDrawColor(200); doc.line(M,y,595-M,y); y+=22;
+    doc.setFont('helvetica','normal'); doc.setFontSize(11.5);
+    const clean=text.replace(/```\w*\n?/g,'').replace(/[*_#`>]/g,'');
+    doc.splitTextToSize(clean,W).forEach(line=>{
+      if(y>800){ doc.addPage(); y=64; } doc.text(line,M,y); y+=17;
+    });
+    doc.save('kairos-documento.pdf'); toast('PDF baixado.');
+  }catch(e){ toast('Falha no PDF: '+e.message,true); }
+}
+/* Mostra a resposta da IA: texto limpo + imagens; devolve o texto pra falar */
+function renderAiReply(reply){
+  const { cleaned, prompts } = parseImagePrompts(reply);
+  const shown = cleaned || (prompts.length?'Prontinho, gerei pra você 👇':'');
+  if(shown) addBubble('ai',shown,true);
+  prompts.forEach(p=>addImageBubble(p));
+  return cleaned || shown;
+}
 
 /* ---------- GROQ API ---------- */
 async function groqChat(messages,model){
@@ -956,6 +1047,26 @@ async function speakAsync(text){
   }
 }
 function speak(text){ speakAsync(text); }
+
+/* ---------- SOM DE ATIVAÇÃO (tipo Siri) ---------- */
+let audioCtx=null;
+function getCtx(){ try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} return audioCtx; }
+function playChime(kind){
+  const ctx=getCtx(); if(!ctx) return;
+  try{ if(ctx.state==='suspended') ctx.resume(); }catch(e){}
+  const now=ctx.currentTime;
+  // 'listen' = duas notas subindo (ativou/ouvindo); 'send' = duas notas descendo (enviado)
+  const notes = kind==='send' ? [[740,0],[523,0.10]] : [[523,0],[784,0.10]];
+  notes.forEach(([f,t])=>{
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type='sine'; o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001, now+t);
+    g.gain.exponentialRampToValueAtTime(0.22, now+t+0.025);
+    g.gain.exponentialRampToValueAtTime(0.0001, now+t+0.20);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(now+t); o.stop(now+t+0.22);
+  });
+}
 /* iOS bloqueia fala fora de um gesto → "destrava" a voz a cada toque do usuário */
 function primeTTS(){
   try{
@@ -963,6 +1074,7 @@ function primeTTS(){
     const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u);
     if(!voices.length) voices=speechSynthesis.getVoices();
   }catch(e){}
+  try{ const ctx=getCtx(); if(ctx&&ctx.state==='suspended') ctx.resume(); }catch(e){}
   // destrava o <audio> do ElevenLabs neste gesto (senão o iOS bloqueia o play pós-fetch)
   try{
     const a=getTtsAudio();
@@ -1009,12 +1121,12 @@ async function send(text){
     const history=s.msgs.slice(-12).map(m=>({role:m.role,content:m.content}));
     const reply=await groqChat([{role:'system',content:systemPrompt()},...history]);
     tp.remove();
-    addBubble('ai',reply,true);
-    s.msgs.push({role:'assistant',content:reply});
+    const spoken=renderAiReply(reply);
+    s.msgs.push({role:'assistant',content:spoken});
     saveSessions();
     setState(''); setStatus('');
-    speak(reply);
-    extractMemory(text,reply);
+    speak(spoken);
+    extractMemory(text,spoken);
   }catch(e){
     tp.remove(); setState(''); setStatus('');
     addBubble('ai','⚠ '+e.message,true);
@@ -1213,7 +1325,7 @@ $('#newChatBtn').onclick=()=>{ newSession(); closeSidebar(); };
 $('#settingsBtn').onclick=()=>{ closeSidebar(); openSettings(); };
 $('#earBtn').onclick=()=>{ primeTTS(); toggleAmbient(); };
 $('#powerBtn').onclick=()=>{ primeTTS(); toggleOnline(); };
-$('#micBtn').onclick=()=>{ primeTTS(); toggleMic(); };   // botão central = push-to-talk (toque fala, toque envia)
+$('#micBtn').onclick=()=>{ primeTTS(); playChime(listening?'send':'listen'); toggleMic(); };   // push-to-talk com som
 $('#sendBtn').onclick=()=>{ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v); };
 $('#txt').addEventListener('keydown',e=>{ if(e.key==='Enter'){ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v);} });
 $('#saveBtn').onclick=saveSettings;
@@ -1389,10 +1501,10 @@ async function hfTurn(){
   try{ const history=s.msgs.slice(-12).map(m=>({role:m.role,content:m.content}));
     reply=await groqChat([{role:'system',content:systemPrompt()},...history]); }
   catch(e){ setState(''); setStatus(''); toast('Erro: '+e.message,true); return; }
-  addBubble('ai',reply,true); s.msgs.push({role:'assistant',content:reply}); saveSessions();
+  const spoken=renderAiReply(reply); s.msgs.push({role:'assistant',content:spoken}); saveSessions();
   setState(''); setStatus('🎧 Falando…');
-  await speakAsync(reply);
-  extractMemory(txt,reply);
+  await speakAsync(spoken);
+  extractMemory(txt,spoken);
 }
 async function handsfreeLoop(){
   while(handsfree){
@@ -1463,11 +1575,11 @@ function onFoneTap(src){
   try{ if(foneAnchor) foneAnchor.play(); }catch(e){}
   try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
   if(handsfree){ toggleHandsfree(); }            // sai do modo contínuo, se estiver
-  if(listening){ toast('🎧 Enviando…'); stopMic(); return; }  // 2º toque: para e envia
+  if(listening){ playChime('send'); toast('🎧 Enviando…'); stopMic(); return; }  // 2º toque: para e envia
   if(!online){ toast('Ligue o agente primeiro.'); return; }
   if(!settings.apiKey){ toast('Configure a chave Groq.'); openSettings(); return; }
   stopSpeaking();      // não grava a própria fala
-  primeTTS(); toast('🎧 Pode falar — toque de novo pra enviar'); startMic();
+  primeTTS(); playChime('listen'); toast('🎧 Pode falar — toque de novo pra enviar'); startMic();
 }
 function armFone(){
   if(foneArmed){ try{ foneAnchor && foneAnchor.play(); }catch(e){} foneDiag(); return; }
