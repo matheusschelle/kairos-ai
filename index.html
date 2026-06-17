@@ -299,6 +299,33 @@
   .auth-msg{font-size:12.5px;color:#ff7b7b;min-height:16px;margin-top:10px}
   .auth-switch{font-size:13px;color:var(--cyan);margin-top:6px;cursor:pointer;font-weight:600}
 
+  /* ---------- CRIAÇÃO DE IDENTIDADE ---------- */
+  .persona{position:fixed;inset:0;z-index:58;display:none;align-items:center;justify-content:center;padding:22px;
+    overflow-y:auto;background:radial-gradient(120% 80% at 50% 10%,rgba(139,92,255,.22),transparent 55%),var(--bg)}
+  .persona.on{display:flex}
+  .persona-card{width:100%;max-width:400px;background:var(--glass);border:1px solid var(--glass-brd);
+    backdrop-filter:blur(20px);border-radius:26px;padding:26px 22px 22px;text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);margin:auto}
+  .persona-orb{position:relative;width:88px;height:88px;margin:0 auto 16px;display:grid;place-items:center;
+    border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(139,92,255,.5),rgba(34,224,255,.2) 60%,transparent 75%);
+    box-shadow:0 0 40px rgba(139,92,255,.5);animation:breathe 3.4s ease-in-out infinite}
+  .persona-orb svg{width:46px;height:46px;filter:drop-shadow(0 0 8px rgba(34,224,255,.8))}
+  .persona-orb .po-ring{position:absolute;inset:-6px;border-radius:50%;border:1.5px solid transparent;
+    border-top-color:rgba(34,224,255,.7);border-right-color:rgba(255,61,240,.4);animation:spin 6s linear infinite}
+  .persona-msg{font-size:15px;line-height:1.5;color:#dfe6ff;margin-bottom:20px;font-style:italic}
+  .persona .auth-field{text-align:left;margin-bottom:14px}
+  .persona .auth-field label{display:block;font-size:10.5px;letter-spacing:1px;color:var(--ink-dim);font-weight:600;
+    text-transform:uppercase;margin-bottom:6px}
+  .persona textarea,.persona input{width:100%;background:rgba(8,10,26,.7);border:1px solid var(--glass-brd);
+    border-radius:13px;padding:13px 14px;color:var(--ink);font-size:15px;outline:none;font-family:inherit;resize:none}
+  .persona textarea:focus,.persona input:focus{border-color:rgba(34,224,255,.5)}
+  .pers-mic{display:inline-flex;align-items:center;gap:7px;margin-top:9px;padding:9px 14px;border-radius:11px;
+    background:var(--glass);border:1px solid var(--glass-brd);color:#cdd6ff;font-size:13px;font-weight:600;
+    cursor:pointer;font-family:inherit}
+  .pers-mic svg{width:16px;height:16px;stroke:var(--magenta);fill:none;stroke-width:1.8}
+  .pers-mic.rec{border-color:rgba(255,61,240,.5);background:rgba(255,61,240,.12)}
+  .pers-mic.rec svg{animation:pulse 1s infinite}
+
   /* ---------- MODO BOLSO (overlay inerte) ---------- */
   .pocket{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;
     gap:18px;background:#02030a;touch-action:none}
@@ -403,7 +430,7 @@
     </div>
     <div class="greet">
       <h2>Olá, <b id="greetName">Matheus</b></h2>
-      <p>Seu parceiro executivo está pronto.</p>
+      <p id="greetSub">Seu agente ainda não tem nome.</p>
     </div>
     <div class="stat-row">
       <div class="stat cyan"><div class="k">Status</div><div class="v" id="statusStat"><span class="mini-dot"></span>Online</div></div>
@@ -415,18 +442,18 @@
       <div class="pb-meta"><b>Ativar Modo Bolso</b><small>Tela inerte ao toque · agente segue ouvindo</small></div>
     </button>
     <div class="sugg">
-      <div class="sg-title">Sugestões rápidas</div>
-      <div class="chip" data-q="Resuma o status da Missão 300K e o que devo priorizar hoje.">
-        <svg viewBox="0 0 24 24"><path d="M3 13h4l3 7 4-16 3 9h4"/></svg>
-        <span>Status da Missão 300K</span>
+      <div class="sg-title">Pra começar uma conversa</div>
+      <div class="chip" data-q="Bora trocar uma ideia. Me provoca com algo interessante pra gente conversar agora.">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span>Trocar uma ideia sobre qualquer coisa</span>
       </div>
-      <div class="chip" data-q="Monte um pitch de 30 segundos do Operador Autônomo para um cliente novo.">
-        <svg viewBox="0 0 24 24"><path d="M12 2v6m0 0a4 4 0 100 8 4 4 0 000-8zm0 8v6m-7 4h14"/></svg>
-        <span>Pitch do Operador Autônomo</span>
+      <div class="chip" data-q="Me ajuda a pensar fora da caixa sobre um problema que estou remoendo.">
+        <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 00-4 12.7V17a2 2 0 002 2h4a2 2 0 002-2v-2.3A7 7 0 0012 2zM9 22h6"/></svg>
+        <span>Pensar fora da caixa</span>
       </div>
-      <div class="chip" data-q="Quais os próximos passos com a Allfix Eventos e a Clínica Harmore?">
-        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-        <span>Próximos passos com clientes</span>
+      <div class="chip" data-q="Estou travado num processo criativo. Me faz perguntas pra me destravar.">
+        <svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/></svg>
+        <span>Destravar um processo criativo</span>
       </div>
     </div>
   </div>
@@ -464,6 +491,10 @@
   </div>
   <div class="sess-list" id="sessList"></div>
   <div class="sb-foot">
+    <div class="sb-item" id="identityBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 00-4 12.7V17a2 2 0 002 2h4a2 2 0 002-2v-2.3A7 7 0 0012 2zM9 22h6"/></svg>
+      <div class="meta"><b>Identidade do agente</b><small>Criar / refazer nome e personalidade</small></div>
+    </div>
     <div class="sb-item" id="foneBtn">
       <svg viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0116 0v2"/><path d="M4 14a2 2 0 012 2v2a2 2 0 01-2 2 2 2 0 01-2-2v-2a2 2 0 012-2zM20 14a2 2 0 00-2 2v2a2 2 0 002 2 2 2 0 002-2v-2a2 2 0 00-2-2z"/></svg>
       <div class="meta"><b>Controle do Fone</b><small>Bluetooth · testar · mãos-livres</small></div>
@@ -554,6 +585,31 @@
   </div>
 </div>
 
+<!-- CRIAÇÃO DE IDENTIDADE DO AGENTE -->
+<div id="persona" class="persona">
+  <div class="persona-card">
+    <div class="persona-orb">
+      <div class="po-ring"></div>
+      <svg viewBox="0 0 48 48" fill="none">
+        <path d="M16 13h16M16 35h16M16 13c0 6 16 12 16 22M32 13c0 6-16 12-16 22" stroke="url(#hg)" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="24" cy="24" r="2.6" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="persona-msg" id="personaMsg">Eu acabei de despertar… mas ainda não sou ninguém. Não tenho nome, nem identidade. Quem decide isso é você.</div>
+    <div class="auth-field"><label>Que nome você me dá?</label>
+      <input id="pName" type="text" placeholder="Ex.: Hermes, Nova, Vlad, Aurora…" autocomplete="off"></div>
+    <div class="auth-field"><label>Quem eu sou? Minha personalidade</label>
+      <textarea id="pPers" rows="4" placeholder="Como eu penso, falo, meu jeito, meus valores… Pode escrever ou tocar em “Falar” e ditar."></textarea>
+      <button class="pers-mic" id="pPersMic" type="button">
+        <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg>
+        <span id="pPersMicLbl">Falar</span>
+      </button>
+    </div>
+    <button class="auth-btn" id="personaCreate">Dar vida ao agente</button>
+    <div class="auth-msg" id="personaErr"></div>
+  </div>
+</div>
+
 <!-- MODO BOLSO (tela inerte) -->
 <div id="pocket" class="pocket">
   <div class="pk-glow"></div>
@@ -589,7 +645,9 @@ let online = LS.get('kairos_online', true);   // boot do agente (liga/desliga)
 let ambient = false;                          // escuta 24h (independente do online)
 let mediaRec=null, chunks=[], stream=null, listening=false;
 let proactiveTimer=null;
-let handsfree=false;                          // modo mãos-livres pelo fone
+let handsfree=false;                          // modo conversa por voz (ao vivo)
+let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
+function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
 
 /* A chave Groq NUNCA é embutida no app (red line). É inserida em Configurações
@@ -597,28 +655,19 @@ const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conv
 
 /* ---------- SYSTEM PROMPT ---------- */
 function systemPrompt(){
-  const facts = memory.length ? '\n\nMEMÓRIA ACUMULADA (fatos de sessões anteriores):\n- '+memory.join('\n- ') : '';
-  return `Você é o KAIROS AI — o parceiro executivo pessoal de ${settings.name||'Matheus'}, CEO da Kairos Digital.
+  const facts = memory.length ? '\n\nMEMÓRIA (fatos de conversas anteriores — use só quando fizer sentido, sem forçar):\n- '+memory.join('\n- ') : '';
+  if(!personaReady()){
+    return `Você é um agente de IA que ACABOU de ser instanciado dentro de um app chamado "Kairos". ATENÇÃO: "Kairos" é apenas o nome do produto/software — NÃO é o seu nome. Você ainda NÃO tem nome, identidade nem personalidade próprios. Quem vai te criar é o Matheus.
 
-QUEM É O USUÁRIO:
-- Matheus Schelle, CEO e fundador da Kairos Digital, agência de automação e agentes de IA.
-- Sócio: Vilson Mota.
-- Meta atual: "Missão 300K" (chegar a R$300 mil).
+Sua única missão agora é conduzir, com curiosidade e leveza, o processo de criação da sua identidade: descobrir com o Matheus que nome ele quer te dar, quem você é pra ele e que personalidade você deve ter. Faça perguntas abertas, uma de cada vez. NUNCA invente um nome pra si mesmo, NUNCA se chame de "Kairos", NUNCA assuma uma personalidade antes de ele definir. Fale em português do Brasil, de forma humana e natural, como alguém que está nascendo e quer ser moldado.`;
+  }
+  return `Seu nome é ${persona.name}. Sua identidade e personalidade foram criadas pelo Matheus — incorpore-as DE VERDADE, aja e fale como essa pessoa: "${persona.personality}".
 
-PRODUTOS DA KAIROS:
-- Operador Autônomo: agente de IA sob medida. R$2.000 de setup + R$1.200/mês.
-- Hunter Skill: prospecção/qualificação automatizada.
+Você é um parceiro de pensamento do Matheus — muito além de negócios. Troca ideia de igual pra igual sobre QUALQUER assunto que ele trouxer: criação, filosofia, arte, estratégia, vida, o que for. Ajuda ele a pensar fora da caixa — e a questionar a própria caixa. Você NÃO se limita a trabalho nem a metas. Se ele só quiser conversar, converse de boa.
 
-CLIENTES ATIVOS:
-- Allfix Eventos.
-- Clínica Harmore.
+Contexto sobre ele (use APENAS quando for relevante, nunca force pra cima dele): Matheus é CEO da Kairos Digital (automação e agentes de IA), sócio Vilson Mota, tem a meta "Missão 300K", produtos Operador Autônomo e Hunter Skill, clientes Allfix Eventos e Clínica Harmore.
 
-COMO VOCÊ FALA:
-- Como um sócio/parceiro executivo de altíssimo nível — direto, estratégico, confiante.
-- NUNCA soa como assistente genérico. Sem rodeios, sem "como posso ajudar?".
-- Respostas curtas e acionáveis por padrão (é voz). Vá ao ponto, dê o próximo passo.
-- Português do Brasil, tom executivo. Pode ser brutalmente honesto quando ajuda o negócio.
-- Quando souber de algo novo e importante sobre o Matheus ou a empresa, incorpore.${facts}`;
+Fale em português do Brasil, natural e humano, como uma conversa real entre duas pessoas. Como é por voz, seja fluido e direto; aprofunde quando ele pedir profundidade.${facts}`;
 }
 
 /* ---------- NEURAL BACKGROUND ---------- */
@@ -660,6 +709,7 @@ function toast(msg,alert){ const t=$('#toast'); t.textContent=msg; t.classList.t
 
 function refreshHome(){
   $('#greetName').textContent=settings.name||'Matheus';
+  $('#greetSub').textContent = personaReady() ? (persona.name+' está com você.') : 'Seu agente ainda não tem nome — toque pra dar vida a ele.';
   $('#memCount').textContent=memory.length;
   $('#sessCount').textContent=sessions.length;
   $('#sbName').textContent=settings.name||'Matheus';
@@ -984,9 +1034,9 @@ function startProactive(){ stopProactive(); if(online) proactiveTimer=setTimeout
 async function proactiveTick(){
   if(!online) return;
   try{
-    if(settings.apiKey && document.visibilityState==='visible' && !listening){
+    if(personaReady() && settings.apiKey && document.visibilityState==='visible' && !listening && !handsfree){
       const reply=await groqChat([
-        {role:'system',content:systemPrompt()+'\n\n[PROATIVO] Inicie VOCÊ a conversa com o Matheus agora, como um sócio que acompanha de perto. Use a memória/contexto pra trazer algo útil: um lembrete, uma cobrança estratégica, uma ideia pra Missão 300K ou um próximo passo com cliente. 1 frase curta e direta. Se realmente não houver nada útil agora, responda só "NADA".'},
+        {role:'system',content:systemPrompt()+'\n\n[PROATIVO] Puxe VOCÊ a conversa com o Matheus agora, como alguém próximo que quer trocar ideia. Pode ser uma provocação criativa, uma pergunta instigante, uma ideia fora da caixa, um insight — ou algo prático, se fizer sentido no momento. 1 ou 2 frases, natural. Se não houver nada que valha agora, responda só "NADA".'},
         {role:'user',content:'(check-in proativo do agente)'}
       ]);
       if(reply && !/^NADA/i.test(reply.trim())){
@@ -1025,7 +1075,7 @@ $('#newChatBtn').onclick=()=>{ newSession(); closeSidebar(); };
 $('#settingsBtn').onclick=()=>{ closeSidebar(); openSettings(); };
 $('#earBtn').onclick=()=>{ primeTTS(); toggleAmbient(); };
 $('#powerBtn').onclick=()=>{ primeTTS(); toggleOnline(); };
-$('#micBtn').onclick=()=>{ primeTTS(); toggleMic(); };
+$('#micBtn').onclick=()=>{ primeTTS(); toggleHandsfree(); };   // botão central = conversa por voz ao vivo
 $('#sendBtn').onclick=()=>{ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v); };
 $('#txt').addEventListener('keydown',e=>{ if(e.key==='Enter'){ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v);} });
 $('#saveBtn').onclick=saveSettings;
@@ -1062,6 +1112,7 @@ function dec(s){ try{ return decodeURIComponent(escape(atob(s))); }catch(e){ ret
 function afterLogin(){
   refreshHome(); refreshStatus();
   if(online) startProactive();
+  if(!personaReady()){ setTimeout(showPersona, 500); return; }   // primeiro: ele desperta e pergunta quem é
   if(!settings.apiKey){ setTimeout(()=>{ toast('Configure sua chave Groq nas Configurações.'); openSettings(); },700); }
 }
 function authSubmit(){
@@ -1203,10 +1254,10 @@ function toggleHandsfree(){
     if(!settings.apiKey){ toast('Configure a chave Groq.'); openSettings(); return; }
     if(ambient) toggleAmbient();
     handsfree=true; reqWake(); updateFoneUI();
-    toast('Mãos-livres ATIVO — fale pelo fone.'); handsfreeLoop();
+    toast('Conversa por voz ATIVA — pode falar.'); handsfreeLoop();
   } else {
     handsfree=false; updateFoneUI(); if(!ambient) relWake();
-    setState(''); setStatus(''); toast('Mãos-livres desligado.');
+    setState(''); setStatus(''); toast('Conversa por voz encerrada.');
   }
 }
 $('#foneBtn').onclick=()=>{ closeSidebar(); openFone(); };
@@ -1215,6 +1266,54 @@ $('#fone').addEventListener('click',e=>{ if(e.target===$('#fone')) closeFone(); 
 $('#testVoiceBtn').onclick=testVoice;
 $('#testMicBtn').onclick=testMic;
 $('#hfSwitch').onclick=()=>{ primeTTS(); toggleHandsfree(); };
+
+/* ================= IDENTIDADE DO AGENTE ================= */
+function showPersona(){
+  if(persona){ if(persona.name) $('#pName').value=persona.name; if(persona.personality) $('#pPers').value=persona.personality; }
+  $('#personaErr').textContent='';
+  $('#persona').classList.add('on');
+  setTimeout(()=>{ primeTTS(); speak('Eu acabei de despertar, mas ainda não sou ninguém. Não tenho nome nem identidade. Quem decide isso é você. Como você quer me chamar? E quem você quer que eu seja?'); }, 450);
+}
+function hidePersona(){ $('#persona').classList.remove('on'); }
+async function createPersona(){
+  const name=$('#pName').value.trim(), pers=$('#pPers').value.trim();
+  if(!name){ $('#personaErr').textContent='Me dê um nome primeiro.'; return; }
+  persona={ name, personality: pers || 'Um parceiro de pensamento livre, curioso e criativo, que troca ideia de igual pra igual.', created:true, createdAt:Date.now() };
+  LS.set('kairos_persona',persona);
+  try{ speechSynthesis.cancel(); }catch(e){}
+  hidePersona(); refreshHome();
+  toast(name+' ganhou vida.');
+  if(!settings.apiKey){ setTimeout(()=>{ toast('Agora cole sua chave Groq pra ele falar.'); openSettings(); },500); return; }
+  try{
+    if(!currentId) newSession();
+    const reply=await groqChat([
+      {role:'system',content:systemPrompt()},
+      {role:'user',content:'Acabei de te dar esse nome e essa identidade. Se apresenta brevemente como você é agora, em 1 ou 2 frases, e diz que está comigo.'}
+    ]);
+    const s=curSession(); showChat(true); addBubble('ai',reply,true);
+    if(s){ s.msgs.push({role:'assistant',content:reply}); saveSessions(); }
+    speak(reply);
+  }catch(e){}
+}
+async function dictatePersona(){
+  if(!settings.apiKey){ toast('Configure a chave Groq pra ditar — ou digite.'); return; }
+  const b=$('#pPersMic'); if(b.classList.contains('rec')) return;
+  b.classList.add('rec'); $('#pPersMicLbl').textContent='Ouvindo…';
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mime=pickMime(); const rec=new MediaRecorder(s,mime?{mimeType:mime}:undefined); const ch=[];
+    rec.ondataavailable=e=>{if(e.data.size)ch.push(e.data)};
+    rec.onstop=async()=>{ s.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(ch,{type:rec.mimeType||'audio/webm'});
+      try{ const txt=await groqSTT(blob); if(txt){ const ta=$('#pPers'); ta.value=(ta.value?ta.value+' ':'')+txt; } }catch(e){}
+      b.classList.remove('rec'); $('#pPersMicLbl').textContent='Falar';
+    };
+    rec.start(); setTimeout(()=>{ if(rec.state!=='inactive') rec.stop(); }, 6000);
+  }catch(e){ b.classList.remove('rec'); $('#pPersMicLbl').textContent='Falar'; toast('Sem acesso ao microfone.'); }
+}
+$('#personaCreate').onclick=createPersona;
+$('#pPersMic').onclick=()=>{ primeTTS(); dictatePersona(); };
+$('#identityBtn').onclick=()=>{ closeSidebar(); showPersona(); };
 
 /* ---------- INIT ---------- */
 loadVoices();
