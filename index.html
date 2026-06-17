@@ -600,7 +600,12 @@
     <div class="field"><label>Voz ElevenLabs (ID)</label><input id="elevenVoiceInput" type="text" placeholder="21m00Tcm4TlvDq8ikWAM (Rachel)">
       <div class="hint">Deixe vazio pra usar a voz padrão. ID em elevenlabs.io → Voices.</div>
     </div>
-    <div class="field"><label>Voz nativa (fallback, sem ElevenLabs)</label><select id="voiceInput"></select></div>
+    <div class="field"><label>Voz nativa (fallback, sem ElevenLabs)</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <select id="voiceInput" style="flex:1"></select>
+        <button id="previewVoiceBtn" type="button" style="padding:10px 14px;border-radius:12px;border:1px solid var(--glass-brd);background:var(--glass);color:#cdd6ff;font-size:13px;font-weight:600;cursor:pointer;flex:0 0 auto;font-family:inherit">Ouvir</button>
+      </div>
+    </div>
     <button class="save" id="saveBtn">Salvar</button>
     <div style="text-align:center;font-size:10.5px;color:#5a6296;margin-top:10px" id="buildTag">versão —</div>
   </div>
@@ -749,7 +754,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v11 · 17/06';              // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v12 · 17/06';              // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -922,7 +927,17 @@ function addBubble(role,text,animate){
     RATE_STEPS.forEach(([label,r])=>{ const b=document.createElement('button'); b.className='ma-btn ma-rate'; b.dataset.r=r; b.textContent=label;
       b.onclick=()=>{ primeTTS(); setRate(r); markRate(); speak(text); };
       act.appendChild(b); });
-    // — downloads
+    // — utilitários
+    const copyBtn=document.createElement('button'); copyBtn.className='ma-btn'; copyBtn.textContent='Copiar';
+    copyBtn.onclick=()=>{
+      (navigator.clipboard&&navigator.clipboard.writeText
+        ?navigator.clipboard.writeText(text)
+        :Promise.resolve(document.execCommand('copy',(function(){const r=document.createRange();r.selectNode(document.body);window.getSelection().removeAllRanges();window.getSelection().addRange(r);})()||true))
+      ).then(()=>toast('Copiado!')).catch(()=>{
+        try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');ta.remove();toast('Copiado!');}catch(e){toast('Não foi possível copiar.',true);}
+      });
+    };
+    act.appendChild(copyBtn);
     const code=extractCode(text);
     if(code){ const cb=document.createElement('button'); cb.className='ma-btn'; cb.textContent='⬇ '+code.label;
       cb.onclick=()=>downloadFile(code.name,code.content,code.mime); act.appendChild(cb); }
@@ -1131,9 +1146,8 @@ function speakNative(text){
 }
 async function speakAsync(text){
   if(!text) return;
-  // Pausa a âncora do fone enquanto fala — senão atrapalha o áudio sair no Bluetooth
-  const anchorWasOn = foneAnchor && !foneAnchor.paused;
-  if(anchorWasOn){ try{ foneAnchor.pause(); }catch(e){} }
+  // NÃO pausar a âncora — pausar + retomar em contexto async falha no iOS (NotAllowedError)
+  // e mata o Media Session. Ambos os elementos tocam simultaneamente sem conflito.
   try{
     if(settings.elevenKey){
       try{ speechSynthesis.cancel(); }catch(e){}
@@ -1142,13 +1156,18 @@ async function speakAsync(text){
     }
     await speakNative(text);
   } finally {
-    if(anchorWasOn){ try{ foneAnchor.play(); navigator.mediaSession.playbackState='playing'; }catch(e){} }
+    // Garante que a âncora continua rodando (mantém Media Session vivo no iOS)
+    if(foneArmed && foneAnchor && foneAnchor.paused){
+      const pr=foneAnchor.play(); if(pr&&pr.catch) pr.catch(()=>{});
+    }
+    try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
   }
 }
 function speak(text){
   if(!text) return;
   currentSpeechText=text;
   setSpeechState('speaking');
+  if(handsfree) setStatus('🎧 Falando…');
   speakAsync(text).finally(()=>{
     if(speechState==='speaking') setSpeechState('idle');
     if(handsfree && !listening) setStatus('🎧 Aguardando toque no fone…');
@@ -1447,6 +1466,16 @@ $('#sendBtn').onclick=()=>{ primeTTS(); const v=$('#txt').value; $('#txt').value
 $('#txt').addEventListener('keydown',e=>{ if(e.key==='Enter'){ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v);} });
 $('#saveBtn').onclick=saveSettings;
 $('#settings').addEventListener('click',e=>{ if(e.target===$('#settings')) closeSettings(); });
+$('#previewVoiceBtn').onclick=()=>{
+  primeTTS();
+  const sel=$('#voiceInput'); const vName=sel?sel.value:'';
+  const vList=speechSynthesis.getVoices();
+  const v=vList.find(x=>x.name===vName)||vList.find(x=>/pt[-_]?BR/i.test(x.lang))||vList.find(x=>/pt/i.test(x.lang));
+  const u=new SpeechSynthesisUtterance('Olá, eu sou o agente de voz Kairos. Esta é a minha voz.');
+  if(v){u.voice=v;u.lang=v.lang;} else u.lang='pt-BR';
+  u.rate=settings.rate||1; u.pitch=1; u.volume=1;
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+};
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ primeTTS(); send(c.dataset.q); });
 $('#photoInput').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -1748,7 +1777,7 @@ function foneDiag(){
 function onFoneTap(src){
   foneTaps++; foneErr=''; foneDiag();
   try{ const c=getCtx(); if(c&&c.state==='suspended') c.resume(); }catch(e){}  // destrava o som do chime
-  try{ if(foneAnchor) foneAnchor.play(); }catch(e){}
+  if(foneAnchor){ const pr=foneAnchor.play(); if(pr&&pr.catch) pr.catch(()=>{}); }
   if(foneTestMode){ foneTestHit(src); return; }   // em modo teste, o toque só confirma o sensor
   try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
   if(listening){ playChime('send'); toast('🎧 Enviando…'); setStatus('Transcrevendo…'); stopMic(); return; }  // 2º toque: para e envia
