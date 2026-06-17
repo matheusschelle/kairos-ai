@@ -1153,7 +1153,7 @@ $('#newChatBtn').onclick=()=>{ newSession(); closeSidebar(); };
 $('#settingsBtn').onclick=()=>{ closeSidebar(); openSettings(); };
 $('#earBtn').onclick=()=>{ primeTTS(); toggleAmbient(); };
 $('#powerBtn').onclick=()=>{ primeTTS(); toggleOnline(); };
-$('#micBtn').onclick=()=>{ primeTTS(); toggleHandsfree(); };   // botão central = conversa por voz ao vivo
+$('#micBtn').onclick=()=>{ primeTTS(); toggleMic(); };   // botão central = push-to-talk (toque fala, toque envia)
 $('#sendBtn').onclick=()=>{ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v); };
 $('#txt').addEventListener('keydown',e=>{ if(e.key==='Enter'){ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v);} });
 $('#saveBtn').onclick=saveSettings;
@@ -1395,13 +1395,19 @@ function foneDiag(){
   el.innerHTML = `Media Session: <b>${ms?'sim':'NÃO'}</b> · âncora: <b>${foneArmed?(playing?'tocando':'pausada'):'não armada'}</b> · toques: <b>${foneTaps}</b>`
     + (foneErr?` · <span style="color:#ff9b9b">${foneErr}</span>`:'');
 }
+/* Toque do fone = PUSH-TO-TALK: 1 toque começa a ouvir, outro toque envia e
+   ele responde UMA vez (sem loop contínuo). */
 function onFoneTap(src){
   foneTaps++; foneErr=''; foneDiag();
   try{ if(navigator.vibrate) navigator.vibrate(60); }catch(e){}
   try{ if(foneAnchor) foneAnchor.play(); }catch(e){}
   try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
-  toast('🎧 Toque do fone recebido'+(src?' ('+src+')':''));
-  primeTTS(); toggleHandsfree();
+  if(handsfree){ toggleHandsfree(); }            // sai do modo contínuo, se estiver
+  if(listening){ toast('🎧 Enviando…'); stopMic(); return; }  // 2º toque: para e envia
+  if(!online){ toast('Ligue o agente primeiro.'); return; }
+  if(!settings.apiKey){ toast('Configure a chave Groq.'); openSettings(); return; }
+  try{ speechSynthesis.cancel(); }catch(e){}      // não grava a própria fala
+  primeTTS(); toast('🎧 Pode falar — toque de novo pra enviar'); startMic();
 }
 function armFone(){
   if(foneArmed){ try{ foneAnchor && foneAnchor.play(); }catch(e){} foneDiag(); return; }
