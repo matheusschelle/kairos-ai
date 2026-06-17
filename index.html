@@ -562,7 +562,14 @@
         <option value="qwen/qwen3-32b">Qwen 3 32B</option>
       </select>
     </div>
-    <div class="field"><label>Voz (TTS)</label><select id="voiceInput"></select></div>
+    <div class="field"><label>ElevenLabs API Key <span style="color:#7a83a8;font-weight:400">(voz premium, sai no fone)</span></label>
+      <input id="elevenKeyInput" type="password" placeholder="sk_…">
+      <div class="hint">Opcional. Com ela a voz fica natural e <b>sai no fone Bluetooth</b> (a voz nativa do iPhone vai só no alto-falante). Em <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank">elevenlabs.io</a>. Guardada só neste aparelho.</div>
+    </div>
+    <div class="field"><label>Voz ElevenLabs (ID)</label><input id="elevenVoiceInput" type="text" placeholder="21m00Tcm4TlvDq8ikWAM (Rachel)">
+      <div class="hint">Deixe vazio pra usar a voz padrão. ID em elevenlabs.io → Voices.</div>
+    </div>
+    <div class="field"><label>Voz nativa (fallback, sem ElevenLabs)</label><select id="voiceInput"></select></div>
     <button class="save" id="saveBtn">Salvar</button>
   </div>
 </div>
@@ -754,6 +761,8 @@ function refreshHome(){
   $('#sbName').textContent=settings.name||'Matheus';
   $('#nameInput').value=settings.name||'';
   $('#keyInput').value=settings.apiKey||'';
+  $('#elevenKeyInput').value=settings.elevenKey||'';
+  $('#elevenVoiceInput').value=settings.elevenVoice||'';
   $('#modelInput').value=settings.model;
   if(settings.photo){
     $('#sbAvatar').innerHTML=`<img src="${settings.photo}">`;
@@ -875,22 +884,47 @@ function loadVoices(){
   sel.value=settings.voice||'';
 }
 speechSynthesis.onvoiceschanged=loadVoices;
-function speakAsync(text){
+
+/* Áudio compartilhado pra TTS do ElevenLabs (roteia certo no Bluetooth) */
+let ttsAudio=null;
+function getTtsAudio(){
+  if(!ttsAudio){ ttsAudio=new Audio(); ttsAudio.setAttribute('playsinline',''); ttsAudio.setAttribute('webkit-playsinline',''); }
+  return ttsAudio;
+}
+function stopSpeaking(){
+  try{ speechSynthesis.cancel(); }catch(e){}
+  try{ if(ttsAudio){ ttsAudio.pause(); } }catch(e){}
+}
+async function speakEleven(text){
+  const key=settings.elevenKey;
+  const voice=settings.elevenVoice||'21m00Tcm4TlvDq8ikWAM'; // Rachel (multilingual)
+  const clean=text.replace(/[⚡*_#`>]/g,'').trim();
+  if(!clean) return;
+  const res=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(voice),{
+    method:'POST',
+    headers:{'xi-api-key':key,'Content-Type':'application/json','Accept':'audio/mpeg'},
+    body:JSON.stringify({ text:clean, model_id:'eleven_turbo_v2_5',
+      voice_settings:{ stability:0.5, similarity_boost:0.8, style:0.2 } })
+  });
+  if(!res.ok){ throw new Error('ElevenLabs '+res.status); }
+  const blob=await res.blob();
+  const a=getTtsAudio();
+  return new Promise(resolve=>{
+    try{ a.src=URL.createObjectURL(blob); }catch(e){ resolve(); return; }
+    a.playbackRate=settings.rate||1;
+    a.onended=()=>resolve(); a.onerror=()=>resolve();
+    a.play().catch(()=>resolve());
+  });
+}
+function speakNative(text){
   return new Promise(res=>{
-    if(!text){ res(); return; }
-    // Pausa a âncora do fone enquanto fala — senão ela atrapalha o áudio sair no Bluetooth
-    const anchorWasOn = foneAnchor && !foneAnchor.paused;
-    if(anchorWasOn){ try{ foneAnchor.pause(); }catch(e){} }
     try{
       if(!voices.length) voices=speechSynthesis.getVoices();
       speechSynthesis.cancel();
       const v=voices.find(x=>x.name===settings.voice) || voices.find(x=>/pt[-_]?BR/i.test(x.lang)) || voices.find(x=>/pt/i.test(x.lang));
-      // iOS corta falas longas → quebra em frases curtas
       const parts=(text.replace(/[⚡*_#`>]/g,'').match(/[^.!?\n]+[.!?\n]?/g)||[text]).map(p=>p.trim()).filter(Boolean);
       if(!parts.length){ res(); return; }
-      let done=false; const finish=()=>{ if(!done){ done=true;
-        if(anchorWasOn){ try{ foneAnchor.play(); navigator.mediaSession.playbackState='playing'; }catch(e){} }
-        res(); } };
+      let done=false; const finish=()=>{ if(!done){ done=true; res(); } };
       parts.forEach((p,idx)=>{
         const u=new SpeechSynthesisUtterance(p);
         if(v){u.voice=v;u.lang=v.lang;} else u.lang='pt-BR';
@@ -899,9 +933,25 @@ function speakAsync(text){
         speechSynthesis.speak(u);
       });
       setTimeout(()=>{ try{ if(speechSynthesis.paused) speechSynthesis.resume(); }catch(e){} },150);
-      setTimeout(finish, 1800 + parts.join(' ').length*95); // failsafe se onend não disparar (iOS)
+      setTimeout(finish, 1800 + parts.join(' ').length*95);
     }catch(e){ res(); }
   });
+}
+async function speakAsync(text){
+  if(!text) return;
+  // Pausa a âncora do fone enquanto fala — senão atrapalha o áudio sair no Bluetooth
+  const anchorWasOn = foneAnchor && !foneAnchor.paused;
+  if(anchorWasOn){ try{ foneAnchor.pause(); }catch(e){} }
+  try{
+    if(settings.elevenKey){
+      try{ speechSynthesis.cancel(); }catch(e){}
+      try{ await speakEleven(text); return; }
+      catch(e){ /* falhou (chave/quota) → cai pra voz nativa */ }
+    }
+    await speakNative(text);
+  } finally {
+    if(anchorWasOn){ try{ foneAnchor.play(); navigator.mediaSession.playbackState='playing'; }catch(e){} }
+  }
 }
 function speak(text){ speakAsync(text); }
 /* iOS bloqueia fala fora de um gesto → "destrava" a voz a cada toque do usuário */
@@ -910,6 +960,12 @@ function primeTTS(){
     speechSynthesis.resume();
     const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u);
     if(!voices.length) voices=speechSynthesis.getVoices();
+  }catch(e){}
+  // destrava o <audio> do ElevenLabs neste gesto (senão o iOS bloqueia o play pós-fetch)
+  try{
+    const a=getTtsAudio();
+    if(!a._unlocked){ a.muted=true; a.src=URL.createObjectURL(buildSilentWav(1));
+      const pr=a.play(); if(pr&&pr.then) pr.then(()=>{ a.pause(); a.currentTime=0; a.muted=false; a._unlocked=true; }).catch(()=>{ a.muted=false; }); }
   }catch(e){}
 }
 
@@ -974,7 +1030,7 @@ async function startMic(){
   if(!online){ toast('Agente offline. Ligue o agente (power) primeiro.'); return; }
   if(!settings.apiKey){ toast('Configure a chave Groq nas Configurações.'); openSettings(); return; }
   try{
-    speechSynthesis.cancel();
+    stopSpeaking();
     stream=await navigator.mediaDevices.getUserMedia({audio:true});
     const mime=pickMime();
     mediaRec=new MediaRecorder(stream, mime?{mimeType:mime}:undefined);
@@ -1084,7 +1140,7 @@ function toggleOnline(){
   if(!online){
     if(ambient) toggleAmbient();
     if(listening) stopMic();
-    stopProactive(); try{speechSynthesis.cancel();}catch(e){}
+    stopProactive(); stopSpeaking();
     setState(''); setStatus('');
     toast('Agente OFFLINE. Toque no power pra religar.');
   } else {
@@ -1137,6 +1193,8 @@ function saveSettings(){
   settings.apiKey=$('#keyInput').value.trim();
   settings.model=$('#modelInput').value;
   settings.voice=$('#voiceInput').value;
+  settings.elevenKey=$('#elevenKeyInput').value.trim();
+  settings.elevenVoice=$('#elevenVoiceInput').value.trim();
   LS.set('kairos_settings',settings);
   refreshHome(); closeSettings(); toast('Configurações salvas.');
 }
@@ -1406,7 +1464,7 @@ function onFoneTap(src){
   if(listening){ toast('🎧 Enviando…'); stopMic(); return; }  // 2º toque: para e envia
   if(!online){ toast('Ligue o agente primeiro.'); return; }
   if(!settings.apiKey){ toast('Configure a chave Groq.'); openSettings(); return; }
-  try{ speechSynthesis.cancel(); }catch(e){}      // não grava a própria fala
+  stopSpeaking();      // não grava a própria fala
   primeTTS(); toast('🎧 Pode falar — toque de novo pra enviar'); startMic();
 }
 function armFone(){
@@ -1448,7 +1506,7 @@ async function createPersona(){
   if(!name){ $('#personaErr').textContent='Me dê um nome primeiro.'; return; }
   persona={ name, personality: pers || 'Um parceiro de pensamento livre, curioso e criativo, que troca ideia de igual pra igual.', created:true, createdAt:Date.now() };
   LS.set('kairos_persona',persona);
-  try{ speechSynthesis.cancel(); }catch(e){}
+  stopSpeaking();
   foneMeta();
   hidePersona(); refreshHome();
   toast(name+' ganhou vida.');
