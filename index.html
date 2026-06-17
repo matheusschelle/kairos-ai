@@ -610,8 +610,14 @@
       <input id="elevenKeyInput" type="password" placeholder="sk_…">
       <div class="hint">Opcional. Com ela a voz fica natural e <b>sai no fone Bluetooth</b> (a voz nativa do iPhone vai só no alto-falante). Em <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank">elevenlabs.io</a>. Guardada só neste aparelho.</div>
     </div>
-    <div class="field"><label>Voz ElevenLabs (ID)</label><input id="elevenVoiceInput" type="text" placeholder="21m00Tcm4TlvDq8ikWAM (Rachel)">
-      <div class="hint">Deixe vazio pra usar a voz padrão. ID em elevenlabs.io → Voices.</div>
+    <div class="field">
+      <label>Voz ElevenLabs</label>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+        <select id="elevenVoiceSelect" style="flex:1;background:rgba(8,10,26,.7);border:1px solid var(--glass-brd);border-radius:13px;padding:11px 14px;color:var(--ink);font-size:14px;outline:none;font-family:inherit;appearance:none;-webkit-appearance:none"><option value="">Carregue as vozes abaixo ↓</option></select>
+        <button id="elevenVoicePreviewBtn" type="button" style="padding:10px 14px;border-radius:12px;border:1px solid var(--glass-brd);background:var(--glass);color:#cdd6ff;font-size:13px;font-weight:600;cursor:pointer;flex:0 0 auto;font-family:inherit">Ouvir</button>
+      </div>
+      <button id="loadElevenVoicesBtn" type="button" style="width:100%;padding:11px;border-radius:12px;border:1px solid rgba(139,92,255,.4);background:rgba(139,92,255,.12);color:#c8b8ff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:6px">↻ Carregar vozes do ElevenLabs</button>
+      <div class="hint">Prévia usa a amostra de cada voz (sem créditos). Salve para aplicar.</div>
     </div>
     <div class="field"><label>Voz nativa (fallback, sem ElevenLabs)</label>
       <div style="display:flex;gap:10px;align-items:center">
@@ -776,7 +782,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v13 · 17/06';              // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v14 · 17/06';              // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -1073,7 +1079,7 @@ async function groqSTT(blob){
 }
 
 /* ---------- TTS ---------- */
-let voices=[];
+let voices=[], elevenVoices=[];
 function fillVoiceSelect(selEl, currentVal){
   if(!selEl) return;
   const pt=voices.filter(v=>/pt/i.test(v.lang));
@@ -1088,6 +1094,32 @@ function loadVoices(){
   fillVoiceSelect($('#pVoiceInput'), settings.voice);
 }
 speechSynthesis.onvoiceschanged=loadVoices;
+
+function populateElevenSelect(){
+  const sel=$('#elevenVoiceSelect'); if(!sel) return;
+  if(!elevenVoices.length){ sel.innerHTML='<option value="">Clique em "Carregar vozes" →</option>'; return; }
+  const custom=elevenVoices.filter(v=>v.category==='cloned'||v.category==='generated');
+  const premade=elevenVoices.filter(v=>v.category!=='cloned'&&v.category!=='generated');
+  let html='<option value="">Padrão (Rachel — multilingual)</option>';
+  if(custom.length) html+='<optgroup label="Minhas vozes">'+custom.map(v=>`<option value="${v.voice_id}">${v.name}</option>`).join('')+'</optgroup>';
+  if(premade.length) html+='<optgroup label="Biblioteca ElevenLabs">'+premade.map(v=>`<option value="${v.voice_id}">${v.name}</option>`).join('')+'</optgroup>';
+  sel.innerHTML=html; sel.value=settings.elevenVoice||'';
+}
+async function loadElevenVoices(){
+  const key=($('#elevenKeyInput')&&$('#elevenKeyInput').value.trim())||settings.elevenKey;
+  if(!key){ toast('Cole a chave ElevenLabs primeiro.',true); return; }
+  const btn=$('#loadElevenVoicesBtn');
+  if(btn){ btn.textContent='Carregando…'; btn.disabled=true; }
+  try{
+    const r=await fetch('https://api.elevenlabs.io/v1/voices',{headers:{'xi-api-key':key}});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const j=await r.json();
+    elevenVoices=(j.voices||[]).sort((a,b)=>a.name.localeCompare(b.name));
+    populateElevenSelect();
+    toast('✅ '+elevenVoices.length+' vozes carregadas.');
+  }catch(e){ toast('Erro ElevenLabs: '+e.message,true); }
+  if(btn){ btn.textContent='↻ Carregar vozes do ElevenLabs'; btn.disabled=false; }
+}
 
 /* Áudio compartilhado pra TTS do ElevenLabs (roteia certo no Bluetooth) */
 let ttsAudio=null;
@@ -1462,7 +1494,13 @@ function updateProactiveUI(){
 }
 
 /* ---------- SETTINGS ---------- */
-function openSettings(){ refreshHome(); loadVoices(); $('#buildTag').textContent='versão '+APP_BUILD; $('#settings').classList.add('on'); }
+function openSettings(){
+  refreshHome(); loadVoices();
+  $('#buildTag').textContent='versão '+APP_BUILD;
+  $('#settings').classList.add('on');
+  if(elevenVoices.length) populateElevenSelect();
+  else if(settings.elevenKey) loadElevenVoices();
+}
 function closeSettings(){ $('#settings').classList.remove('on'); }
 function saveSettings(){
   settings.name=$('#nameInput').value.trim()||'Matheus';
@@ -1470,7 +1508,7 @@ function saveSettings(){
   settings.model=$('#modelInput').value;
   settings.voice=$('#voiceInput').value;
   settings.elevenKey=$('#elevenKeyInput').value.trim();
-  settings.elevenVoice=$('#elevenVoiceInput').value.trim();
+  settings.elevenVoice=($('#elevenVoiceSelect')&&$('#elevenVoiceSelect').value)||'';
   LS.set('kairos_settings',settings);
   refreshHome(); closeSettings(); toast('Configurações salvas.');
 }
@@ -1501,6 +1539,25 @@ $('#previewVoiceBtn').onclick=()=>{
   if(v){u.voice=v;u.lang=v.lang;} else u.lang='pt-BR';
   u.rate=settings.rate||1; u.pitch=1; u.volume=1;
   speechSynthesis.cancel(); speechSynthesis.speak(u);
+};
+$('#loadElevenVoicesBtn').onclick=()=>{ loadElevenVoices(); };
+$('#elevenVoicePreviewBtn').onclick=async()=>{
+  primeTTS();
+  const sel=$('#elevenVoiceSelect'); const voiceId=sel?sel.value:'';
+  const voice=elevenVoices.find(v=>v.voice_id===voiceId);
+  if(voice&&voice.preview_url){
+    // Amostra gratuita — não consome créditos
+    stopSpeaking();
+    const a=getTtsAudio(); a.src=voice.preview_url;
+    const pr=a.play(); if(pr&&pr.catch) pr.catch(()=>toast('Não foi possível tocar o preview.',true));
+    toast('Prévia: '+voice.name);
+  } else if(settings.elevenKey){
+    const key=settings.elevenKey; const vid=voiceId||'21m00Tcm4TlvDq8ikWAM';
+    toast('Gerando prévia…');
+    const prevVoice=settings.elevenVoice; settings.elevenVoice=vid;
+    await speakAsync('Olá! Esta é a minha voz. Posso ser o seu assistente pessoal.');
+    settings.elevenVoice=prevVoice;
+  } else { toast('Carregue as vozes primeiro.',true); }
 };
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ primeTTS(); send(c.dataset.q); });
 $('#photoInput').addEventListener('change',e=>{
