@@ -450,6 +450,11 @@
       <div class="stat mag"><div class="k">Memória</div><div class="v" id="memCount">0</div></div>
       <div class="stat gold"><div class="k">Sessões</div><div class="v" id="sessCount">0</div></div>
     </div>
+    <button class="scrl-btn" id="proactBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 00-4 12.7V17a2 2 0 002 2h4a2 2 0 002-2v-2.3A7 7 0 0012 2zM9 22h6"/></svg>
+      <div class="pb-meta"><b id="proactLbl">Resposta autônoma</b><small id="proactSub">Ele puxa conversa sozinho de tempos em tempos</small></div>
+      <span class="scrl-dot" id="proactDot"></span>
+    </button>
     <button class="scrl-btn" id="awakeBtn">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>
       <div class="pb-meta"><b id="awakeLbl">Manter tela acesa</b><small id="awakeSub">Tela não apaga enquanto estiver aqui</small></div>
@@ -669,6 +674,7 @@ let online = LS.get('kairos_online', true);   // boot do agente (liga/desliga)
 let ambient = false;                          // escuta 24h (independente do online)
 let mediaRec=null, chunks=[], stream=null, listening=false;
 let proactiveTimer=null;
+let proactiveOn = LS.get('kairos_proactive', true); // agente fala por vontade própria
 let handsfree=false;                          // modo conversa por voz (ao vivo)
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
@@ -736,7 +742,7 @@ function refreshHome(){
   $('#greetSub').textContent = personaReady() ? (persona.name+' está com você.') : 'Seu agente ainda não tem nome — toque pra dar vida a ele.';
   $('#memCount').textContent=memory.length;
   $('#sessCount').textContent=sessions.length;
-  try{ updateAwakeUI(); }catch(e){}
+  try{ updateAwakeUI(); updateProactiveUI(); }catch(e){}
   $('#sbName').textContent=settings.name||'Matheus';
   $('#nameInput').value=settings.name||'';
   $('#keyInput').value=settings.apiKey||'';
@@ -1063,9 +1069,9 @@ function toggleOnline(){
 
 /* ---------- PROATIVIDADE (agente puxa conversa quando online) ---------- */
 function stopProactive(){ clearTimeout(proactiveTimer); proactiveTimer=null; }
-function startProactive(){ stopProactive(); if(online) proactiveTimer=setTimeout(proactiveTick, PROACTIVE_MS); }
+function startProactive(){ stopProactive(); if(online && proactiveOn) proactiveTimer=setTimeout(proactiveTick, PROACTIVE_MS); }
 async function proactiveTick(){
-  if(!online) return;
+  if(!online || !proactiveOn) return;
   try{
     if(personaReady() && settings.apiKey && document.visibilityState==='visible' && !listening && !handsfree){
       const reply=await groqChat([
@@ -1081,7 +1087,19 @@ async function proactiveTick(){
       }
     }
   }catch(e){}
-  if(online) proactiveTimer=setTimeout(proactiveTick, PROACTIVE_MS);
+  if(online && proactiveOn) proactiveTimer=setTimeout(proactiveTick, PROACTIVE_MS);
+}
+function toggleProactive(){
+  proactiveOn=!proactiveOn; LS.set('kairos_proactive',proactiveOn);
+  if(proactiveOn){ startProactive(); toast('Vontade própria ATIVA — ele vai puxar conversa sozinho.'); }
+  else { stopProactive(); toast('Vontade própria desligada — só responde quando você falar.'); }
+  updateProactiveUI();
+}
+function updateProactiveUI(){
+  const b=$('#proactBtn'); if(!b) return;
+  b.classList.toggle('on',proactiveOn);
+  $('#proactLbl').textContent = proactiveOn ? 'Vontade própria: ligada' : 'Resposta autônoma';
+  $('#proactSub').textContent = proactiveOn ? 'Ele puxa conversa sozinho de tempos em tempos' : 'Ele só responde quando você fala';
 }
 
 /* ---------- SETTINGS ---------- */
@@ -1186,6 +1204,7 @@ function toggleScreenAwake(){
   updateAwakeUI();
 }
 $('#awakeBtn').onclick=()=>{ primeTTS(); toggleScreenAwake(); };
+$('#proactBtn').onclick=()=>{ primeTTS(); toggleProactive(); };
 if(screenAwake) reqWake();   // restaura ao abrir
 ['touchstart','touchmove','touchend'].forEach(ev=>
   $('#pocket').addEventListener(ev,e=>{ if(!e.target.closest('#pkHold')) e.preventDefault(); },{passive:false}));
