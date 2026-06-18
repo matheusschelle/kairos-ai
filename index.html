@@ -782,7 +782,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v16 · 17/06';              // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v17 · 18/06';              // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -1135,9 +1135,6 @@ async function loadElevenVoices(){
 /* Áudio compartilhado pra TTS do ElevenLabs (roteia certo no Bluetooth) */
 let ttsAudio=null;
 function getTtsAudio(){
-  // Quando o fone está armado, usa o MESMO elemento da âncora — assim o iOS
-  // nunca troca de elemento ativo e o Media Session permanece vivo após o TTS.
-  if(foneArmed && foneAnchor) return foneAnchor;
   if(!ttsAudio){ ttsAudio=new Audio(); ttsAudio.setAttribute('playsinline',''); ttsAudio.setAttribute('webkit-playsinline',''); }
   return ttsAudio;
 }
@@ -1187,8 +1184,6 @@ async function speakEleven(text){
   if(!res.ok){ throw new Error('ElevenLabs '+res.status); }
   const blob=await res.blob();
   const a=getTtsAudio();
-  // Quando foneAnchor é usado como TTS: desativa loop para que onended dispare
-  if(a===foneAnchor) a.loop=false;
   return new Promise(resolve=>{
     try{ a.src=URL.createObjectURL(blob); }catch(e){ resolve(); return; }
     try{ a.preservesPitch=true; a.mozPreservesPitch=true; a.webkitPreservesPitch=true; }catch(e){}
@@ -1220,8 +1215,7 @@ function speakNative(text){
 }
 async function speakAsync(text){
   if(!text) return;
-  // Quando foneArmed: getTtsAudio() devolve foneAnchor → um único elemento para TTS e âncora.
-  // O finally restaura o loop silencioso e re-registra os handlers do Media Session.
+  // Âncora e TTS são elementos separados — âncora usa srcObject do AudioContext (nunca para).
   try{
     if(settings.elevenKey){
       try{ speechSynthesis.cancel(); }catch(e){}
@@ -1230,14 +1224,8 @@ async function speakAsync(text){
     }
     await speakNative(text);
   } finally {
-    if(foneArmed && foneAnchor){
-      // Restaura o loop silencioso (o elemento foi usado como TTS e ficou parado)
-      foneAnchor.onended=null; foneAnchor.onerror=null; foneAnchor.loop=true;
-      if(foneAnchor.paused || foneAnchor.ended){
-        foneAnchor.src=URL.createObjectURL(buildSilentWav(5));
-        const pr=foneAnchor.play(); if(pr&&pr.catch) pr.catch(()=>{});
-      }
-      // Re-registra handlers — iOS pode deregistrar após fim de reprodução
+    if(foneArmed){
+      // Re-registra handlers após fala — iOS pode resetar Media Session
       ['play','pause','stop','previoustrack','nexttrack'].forEach(act=>{
         try{ navigator.mediaSession.setActionHandler(act,()=>onFoneTap(act)); }catch(e){}
       });
@@ -1290,15 +1278,12 @@ function primeTTS(){
     if(!voices.length) voices=speechSynthesis.getVoices();
   }catch(e){}
   try{ const ctx=getCtx(); if(ctx&&ctx.state==='suspended') ctx.resume(); }catch(e){}
-  // destrava o <audio> do ElevenLabs neste gesto — mas só se o fone NÃO estiver armado
-  // (quando armado, getTtsAudio() devolve foneAnchor que já está tocando — não interromper)
-  if(!foneArmed){
-    try{
-      const a=getTtsAudio();
-      if(!a._unlocked){ a.muted=true; a.src=URL.createObjectURL(buildSilentWav(1));
-        const pr=a.play(); if(pr&&pr.then) pr.then(()=>{ a.pause(); a.currentTime=0; a.muted=false; a._unlocked=true; }).catch(()=>{ a.muted=false; }); }
-    }catch(e){}
-  }
+  // destrava o <audio> do ElevenLabs neste gesto (senão o iOS bloqueia o play pós-fetch)
+  try{
+    const a=getTtsAudio();
+    if(!a._unlocked){ a.muted=true; a.src=URL.createObjectURL(buildSilentWav(1));
+      const pr=a.play(); if(pr&&pr.then) pr.then(()=>{ a.pause(); a.currentTime=0; a.muted=false; a._unlocked=true; }).catch(()=>{ a.muted=false; }); }
+  }catch(e){}
 }
 
 /* ---------- MEMORY EXTRACTION ---------- */
@@ -1828,12 +1813,12 @@ $('#ftStop').onclick=stopFoneTest;
    segurar os controles de mídia; aí 1 toque no fone = play/pause = alterna
    a conversa por voz. Também aparece um controle na tela de bloqueio. */
 let foneAnchor=null, foneArmed=false, foneTaps=0;
+let foneOsc=null, foneOscCtx=null; // AudioContext que gera o stream âncora
 let foneTestMode=false, foneTestHits=0, foneTestTimer=null;
 /* TESTE DO TOQUE DO FONE: confirma se o sensor do botão (play/pause do fone)
    chega no app, sem iniciar conversa. Cada toque vira um "✓ detectado". */
 function startFoneTest(){
-  if(!foneArmed){ armFone(); }   // precisa da âncora tocando pra o iOS entregar os toques
-  if(!foneArmed){ toast('Toque em “Ativar controle do fone” primeiro.'); return; }
+  if(!foneArmed){ armFone(); toast('Ativando… aguarde 2s e toque “Testar” de novo.'); return; }
   foneTestMode=true; foneTestHits=0;
   const box=$('#foneTest');
   box.classList.add('on','waiting'); box.classList.remove('hit');
@@ -1866,9 +1851,7 @@ function stopFoneTest(){
   if(foneTestHits>0) toast('✅ Sensor do fone OK ('+foneTestHits+' toque'+(foneTestHits===1?'':'s')+').');
   else toast('Nenhum toque chegou. Veja as dicas no diagnóstico.');
 }
-/* Áudio quase-silencioso (amplitude mínima, ~-90 dBFS = inaudível). iOS NÃO
-   engaja os controles remotos com volume 0 nem com samples 100% zerados —
-   precisa "ver" áudio real tocando. */
+/* buildSilentWav: usado só para desbloquear ttsAudio no primeTTS */
 function buildSilentWav(sec){
   const sr=8000, n=sr*sec, buf=new ArrayBuffer(44+n*2), dv=new DataView(buf);
   const w=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
@@ -1876,21 +1859,31 @@ function buildSilentWav(sec){
   dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
   dv.setUint32(24,sr,true); dv.setUint32(28,sr*2,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
   w(36,'data'); dv.setUint32(40,n*2,true);
-  for(let i=0;i<n;i++) dv.setInt16(44+i*2, (i&1)?200:-200, true); // ±200 LSB — inaudível mas acima do limiar de silêncio do iOS
+  for(let i=0;i<n;i++) dv.setInt16(44+i*2, (i&1)?1:-1, true);
   return new Blob([buf],{type:'audio/wav'});
 }
 function foneMeta(){
   if(!('mediaSession' in navigator)) return;
-  try{ navigator.mediaSession.metadata=new MediaMetadata({
-    title:(persona&&persona.name)||'Kairos AI', artist:'Toque o fone pra falar' }); }catch(e){}
+  try{
+    navigator.mediaSession.metadata=new MediaMetadata({
+      title:(persona&&persona.name)||'Kairos AI',
+      artist:'Toque o fone pra falar',
+      // artwork é obrigatório para iOS exibir o widget Now Playing e rotear o botão do AirPods
+      artwork:[
+        {src:'https://matheusschelle.github.io/kairos-ai/icon-192.png',sizes:'192x192',type:'image/png'},
+        {src:'https://matheusschelle.github.io/kairos-ai/icon-512.png',sizes:'512x512',type:'image/png'}
+      ]
+    });
+  }catch(e){}
 }
 let foneErr='';
 function foneDiag(){
   const el=$('#foneDiag'); if(!el) return;
   const ms=('mediaSession' in navigator);
-  const playing=foneAnchor && !foneAnchor.paused;
-  el.innerHTML = `Media Session: <b>${ms?'sim':'NÃO'}</b> · âncora: <b>${foneArmed?(playing?'tocando':'pausada'):'não armada'}</b> · toques: <b>${foneTaps}</b>`
-    + (foneErr?` · <span style="color:#ff9b9b">${foneErr}</span>`:'');
+  const playing=foneAnchor&&!foneAnchor.paused;
+  const oscSt=foneOscCtx?foneOscCtx.state:'off';
+  el.innerHTML=`Media Session: <b>${ms?'sim':'NÃO'}</b> · âncora: <b>${foneArmed?(playing?'ativa':'parada'):'não armada'}</b> · osc: <b>${oscSt}</b> · toques: <b>${foneTaps}</b>`
+    +(foneErr?` · <span style="color:#ff9b9b">${foneErr}</span>`:'');
 }
 /* Toque do fone = PUSH-TO-TALK: 1 toque começa a ouvir, outro toque envia e
    ele responde UMA vez (sem loop contínuo). */
@@ -1914,22 +1907,42 @@ function onFoneTap(src){
   if(foneAnchor && foneArmed){ const pr=foneAnchor.play(); if(pr&&pr.catch) pr.catch(()=>{}); }
 }
 function armFone(){
-  // Se armado mas âncora morreu (iOS pausou), re-arma do zero
+  // Re-arma se âncora morreu (iOS pode suspender o AudioContext em background)
   if(foneArmed && foneAnchor && foneAnchor.paused){
     foneArmed=false;
-    try{ if(foneAnchor.parentNode) foneAnchor.parentNode.removeChild(foneAnchor); }catch(e){}
+    try{ foneOsc&&foneOsc.stop(); }catch(e){}
+    try{ foneOscCtx&&foneOscCtx.close(); }catch(e){}
+    foneOsc=null; foneOscCtx=null;
+    try{ foneAnchor.parentNode&&foneAnchor.parentNode.removeChild(foneAnchor); }catch(e){}
     foneAnchor=null;
   }
-  if(foneArmed){ try{ foneAnchor && foneAnchor.play(); }catch(e){} foneDiag(); return; }
+  if(foneArmed){
+    try{ if(foneOscCtx&&foneOscCtx.state==='suspended') foneOscCtx.resume(); }catch(e){}
+    try{ foneAnchor&&foneAnchor.play(); }catch(e){}
+    foneDiag(); return;
+  }
   try{
+    /* Âncora via AudioContext: oscilador 432 Hz a -50 dB → MediaStream contínuo
+       sem gaps de loop → iOS reconhece como mídia ativa e roteia botão do AirPods */
+    foneOscCtx=new(window.AudioContext||window.webkitAudioContext)();
+    foneOscCtx.resume().catch(()=>{});
+    foneOsc=foneOscCtx.createOscillator();
+    const gain=foneOscCtx.createGain();
+    const dest=foneOscCtx.createMediaStreamDestination();
+    gain.gain.value=0.003; // ~-50 dB: inaudível mas não silêncio absoluto
+    foneOsc.frequency.value=432;
+    foneOsc.connect(gain); gain.connect(dest); foneOsc.start();
+
     foneAnchor=new Audio();
-    foneAnchor.loop=true; foneAnchor.volume=1; foneAnchor.preload='auto';
-    foneAnchor.setAttribute('playsinline',''); foneAnchor.setAttribute('webkit-playsinline','');
-    foneAnchor.src=URL.createObjectURL(buildSilentWav(5));
-    try{ foneAnchor.style.display='none'; document.body.appendChild(foneAnchor); }catch(e){}
+    foneAnchor.setAttribute('playsinline','');
+    foneAnchor.setAttribute('webkit-playsinline','');
+    foneAnchor.srcObject=dest.stream; // stream vivo — sem loop, sem gaps
+    foneAnchor.volume=1;
+    try{ document.body.appendChild(foneAnchor); }catch(e){}
+
     const p=foneAnchor.play();
     const onok=()=>{
-      foneArmed=true; foneErr=''; foneAnchor._unlocked=true;
+      foneArmed=true; foneErr='';
       if('mediaSession' in navigator){
         foneMeta();
         try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
@@ -1941,12 +1954,11 @@ function armFone(){
       toast('● Controle do fone ativo. Pressione o botão do fone.');
       foneDiag();
     };
-    if(p && p.then) p.then(onok).catch(err=>{
-      foneErr='áudio bloqueado: '+(err&&err.name||'?');
-      updateArmFoneUI();
-      foneDiag();
+    if(p&&p.then) p.then(onok).catch(err=>{
+      foneErr='bloqueado: '+(err&&err.name||'?');
+      updateArmFoneUI(); foneDiag();
     }); else onok();
-  }catch(e){ foneErr='falha ao armar'; updateArmFoneUI(); foneDiag(); }
+  }catch(e){ foneErr='falha: '+e.message; updateArmFoneUI(); foneDiag(); }
 }
 function updateArmFoneUI(){
   const btn=$('#armFoneBtn'); if(!btn) return;
@@ -1962,17 +1974,24 @@ function updateArmFoneUI(){
     btn.style.cssText='';
   }
 }
-/* mantém a âncora viva ao voltar pro app */
+/* Ao voltar pro app: resume AudioContext + re-registra handlers */
 document.addEventListener('visibilitychange',()=>{
-  if(foneArmed && document.visibilityState==='visible'){
-    try{ foneAnchor.play(); }catch(e){}
-    // Re-registra handlers — iOS deregistra Media Session ao ir pra background
+  if(foneArmed&&document.visibilityState==='visible'){
+    try{ if(foneOscCtx&&foneOscCtx.state==='suspended') foneOscCtx.resume(); }catch(e){}
+    try{ foneAnchor&&foneAnchor.play(); }catch(e){}
     ['play','pause','stop','previoustrack','nexttrack'].forEach(a=>{
       try{ navigator.mediaSession.setActionHandler(a,()=>onFoneTap(a)); }catch(e){}
     });
     try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
   }
 });
+/* Heartbeat: garante AudioContext rodando e Media Session ativo a cada 5s */
+setInterval(()=>{
+  if(!foneArmed) return;
+  try{ if(foneOscCtx&&foneOscCtx.state==='suspended') foneOscCtx.resume(); }catch(e){}
+  if(foneAnchor&&foneAnchor.paused){ const pr=foneAnchor.play(); if(pr&&pr.catch) pr.catch(()=>{}); }
+  try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
+},5000);
 
 /* ================= IDENTIDADE DO AGENTE ================= */
 function showPersona(){
