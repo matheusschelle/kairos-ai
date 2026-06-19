@@ -86,44 +86,113 @@
   body.offline .orb-ring{opacity:.25;animation-duration:30s}
 
   /* ---------- HOME / ORB ---------- */
-  #home{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
-    overflow-y:auto;-webkit-overflow-scrolling:touch;padding-top:6px}
+  #home{flex:1;display:flex;overflow:hidden;position:relative}
   #home::-webkit-scrollbar{display:none}
-  .orb-wrap{position:relative;width:230px;height:230px;margin:14px 0 6px;display:grid;place-items:center}
+
+  /* Left module panel */
+  .mod-panel{width:178px;min-width:178px;display:flex;flex-direction:column;
+    background:rgba(6,8,22,.85);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+    border-right:1px solid rgba(139,92,255,.18);overflow-y:auto;overflow-x:hidden;padding:6px 0 0}
+  .mod-panel::-webkit-scrollbar{display:none}
+  .mod-item{display:flex;align-items:center;gap:9px;padding:10px 10px;cursor:pointer;
+    border-radius:12px;margin:1px 6px;transition:background .15s;position:relative}
+  .mod-item:active,.mod-item:hover{background:rgba(139,92,255,.15)}
+  .mod-ico{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;
+    border-radius:8px;background:rgba(139,92,255,.12);border:1px solid rgba(139,92,255,.22)}
+  .mod-ico svg{width:15px;height:15px;stroke:var(--cyan);fill:none;stroke-width:1.7}
+  .mod-txt{flex:1;min-width:0}
+  .mod-txt b{display:block;font-size:11px;font-weight:700;color:#cdd6ff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mod-txt small{display:block;font-size:9px;color:var(--ink-dim);margin-top:1px}
+  .mod-dot{width:7px;height:7px;border-radius:50%;background:#2a3350;flex:0 0 7px;transition:.2s}
+  .mod-dot.live{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+  .mod-dot.mod-dot-off{background:#333}
+  .mod-sep{height:1px;background:rgba(139,92,255,.12);margin:5px 14px}
+
+  /* Neural card inside left panel */
+  .neural-card{margin:6px 8px 4px;padding:11px 12px;border-radius:13px;
+    background:linear-gradient(135deg,rgba(34,224,255,.1),rgba(139,92,255,.08));
+    border:1px solid rgba(34,224,255,.18)}
+  .nc-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+  .nc-label{font-size:8px;letter-spacing:2px;color:var(--cyan);font-weight:700}
+  .nc-tog{width:34px;height:18px;border-radius:9px;background:#15182e;position:relative;cursor:pointer;
+    border:1px solid rgba(34,224,255,.25);transition:.2s}
+  .nc-tog span{position:absolute;top:3px;left:3px;width:10px;height:10px;border-radius:50%;
+    background:#3a3f60;transition:.2s}
+  body.online .nc-tog{background:rgba(34,224,255,.2);border-color:var(--cyan)}
+  body.online .nc-tog span{left:19px;background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+  .nc-status{font-size:10.5px;font-weight:700;color:#dfe6ff;margin:1px 0 4px}
+  .nc-wave{width:100%;display:block;height:20px}
+
+  /* Agent profile at bottom of left panel */
+  .agent-prof{display:flex;align-items:center;gap:8px;padding:9px 12px 10px;
+    border-top:1px solid rgba(139,92,255,.12);margin-top:auto}
+  .ap-av{width:30px;height:30px;flex:0 0 30px;border-radius:50%;overflow:hidden;
+    background:rgba(139,92,255,.18);border:1.5px solid rgba(139,92,255,.35);
+    display:grid;place-items:center}
+  .ap-av img{width:100%;height:100%;object-fit:cover}
+  .ap-ph svg{width:16px;height:16px;stroke:var(--violet);fill:none;stroke-width:1.7}
+  .ap-info{flex:1;min-width:0}
+  .ap-info b{display:block;font-size:11px;font-weight:700;color:#cdd6ff;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ap-info small{display:block;font-size:8.5px;letter-spacing:1.5px;color:var(--ink-dim)}
+  .ap-dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;background:#2a3350;transition:.2s}
+  body.online .ap-dot{background:var(--ok);box-shadow:0 0 7px var(--ok)}
+
+  /* Right: status overlay */
+  .stat-overlay{flex:1;display:flex;flex-direction:column;align-items:flex-end;
+    padding:10px 10px 80px;gap:8px;overflow:hidden;pointer-events:none}
+  .stat-bubble{padding:12px 14px;border-radius:16px;width:155px;
+    background:rgba(6,8,22,.8);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border:1px solid rgba(139,92,255,.22);pointer-events:auto}
+  .sb-lbl{font-size:8px;letter-spacing:1.8px;color:var(--ink-dim);font-weight:700;
+    text-transform:uppercase;margin-bottom:5px}
+  .sb-big{font-size:30px;font-weight:700;color:var(--cyan);line-height:1}
+  .sb-bar{height:3px;border-radius:2px;background:#1a2040;margin-top:8px;overflow:hidden}
+  .sb-fill{height:100%;border-radius:2px;
+    background:linear-gradient(90deg,var(--cyan),var(--violet));transition:width .6s ease}
+  .sb-voice{font-size:12.5px;font-weight:700;color:#dfe6ff;margin-bottom:5px}
+  .sb-waveform{width:100%;height:22px;display:block;margin-bottom:5px}
+  .sb-mic-row{display:flex;justify-content:center}
+  .sb-mic-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(34,224,255,.35);
+    background:rgba(34,224,255,.09);display:grid;place-items:center;cursor:pointer;transition:.15s}
+  .sb-mic-btn:active{transform:scale(.9)}
+  .sb-mic-btn svg{width:17px;height:17px;stroke:var(--cyan);fill:none;stroke-width:1.8}
+  body.listening .sb-mic-btn{background:rgba(255,61,240,.2);border-color:var(--magenta);
+    box-shadow:0 0 12px rgba(255,61,240,.5)}
+  body.listening .sb-mic-btn svg{stroke:var(--magenta)}
+  body.listening .sb-voice{color:var(--magenta)}
+
+  /* Compact suggestions */
+  .sugg-compact{display:flex;flex-direction:column;gap:6px;width:155px;
+    pointer-events:auto;margin-top:auto}
+  .sg2{padding:8px 11px;border-radius:11px;font-size:10.5px;color:#a8b4d8;cursor:pointer;
+    background:rgba(6,8,22,.75);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(139,92,255,.18);transition:.15s;text-align:right;line-height:1.35}
+  .sg2:active{transform:scale(.97);border-color:rgba(34,224,255,.45)}
+
+  /* ORB: absolute center-bottom overlay */
+  .orb-wrap{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+    width:148px;height:148px;display:grid;place-items:center;z-index:2;pointer-events:none}
   .orb-ring{position:absolute;border-radius:50%;border:1.5px solid transparent}
   .orb-ring.r1{inset:0;border-top-color:rgba(34,224,255,.7);border-right-color:rgba(34,224,255,.15);
     animation:spin 7s linear infinite}
-  .orb-ring.r2{inset:20px;border-bottom-color:rgba(255,61,240,.7);border-left-color:rgba(255,61,240,.12);
+  .orb-ring.r2{inset:16px;border-bottom-color:rgba(255,61,240,.7);border-left-color:rgba(255,61,240,.12);
     animation:spin 5s linear infinite reverse}
-  .orb-ring.r3{inset:40px;border-top-color:rgba(245,201,105,.55);
+  .orb-ring.r3{inset:32px;border-top-color:rgba(245,201,105,.55);
     animation:spin 11s linear infinite}
-  .orb-core{width:128px;height:128px;border-radius:50%;position:relative;display:grid;place-items:center;
+  .orb-core{width:88px;height:88px;border-radius:50%;position:relative;display:grid;place-items:center;
     background:radial-gradient(circle at 50% 40%,rgba(139,92,255,.55),rgba(34,224,255,.25) 55%,rgba(5,6,15,.1) 75%);
     box-shadow:0 0 50px rgba(139,92,255,.5),inset 0 0 40px rgba(34,224,255,.3);
     animation:breathe 4s ease-in-out infinite}
-  .orb-core svg{width:64px;height:64px;filter:drop-shadow(0 0 10px rgba(34,224,255,.8))}
+  .orb-core svg{width:44px;height:44px;filter:drop-shadow(0 0 10px rgba(34,224,255,.8))}
   body.listening .orb-core{animation:breathe 1s ease-in-out infinite;
     box-shadow:0 0 70px rgba(255,61,240,.7),inset 0 0 40px rgba(255,61,240,.4)}
   body.thinking .orb-core{animation:breathe 1.6s ease-in-out infinite;
     box-shadow:0 0 70px rgba(245,201,105,.6),inset 0 0 40px rgba(245,201,105,.35)}
 
-  .greet{text-align:center;margin:2px 0 16px}
-  .greet h2{font-size:23px;font-weight:600;letter-spacing:.3px}
-  .greet h2 b{font-weight:700;background:linear-gradient(90deg,var(--cyan),var(--violet));
-    -webkit-background-clip:text;background-clip:text;color:transparent}
-  .greet p{font-size:13px;color:var(--ink-dim);margin-top:3px}
-
-  .stat-row{display:flex;gap:10px;width:100%;max-width:420px;margin-bottom:14px}
-  .stat{flex:1;background:var(--glass);border:1px solid var(--glass-brd);border-radius:16px;
-    padding:13px 12px;backdrop-filter:blur(16px)}
-  .stat .k{font-size:9px;letter-spacing:1.5px;color:var(--ink-dim);font-weight:700;text-transform:uppercase}
-  .stat .v{font-size:18px;font-weight:700;margin-top:4px;display:flex;align-items:center;gap:6px}
-  .stat .v .mini-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
-  .stat.cyan .v{color:var(--cyan)} .stat.mag .v{color:var(--magenta)} .stat.gold .v{color:var(--gold)}
-
-  .sugg{width:100%;max-width:420px;display:flex;flex-direction:column;gap:9px;margin-bottom:10px}
-  .sugg .sg-title{font-size:10px;letter-spacing:2px;color:var(--ink-dim);font-weight:700;
-    text-transform:uppercase;margin:4px 2px}
+  /* keep old .stat / .greet / .chip for chat context (hidden in new layout) */
+  .greet{display:none}.stat-row{display:none}.sugg{display:none}
   .chip{display:flex;align-items:center;gap:11px;padding:13px 15px;border-radius:15px;
     background:var(--glass);border:1px solid var(--glass-brd);backdrop-filter:blur(14px);
     font-size:14px;cursor:pointer;transition:.18s}
@@ -161,9 +230,15 @@
   .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
 
   /* ---------- DOCK ---------- */
-  .dock{display:flex;align-items:center;gap:10px;padding:8px 4px 2px}
+  .dock{display:flex;flex-direction:column;gap:6px;padding:8px 4px 2px}
+  .attach-preview{display:flex;align-items:center;gap:8px;padding:0 6px 2px}
+  .attach-btn{width:32px;height:32px;flex:0 0 32px;border-radius:10px;border:none;cursor:pointer;
+    background:rgba(139,92,255,.18);display:grid;place-items:center}
+  .attach-btn svg{width:16px;height:16px;stroke:var(--violet);fill:none;stroke-width:1.8}
+  .attach-btn:active{background:rgba(139,92,255,.35)}
   .txtfield{flex:1;display:flex;align-items:center;gap:8px;background:var(--glass);
-    border:1px solid var(--glass-brd);border-radius:17px;padding:4px 6px 4px 16px;backdrop-filter:blur(16px)}
+    border:1px solid var(--glass-brd);border-radius:17px;padding:4px 6px 4px 12px;backdrop-filter:blur(16px)}
+  .dock-row{display:flex;align-items:center;gap:10px;width:100%}
   .txtfield input{flex:1;background:none;border:none;outline:none;color:var(--ink);font-size:15px;
     padding:10px 0;font-family:inherit}
   .txtfield input::placeholder{color:var(--ink-dim)}
@@ -297,6 +372,14 @@
   .scrl-dot{width:11px;height:11px;border-radius:50%;background:#2a3350;flex:0 0 auto;transition:background .2s,box-shadow .2s}
   .scrl-btn.on{border-color:rgba(34,224,255,.6);background:linear-gradient(135deg,rgba(34,224,255,.22),rgba(139,92,255,.18))}
   .scrl-btn.on .scrl-dot{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+  /* Reset old scrl-btn/pocket-btn styles inside mod-panel */
+  .mod-panel .scrl-btn,.mod-panel .pocket-btn{width:auto;max-width:none;gap:9px;
+    margin:1px 6px;margin-bottom:1px;padding:10px 10px;border-radius:12px;
+    background:none;border:none;font-family:inherit}
+  .mod-panel .scrl-btn.on{background:rgba(34,224,255,.12);border-color:transparent}
+  .mod-panel .scrl-btn svg,.mod-panel .pocket-btn svg{display:none}
+  .mod-panel .scrl-btn .pb-meta,.mod-panel .pocket-btn .pb-meta{display:none}
+  .mod-panel .scrl-dot{display:none}
 
   /* ---------- AUTH / LOGIN ---------- */
   .auth{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:24px;
@@ -482,6 +565,96 @@
 
   <!-- HOME -->
   <div id="home">
+    <!-- ── Left module panel ── -->
+    <nav class="mod-panel">
+      <div class="mod-item" id="modNeural">
+        <div class="mod-ico"><svg viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0116 0v2"/><path d="M4 14a2 2 0 012 2v2a2 2 0 01-2 2 2 2 0 01-2-2v-2a2 2 0 012-2zM20 14a2 2 0 00-2 2v2a2 2 0 002 2 2 2 0 002-2v-2a2 2 0 00-2-2z"/></svg></div>
+        <div class="mod-txt"><b>Neural Link</b><small id="modNeuralSt">ATIVO</small></div>
+        <span class="mod-dot live" id="modNeuralDot"></span>
+      </div>
+      <div class="mod-item" id="modCognition">
+        <div class="mod-ico"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 00-4 12.7V17a2 2 0 002 2h4a2 2 0 002-2v-2.3A7 7 0 0012 2zM9 22h6"/></svg></div>
+        <div class="mod-txt"><b>Cognição</b><small id="modCognitionSt">0 sessões</small></div>
+      </div>
+      <div class="mod-item" id="modMemory">
+        <div class="mod-ico"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+        <div class="mod-txt"><b>Memory Core</b><small id="modMemorySt">0 fatos</small></div>
+      </div>
+      <div class="mod-item" id="modEmo">
+        <div class="mod-ico"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8L12 21.2l8.8-8.8a5.5 5.5 0 000-7.8z"/></svg></div>
+        <div class="mod-txt"><b>Mapa Emocional</b><small id="modEmoSt">Estável</small></div>
+      </div>
+      <div class="mod-item" id="modVoiceItem">
+        <div class="mod-ico"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg></div>
+        <div class="mod-txt"><b>Interface de Voz</b><small id="modVoiceSt">Aguardando</small></div>
+      </div>
+      <div class="mod-sep"></div>
+      <button class="mod-item scrl-btn" id="proactBtn" style="background:none;border:none;width:100%;text-align:left;font-family:inherit">
+        <div class="mod-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3c-2.8 3-4 6-4 9s1.2 6 4 9M12 3c2.8 3 4 6 4 9s-1.2 6-4 9M3 12h18"/></svg></div>
+        <div class="mod-txt"><b id="proactLbl">Learning Stream</b><small id="proactSub">Resposta autônoma</small></div>
+        <span class="mod-dot mod-dot-off" id="proactDot"></span>
+      </button>
+      <button class="mod-item scrl-btn" id="awakeBtn" style="background:none;border:none;width:100%;text-align:left;font-family:inherit">
+        <div class="mod-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></div>
+        <div class="mod-txt"><b id="awakeLbl">Tela acesa</b><small id="awakeSub">Modo Ativo</small></div>
+        <span class="mod-dot mod-dot-off" id="awakeDot"></span>
+      </button>
+      <button class="mod-item pocket-btn" id="pocketBtn" style="background:none;border:none;width:100%;text-align:left;font-family:inherit;margin:1px 6px;border-radius:12px">
+        <div class="mod-ico"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div>
+        <div class="mod-txt"><b>Modo Bolso</b><small>Travar tela</small></div>
+      </button>
+      <div class="mod-sep"></div>
+      <button class="mod-item" id="modSettings" onclick="openSettings()" style="background:none;border:none;width:100%;text-align:left;font-family:inherit">
+        <div class="mod-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7.7 1.6 1.6 0 01-3.2 0 1.6 1.6 0 00-2.7-.7l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00-.7-2.7 1.6 1.6 0 010-3.2 1.6 1.6 0 00.7-2.7l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 002.7-.7 1.6 1.6 0 013.2 0 1.6 1.6 0 002.7.7l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00.7 2.7 1.6 1.6 0 010 3.2z"/></svg></div>
+        <div class="mod-txt"><b>Configurações</b><small>Personalizar</small></div>
+      </button>
+
+      <!-- Neural card -->
+      <div class="neural-card">
+        <div class="nc-row">
+          <span class="nc-label">NEURAL LINK</span>
+          <div class="nc-tog" id="ncTog"><span></span></div>
+        </div>
+        <div class="nc-status" id="ncStatus">ATIVO</div>
+        <canvas class="nc-wave" id="ncWave" height="20"></canvas>
+      </div>
+
+      <!-- Agent profile -->
+      <div class="agent-prof">
+        <div class="ap-av" id="apAvatar"><div class="ap-ph"><svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 10-16 0M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg></div></div>
+        <div class="ap-info"><b id="apName">Kairos</b><small>AI AGENT</small></div>
+        <span class="ap-dot" id="apDot"></span>
+      </div>
+    </nav>
+
+    <!-- ── Right overlay: status cards + suggestions ── -->
+    <div class="stat-overlay">
+      <!-- Config progress card -->
+      <div class="stat-bubble">
+        <div class="sb-lbl">Configuração</div>
+        <div class="sb-big" id="sbPct">0%</div>
+        <div class="sb-bar"><div class="sb-fill" id="sbFill" style="width:0%"></div></div>
+      </div>
+      <!-- Voice status card -->
+      <div class="stat-bubble">
+        <div class="sb-lbl">Entrada de Voz</div>
+        <div class="sb-voice" id="sbVoice">Aguardando</div>
+        <canvas class="sb-waveform" id="sbWave" height="22"></canvas>
+        <div class="sb-mic-row">
+          <button class="sb-mic-btn" id="sbMicBtn">
+            <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M5 11a7 7 0 0014 0"/></svg>
+          </button>
+        </div>
+      </div>
+      <!-- Compact suggestions -->
+      <div class="sugg-compact">
+        <div class="sg2" data-q="Bora trocar uma ideia. Me provoca com algo interessante pra gente conversar agora.">💬 Trocar uma ideia</div>
+        <div class="sg2" data-q="Me ajuda a pensar fora da caixa sobre um problema que estou remoendo.">💡 Pensar fora da caixa</div>
+        <div class="sg2" data-q="Estou travado num processo criativo. Me faz perguntas pra me destravar.">✨ Destravar criatividade</div>
+      </div>
+    </div>
+
+    <!-- ORB (absolute, center-bottom) -->
     <div class="orb-wrap">
       <div class="orb-ring r1"></div>
       <div class="orb-ring r2"></div>
@@ -493,44 +666,6 @@
         </svg>
       </div>
     </div>
-    <div class="greet">
-      <h2>Olá, <b id="greetName">Matheus</b></h2>
-      <p id="greetSub">Seu agente ainda não tem nome.</p>
-    </div>
-    <div class="stat-row">
-      <div class="stat cyan"><div class="k">Status</div><div class="v" id="statusStat"><span class="mini-dot"></span>Online</div></div>
-      <div class="stat mag"><div class="k">Memória</div><div class="v" id="memCount">0</div></div>
-      <div class="stat gold"><div class="k">Sessões</div><div class="v" id="sessCount">0</div></div>
-    </div>
-    <button class="scrl-btn" id="proactBtn">
-      <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 00-4 12.7V17a2 2 0 002 2h4a2 2 0 002-2v-2.3A7 7 0 0012 2zM9 22h6"/></svg>
-      <div class="pb-meta"><b id="proactLbl">Resposta autônoma</b><small id="proactSub">Ele puxa conversa sozinho de tempos em tempos</small></div>
-      <span class="scrl-dot" id="proactDot"></span>
-    </button>
-    <button class="scrl-btn" id="awakeBtn">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>
-      <div class="pb-meta"><b id="awakeLbl">Manter tela acesa</b><small id="awakeSub">Tela não apaga enquanto estiver aqui</small></div>
-      <span class="scrl-dot" id="awakeDot"></span>
-    </button>
-    <button class="pocket-btn" id="pocketBtn">
-      <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
-      <div class="pb-meta"><b>Travar tela (Modo Bolso)</b><small>Tela inerte ao toque · agente segue ouvindo</small></div>
-    </button>
-    <div class="sugg">
-      <div class="sg-title">Pra começar uma conversa</div>
-      <div class="chip" data-q="Bora trocar uma ideia. Me provoca com algo interessante pra gente conversar agora.">
-        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        <span>Trocar uma ideia sobre qualquer coisa</span>
-      </div>
-      <div class="chip" data-q="Me ajuda a pensar fora da caixa sobre um problema que estou remoendo.">
-        <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 00-4 12.7V17a2 2 0 002 2h4a2 2 0 002-2v-2.3A7 7 0 0012 2zM9 22h6"/></svg>
-        <span>Pensar fora da caixa</span>
-      </div>
-      <div class="chip" data-q="Estou travado num processo criativo. Me faz perguntas pra me destravar.">
-        <svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/></svg>
-        <span>Destravar um processo criativo</span>
-      </div>
-    </div>
   </div>
 
   <!-- CHAT -->
@@ -540,17 +675,27 @@
 
   <!-- DOCK -->
   <div class="dock">
-    <div class="txtfield">
-      <input id="txt" type="text" placeholder="Fale ou escreva…" autocomplete="off" enterkeyhint="send">
-      <button class="send" id="sendBtn">
-        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-      </button>
+    <div class="attach-preview" id="attachPreview" style="display:none">
+      <img id="attachThumb" src="" alt="" style="max-height:56px;border-radius:8px;border:1.5px solid rgba(139,92,255,.5)">
+      <button id="attachClear" style="background:rgba(255,61,240,.2);border:none;color:#fff;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;line-height:1;display:grid;place-items:center">✕</button>
     </div>
-    <div class="mic" id="micBtn">
-      <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg>
-      <div class="wave"><b></b><b></b><b></b><b></b><b></b></div>
+    <div class="dock-row">
+      <div class="txtfield">
+        <button class="attach-btn" id="attachBtn" title="Enviar imagem">
+          <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <input id="txt" type="text" placeholder="Fale ou escreva…" autocomplete="off" enterkeyhint="send">
+        <button class="send" id="sendBtn">
+          <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </div>
+      <div class="mic" id="micBtn">
+        <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg>
+        <div class="wave"><b></b><b></b><b></b><b></b><b></b></div>
+      </div>
     </div>
   </div>
+  <input type="file" id="attachInput" accept="image/*" style="display:none">
   <div class="statusline" id="statusline"></div>
 </div>
 
@@ -782,7 +927,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v17 · 18/06';              // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v18 · 19/06';              // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -817,58 +962,152 @@ VOCÊ CRIA CONTEÚDO (por voz ou texto). Quando o Matheus pedir, você produz de
 Fale em português do Brasil, natural e humano, como uma conversa real entre duas pessoas. Como é por voz, seja fluido e direto; aprofunde quando ele pedir profundidade.${facts}`;
 }
 
-/* ---------- NEURAL BACKGROUND ---------- */
+/* ---------- NEURAL BACKGROUND (state-reactive) ---------- */
+window._neuralState='idle';
 (function(){
   const c=$('#neural'), x=c.getContext('2d'); let W,H,P=[];
-  function rs(){W=c.width=innerWidth*devicePixelRatio;H=c.height=innerHeight*devicePixelRatio;
-    c.style.width=innerWidth+'px';c.style.height=innerHeight+'px'}
+  function rs(){
+    W=c.width=innerWidth*devicePixelRatio; H=c.height=innerHeight*devicePixelRatio;
+    c.style.width=innerWidth+'px'; c.style.height=innerHeight+'px';
+  }
   rs(); addEventListener('resize',rs);
-  const N=Math.min(64, Math.floor(innerWidth/7));
-  for(let i=0;i<N;i++)P.push({x:Math.random()*W,y:Math.random()*H,
-    vx:(Math.random()-.5)*.25*devicePixelRatio,vy:(Math.random()-.5)*.25*devicePixelRatio,
-    r:(Math.random()*1.6+.6)*devicePixelRatio});
+  const N=Math.min(72,Math.floor(innerWidth/5.5));
+  for(let i=0;i<N;i++) P.push({
+    x:Math.random()*W, y:Math.random()*H,
+    vx:(Math.random()-.5)*.3*devicePixelRatio,
+    vy:(Math.random()-.5)*.3*devicePixelRatio,
+    r:(Math.random()*1.8+.6)*devicePixelRatio,
+    ox:0, oy:0
+  });
+  let t=0;
   function loop(){
     x.clearRect(0,0,W,H);
-    for(let i=0;i<P.length;i++){const p=P[i];
-      p.x+=p.vx;p.y+=p.vy;
-      if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;
-      for(let j=i+1;j<P.length;j++){const q=P[j],dx=p.x-q.x,dy=p.y-q.y,d=Math.hypot(dx,dy);
-        if(d<120*devicePixelRatio){const a=(1-d/(120*devicePixelRatio))*.5;
-          x.strokeStyle=`rgba(110,140,255,${a*.6})`;x.lineWidth=devicePixelRatio*.6;
-          x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke()}}
-      x.beginPath();x.arc(p.x,p.y,p.r,0,7);
-      x.fillStyle=i%3===0?'rgba(34,224,255,.9)':i%3===1?'rgba(255,61,240,.7)':'rgba(139,92,255,.8)';
-      x.shadowBlur=8*devicePixelRatio;x.shadowColor='rgba(110,140,255,.8)';x.fill();x.shadowBlur=0;
+    t+=0.016;
+    const ns=window._neuralState||'idle';
+    const cx=W*.62, cy=H*.5;
+    const connDist=(ns==='thinking'?145:110)*devicePixelRatio;
+    for(let i=0;i<P.length;i++){
+      const p=P[i];
+      if(ns==='listening'){
+        const dx=cx-p.x, dy=cy-p.y, d=Math.hypot(dx,dy)||1;
+        p.vx+=dx/d*.05*devicePixelRatio; p.vy+=dy/d*.05*devicePixelRatio;
+        const sp=Math.hypot(p.vx,p.vy); const mx=2.2*devicePixelRatio;
+        if(sp>mx){p.vx=p.vx/sp*mx; p.vy=p.vy/sp*mx;}
+      } else if(ns==='thinking'){
+        const dx=cx-p.x, dy=cy-p.y, d=Math.hypot(dx,dy)||1;
+        const tr=90*devicePixelRatio+i*3.5;
+        p.vx+=(dx/d*(d-tr)*.002)+(-dy/d*.035*devicePixelRatio);
+        p.vy+=(dy/d*(d-tr)*.002)+(dx/d*.035*devicePixelRatio);
+        const sp=Math.hypot(p.vx,p.vy); const mx=2*devicePixelRatio;
+        if(sp>mx){p.vx=p.vx/sp*mx; p.vy=p.vy/sp*mx;}
+      } else {
+        const spd=ns==='speaking'?1.6:1;
+        p.x+=p.vx*spd; p.y+=p.vy*spd;
+        if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;
+      }
+      if(ns!=='idle'){p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;}
+      for(let j=i+1;j<P.length;j++){
+        const q=P[j], dx=p.x-q.x, dy=p.y-q.y, d=Math.hypot(dx,dy);
+        if(d<connDist){
+          const a=(1-d/connDist)*.62;
+          x.strokeStyle=ns==='listening'?`rgba(255,61,240,${a*.75})`:
+            ns==='thinking'?`rgba(245,201,105,${a*.65})`:
+            ns==='speaking'?`rgba(34,224,255,${a*.7})`:`rgba(110,140,255,${a*.55})`;
+          x.lineWidth=devicePixelRatio*.7;
+          x.beginPath(); x.moveTo(p.x,p.y); x.lineTo(q.x,q.y); x.stroke();
+        }
+      }
+      let fc=ns==='listening'?'rgba(255,61,240,.95)':ns==='thinking'?'rgba(245,201,105,.9)':
+        ns==='speaking'?'rgba(34,224,255,.9)':i%3===0?'rgba(34,224,255,.9)':i%3===1?'rgba(255,61,240,.7)':'rgba(139,92,255,.8)';
+      const rMul=ns!=='idle'?1.4:1;
+      x.beginPath(); x.arc(p.x,p.y,p.r*rMul,0,7);
+      x.shadowBlur=(ns!=='idle'?18:8)*devicePixelRatio;
+      x.shadowColor=ns==='listening'?'rgba(255,61,240,.9)':ns==='thinking'?'rgba(245,201,105,.8)':
+        ns==='speaking'?'rgba(34,224,255,.9)':'rgba(110,140,255,.8)';
+      x.fillStyle=fc; x.fill(); x.shadowBlur=0;
+    }
+    if(ns==='speaking'){
+      for(let r=0;r<3;r++){
+        const ph=((t*.7+r/3)%1); const rad=ph*Math.min(W,H)*.38; const al=(1-ph)*.22;
+        x.beginPath(); x.arc(cx,cy,rad,0,7);
+        x.strokeStyle=`rgba(34,224,255,${al})`; x.lineWidth=devicePixelRatio*1.5; x.stroke();
+      }
+    }
+    if(ns==='listening'){
+      const al=.28+Math.sin(t*4)*.12; const rad=(55+Math.sin(t*3.2)*18)*devicePixelRatio;
+      x.beginPath(); x.arc(cx,cy,rad,0,7);
+      x.strokeStyle=`rgba(255,61,240,${al})`; x.lineWidth=devicePixelRatio*2; x.stroke();
     }
     requestAnimationFrame(loop);
   }
   loop();
+
+  /* Mini waveforms */
+  function drawWave(canvasEl, color, active, phase){
+    if(!canvasEl) return;
+    const wx=canvasEl.getContext('2d');
+    const wW=canvasEl.offsetWidth||120; const wH=canvasEl.height||20;
+    if(canvasEl.width!==wW*devicePixelRatio){canvasEl.width=wW*devicePixelRatio;}
+    const cw=canvasEl.width; const mid=wH/2;
+    wx.clearRect(0,0,cw,wH);
+    wx.beginPath();
+    for(let i=0;i<=cw;i++){
+      const amp=active?(Math.sin(phase+i*.1)*0.38+Math.sin(phase*.6+i*.07)*.22)*mid*.9:Math.sin(i*.13)*mid*.08;
+      i===0?wx.moveTo(i,mid+amp):wx.lineTo(i,mid+amp);
+    }
+    wx.strokeStyle=color; wx.lineWidth=devicePixelRatio*1.4; wx.stroke();
+    if(active){wx.shadowBlur=6; wx.shadowColor=color; wx.stroke(); wx.shadowBlur=0;}
+  }
+  let wavT=0;
+  setInterval(()=>{
+    wavT+=0.22; const ns=window._neuralState||'idle';
+    drawWave($('#ncWave'),'rgba(34,224,255,.8)', ns==='speaking'||ns==='thinking', wavT);
+    drawWave($('#sbWave'),'rgba(255,61,240,.9)', ns==='listening', wavT*1.3);
+  }, 50);
 })();
 
 /* ---------- VIEW HELPERS ---------- */
-function setState(s){ // '', 'listening', 'thinking'
-  document.body.classList.remove('listening','thinking');
+function setState(s){ // '', 'listening', 'thinking', 'speaking'
+  document.body.classList.remove('listening','thinking','speaking');
   if(s) document.body.classList.add(s);
+  window._neuralState=s||'idle';
+  const sv=$('#sbVoice');
+  if(sv) sv.textContent=s==='listening'?'Ouvindo…':s==='thinking'?'Processando…':s==='speaking'?'Falando…':'Aguardando';
+  const mv=$('#modVoiceSt');
+  if(mv) mv.textContent=s==='listening'?'Ouvindo':s==='thinking'?'Processando':s==='speaking'?'Falando':'Aguardando';
 }
 function setStatus(t){ $('#statusline').textContent=t||''; }
 function toast(msg,alert){ const t=$('#toast'); t.textContent=msg; t.classList.toggle('alert',!!alert);
   t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),3400); }
 
 function refreshHome(){
-  $('#greetName').textContent=settings.name||'Matheus';
-  $('#greetSub').textContent = personaReady() ? (persona.name+' está com você.') : 'Seu agente ainda não tem nome — toque pra dar vida a ele.';
-  $('#memCount').textContent=memory.length;
-  $('#sessCount').textContent=sessions.length;
   try{ updateAwakeUI(); updateProactiveUI(); }catch(e){}
-  $('#sbName').textContent=settings.name||'Matheus';
-  $('#nameInput').value=settings.name||'';
-  $('#keyInput').value=settings.apiKey||'';
-  $('#elevenKeyInput').value=settings.elevenKey||'';
-  $('#modelInput').value=settings.model;
+  // Legacy sidebar refs
+  if($('#sbName')) $('#sbName').textContent=settings.name||'Matheus';
+  if($('#nameInput')) $('#nameInput').value=settings.name||'';
+  if($('#keyInput')) $('#keyInput').value=settings.apiKey||'';
+  if($('#elevenKeyInput')) $('#elevenKeyInput').value=settings.elevenKey||'';
+  if($('#modelInput')) $('#modelInput').value=settings.model;
   if(settings.photo){
-    $('#sbAvatar').innerHTML=`<img src="${settings.photo}">`;
-    $('#photoPv').innerHTML=`<img src="${settings.photo}">`;
+    if($('#sbAvatar')) $('#sbAvatar').innerHTML=`<img src="${settings.photo}">`;
+    if($('#photoPv')) $('#photoPv').innerHTML=`<img src="${settings.photo}">`;
   }
+  // New module panel elements
+  const mem=memory.length, sess=sessions.length;
+  if($('#modMemorySt')) $('#modMemorySt').textContent=mem+' fato'+(mem===1?'':'s');
+  if($('#modCognitionSt')) $('#modCognitionSt').textContent=sess+' sess'+(sess===1?'ão':'ões');
+  if($('#apName')) $('#apName').textContent=(persona&&persona.name)||settings.name||'Kairos';
+  if($('#apAvatar')&&settings.photo) $('#apAvatar').innerHTML=`<img src="${settings.photo}">`;
+  // Config progress %
+  let pct=0;
+  if(settings.apiKey) pct+=40;
+  if(personaReady()) pct+=30;
+  if(settings.elevenKey) pct+=20;
+  if(foneArmed) pct+=10;
+  if($('#sbPct')) $('#sbPct').textContent=pct+'%';
+  if($('#sbFill')) $('#sbFill').style.width=pct+'%';
+  // Neural card status
+  if($('#ncStatus')) $('#ncStatus').textContent=online?'ATIVO':'OFFLINE';
 }
 
 /* ---------- SESSIONS ---------- */
@@ -997,7 +1236,7 @@ async function addImageBubble(prompt){
   try{
     const seed=Math.floor(Math.random()*1e6);
     const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(prompt)
-      +'?width=1024&height=1024&nologo=true&seed='+seed;
+      +'?width=1024&height=1024&model=flux&nologo=true&enhance=true&seed='+seed;
     const res=await fetch(url); if(!res.ok) throw new Error('img '+res.status);
     const blob=await res.blob(); const obj=URL.createObjectURL(blob);
     box.innerHTML='';
@@ -1134,7 +1373,11 @@ async function loadElevenVoices(){
 /* Áudio compartilhado pra TTS do ElevenLabs (roteia certo no Bluetooth) */
 let ttsAudio=null;
 function getTtsAudio(){
-  if(!ttsAudio){ ttsAudio=new Audio(); ttsAudio.setAttribute('playsinline',''); ttsAudio.setAttribute('webkit-playsinline',''); }
+  if(!ttsAudio){
+    ttsAudio=new Audio();
+    ttsAudio.setAttribute('playsinline',''); ttsAudio.setAttribute('webkit-playsinline','');
+    try{ document.body.appendChild(ttsAudio); }catch(e){}
+  }
   return ttsAudio;
 }
 function setSpeechState(s){
@@ -1143,6 +1386,8 @@ function setSpeechState(s){
     btn.textContent=(s==='paused')?'Continuar':'Pausar';
     btn.classList.toggle('on',s==='paused');
   });
+  if(s==='speaking') setState('speaking');
+  else if(s==='idle'||s==='paused') { if(window._neuralState==='speaking') setState(''); }
 }
 function pauseSpeech(){
   if(settings.elevenKey&&ttsAudio&&!ttsAudio.paused){ ttsAudio.pause(); setSpeechState('paused'); }
@@ -1301,19 +1546,26 @@ async function extractMemory(userText,aiText){
 }
 
 /* ---------- SEND MESSAGE ---------- */
+let attachedImg=null; // {url: dataURL, type: mimeType}
 async function send(text){
-  text=(text||'').trim(); if(!text) return;
+  text=(text||'').trim();
+  const hasImg=!!attachedImg;
+  if(!text&&!hasImg) return;
   if(!online){ toast('Agente offline. Ligue o agente (power) pra conversar.'); return; }
   if(!settings.apiKey){ toast('Configure a chave Groq nas Configurações.'); openSettings(); return; }
   if(!currentId) newSession();
   const s=curSession();
   showChat(true);
-  addBubble('user',text,true);
-  s.msgs.push({role:'user',content:text});
-  if(s.title==='Nova conversa'){ s.title=text.slice(0,42); renderSessions(); }
+  const displayText=text||(hasImg?'📎 Imagem enviada':'');
+  addBubble('user',displayText,true);
+  s.msgs.push({role:'user',content:text||(hasImg?'[imagem enviada]':'')});
+  if(s.title==='Nova conversa'){ s.title=(text||'📎 Imagem').slice(0,42); renderSessions(); }
   saveSessions(); refreshHome();
 
-  // typing indicator
+  const savedImg=attachedImg; attachedImg=null;
+  if($('#attachPreview')) $('#attachPreview').style.display='none';
+  if($('#attachThumb')) $('#attachThumb').src='';
+
   const tp=document.createElement('div'); tp.className='msg ai';
   tp.innerHTML='<div class="who">KAIROS</div><div class="typing"><i></i><i></i><i></i></div>';
   $('#msgs').appendChild(tp); $('#msgs').scrollTop=$('#msgs').scrollHeight;
@@ -1321,14 +1573,25 @@ async function send(text){
 
   try{
     const history=s.msgs.slice(-12).map(m=>({role:m.role,content:m.content}));
-    const reply=await groqChat([{role:'system',content:systemPrompt()},...history]);
+    let messages=[{role:'system',content:systemPrompt()},...history];
+    let useModel=undefined;
+    if(savedImg){
+      useModel='llama-3.2-11b-vision-preview';
+      // Replace last user message with multimodal content
+      const lastIdx=messages.map(m=>m.role).lastIndexOf('user');
+      if(lastIdx>=0) messages[lastIdx]={role:'user',content:[
+        {type:'text',text:text||'Descreva e analise esta imagem em detalhes.'},
+        {type:'image_url',image_url:{url:savedImg.url}}
+      ]};
+    }
+    const reply=await groqChat(messages,useModel);
     tp.remove();
     const spoken=renderAiReply(reply);
     s.msgs.push({role:'assistant',content:spoken});
     saveSessions();
     setState(''); setStatus('');
     speak(spoken);
-    extractMemory(text,spoken);
+    extractMemory(text||(savedImg?'[imagem]':''),spoken);
   }catch(e){
     tp.remove(); setState(''); setStatus('');
     addBubble('ai','⚠ '+e.message,true);
@@ -1500,8 +1763,9 @@ function toggleProactive(){
 function updateProactiveUI(){
   const b=$('#proactBtn'); if(!b) return;
   b.classList.toggle('on',proactiveOn);
-  $('#proactLbl').textContent = proactiveOn ? 'Vontade própria: ligada' : 'Resposta autônoma';
-  $('#proactSub').textContent = proactiveOn ? 'Ele puxa conversa sozinho de tempos em tempos' : 'Ele só responde quando você fala';
+  if($('#proactLbl')) $('#proactLbl').textContent='Learning Stream';
+  if($('#proactSub')) $('#proactSub').textContent=proactiveOn?'Ativo · puxa conversa':'Resposta autônoma';
+  const dot=$('#proactDot'); if(dot){ dot.classList.toggle('live',proactiveOn); dot.classList.toggle('mod-dot-off',!proactiveOn); }
 }
 
 /* ---------- SETTINGS ---------- */
@@ -1519,7 +1783,9 @@ function saveSettings(){
   settings.model=$('#modelInput').value;
   settings.voice=$('#voiceInput').value;
   settings.elevenKey=$('#elevenKeyInput').value.trim();
-  settings.elevenVoice=($('#elevenVoiceSelect')&&$('#elevenVoiceSelect').value)||'';
+  const evs=$('#elevenVoiceSelect');
+  if(evs&&evs.value) settings.elevenVoice=evs.value;
+  // preserve existing voice if select is empty (voices not loaded yet)
   LS.set('kairos_settings',settings);
   refreshHome(); closeSettings(); toast('Configurações salvas.');
 }
@@ -1582,6 +1848,36 @@ $('#elevenVoicePreviewBtn').onclick=async()=>{
   }
 };
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ primeTTS(); send(c.dataset.q); });
+document.querySelectorAll('.sg2').forEach(c=>c.onclick=()=>{ primeTTS(); send(c.dataset.q); });
+
+/* Attach image button */
+$('#attachBtn').onclick=()=>{ $('#attachInput').click(); };
+$('#attachInput').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  if(!f.type.startsWith('image/')){ toast('Por enquanto só imagens são suportadas.',true); e.target.value=''; return; }
+  const rd=new FileReader();
+  rd.onload=ev=>{
+    attachedImg={url:ev.target.result,type:f.type};
+    $('#attachThumb').src=ev.target.result;
+    $('#attachPreview').style.display='flex';
+    $('#attachPreview').style.alignItems='center';
+    $('#attachPreview').style.gap='8px';
+    toast('Imagem anexada. Escreva algo e envie, ou só envie.');
+  };
+  rd.readAsDataURL(f);
+  e.target.value='';
+});
+$('#attachClear').onclick=()=>{ attachedImg=null; $('#attachPreview').style.display='none'; $('#attachThumb').src=''; };
+
+/* Module panel clickable items */
+$('#modNeural').onclick=()=>{ primeTTS(); toggleOnline(); };
+$('#ncTog').onclick=()=>{ primeTTS(); toggleOnline(); };
+$('#modCognition').onclick=()=>{ openSidebar(); };
+$('#modMemory').onclick=()=>{ openSidebar(); };
+$('#modEmo').onclick=()=>{ toast('Modo Emocional em desenvolvimento.'); };
+$('#modVoiceItem').onclick=()=>{ primeTTS(); toggleMic(); };
+$('#sbMicBtn').onclick=()=>{ primeTTS(); playChime(listening?'send':'listen'); toggleMic(); };
+
 $('#photoInput').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
   const rd=new FileReader();
@@ -1643,9 +1939,11 @@ $('#pocketBtn').onclick=enterPocket;
 
 /* ---------- MANTER TELA ACESA (wake lock manual) ---------- */
 function updateAwakeUI(){
-  $('#awakeBtn').classList.toggle('on',screenAwake);
-  $('#awakeLbl').textContent = screenAwake ? 'Tela acesa: ligada' : 'Manter tela acesa';
-  $('#awakeSub').textContent = screenAwake ? 'A tela não vai apagar enquanto o app estiver aberto' : 'Tela não apaga enquanto estiver aqui';
+  const b=$('#awakeBtn'); if(!b) return;
+  b.classList.toggle('on',screenAwake);
+  if($('#awakeLbl')) $('#awakeLbl').textContent='Tela acesa';
+  if($('#awakeSub')) $('#awakeSub').textContent=screenAwake?'Ativo · modo ativo':'Tela pode dormir';
+  const dot=$('#awakeDot'); if(dot){ dot.classList.toggle('live',screenAwake); dot.classList.toggle('mod-dot-off',!screenAwake); }
 }
 function toggleScreenAwake(){
   screenAwake=!screenAwake; LS.set('kairos_screenawake',screenAwake);
