@@ -791,6 +791,11 @@
       </div>
     </div>
     <div class="field" style="border-top:1px solid rgba(139,92,255,.2);padding-top:18px;margin-top:6px">
+      <label style="color:#b8a0ff">Busca na Web <span style="color:#7a83a8;font-weight:400">(Serper.dev — gratuito)</span></label>
+      <input id="serperKey" type="password" placeholder="Chave Serper.dev (serper.dev → free 2.500/mês)">
+      <div class="hint">Com a chave, o agente pode pesquisar na web em tempo real. Sem ela, usa o DuckDuckGo (limitado).</div>
+    </div>
+    <div class="field" style="border-top:1px solid rgba(139,92,255,.2);padding-top:18px;margin-top:6px">
       <label style="color:#b8a0ff">Agente Personalizado <span style="color:#7a83a8;font-weight:400">(OpenCLAW / VPS)</span></label>
       <input id="agentUrl" type="url" placeholder="https://seu-vps.com/v1/chat/completions" autocomplete="off">
       <input id="agentKey" type="password" placeholder="Bearer token / API key do agente (opcional)" autocomplete="off" style="margin-top:8px">
@@ -949,7 +954,7 @@ const LS = {
 /* ---------- STATE ---------- */
 let settings = LS.get('kairos_settings',{
   name:'Matheus', photo:'', apiKey:'', model:'llama-3.3-70b-versatile', voice:'', rate:1,
-  elevenKey:'', elevenVoice:'', agentUrl:'', agentKey:''
+  elevenKey:'', elevenVoice:'', agentUrl:'', agentKey:'', serperKey:''
 });
 // normaliza velocidades antigas para os três valores suportados
 if(settings.rate===1.2) settings.rate=1.25;
@@ -969,7 +974,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v19 · 20/06';              // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v20 · 20/06';              // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -984,9 +989,17 @@ if(!LS.get('kairos_mig2', false)){
 /* ---------- GEOLOCATION CONTEXT ---------- */
 let geoCtx='';
 if('geolocation' in navigator){
-  navigator.geolocation.getCurrentPosition(p=>{
-    geoCtx=`Localização atual do Matheus (aproximada): lat ${p.coords.latitude.toFixed(4)}, lon ${p.coords.longitude.toFixed(4)}, precisão ~${Math.round(p.coords.accuracy)}m.`;
-  },()=>{},{timeout:8000,enableHighAccuracy:false});
+  navigator.geolocation.getCurrentPosition(async p=>{
+    const lat=p.coords.latitude.toFixed(5), lon=p.coords.longitude.toFixed(5);
+    geoCtx=`Localização GPS: lat ${lat}, lon ${lon}.`;
+    try{
+      const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=pt`);
+      const j=await r.json();
+      const addr=j.address||{};
+      const place=[addr.city||addr.town||addr.village||addr.county,addr.state,addr.country].filter(Boolean).join(', ');
+      if(place) geoCtx=`Localização: ${place} (lat ${lat}, lon ${lon}).`;
+    }catch(e){}
+  },()=>{},{timeout:10000,enableHighAccuracy:false});
 }
 
 /* ---------- SYSTEM PROMPT ---------- */
@@ -1008,9 +1021,14 @@ VOCÊ CRIA CONTEÚDO (por voz ou texto). Quando o Matheus pedir, você produz de
 - TEXTOS / ARTIGOS / ROTEIROS / POSTS: escreva o conteúdo completo na resposta.
 - HTML / PÁGINAS / CÓDIGO: entregue dentro de um bloco \`\`\`html ... \`\`\` (ou \`\`\`js, \`\`\`css). O app deixa o Matheus baixar o arquivo.
 - DOCUMENTOS / PDF: escreva o conteúdo bem formatado; o app gera o PDF pra baixar.
+- PLANILHAS: entregue em formato de tabela markdown; o app exporta pra Excel/CSV.
 - IMAGENS / BANNERS / LOGOS / ARTES: quando ele pedir uma imagem, responda com 1 frase curta natural E inclua, em uma linha separada, a tag exatamente neste formato: [IMAGEM: descrição visual rica e detalhada EM INGLÊS]. Para banner, descreva layout, cores, estilo e textos. Pode gerar várias imagens (uma tag por imagem). NUNCA descreva a tag em voz alta nem leia os colchetes — é um comando pro app.
 
-VISÃO / CÂMERA: quando o Matheus enviar uma imagem (foto da câmera ou galeria), analise DE VERDADE o que está na imagem — rostos, textos, marcas, objetos, ambiente, situação — e responda de forma precisa e útil. Pode fazer identificação visual, leitura de documentos, análise de produto, reconhecimento de lugar, etc.
+VISÃO / CÂMERA: quando o Matheus enviar uma imagem (foto da câmera ou galeria), analise DE VERDADE o que está na imagem — rostos, textos, marcas, objetos, ambiente, situação, documentos, placas, produtos, pessoas, expressões — com riqueza de detalhes. Forneça identificação visual, leitura de texto, análise de produto, reconhecimento de lugar, contexto comportamental, etc.
+
+BUSCA NA WEB: quando precisar de informações atuais, recentes ou externas, use a tag [BUSCAR: query de busca clara em português]. O app executa a busca e te devolve os resultados. Use uma tag por busca. NUNCA diga que não consegue buscar — o app faz isso por você. Exemplo: para "qual o preço do dólar hoje" → [BUSCAR: cotação dólar hoje].
+
+PLANILHA / EXCEL: para gerar planilhas, crie uma tabela markdown bem estruturada — o app exporta como Excel automaticamente.
 
 Fale em português do Brasil, natural e humano, como uma conversa real entre duas pessoas. Como é por voz, seja fluido e direto; aprofunde quando ele pedir profundidade.${facts}${geo}`;
 }
@@ -1143,6 +1161,7 @@ function refreshHome(){
   if($('#modelInput')) $('#modelInput').value=settings.model;
   if($('#agentUrl')) $('#agentUrl').value=settings.agentUrl||'';
   if($('#agentKey')) $('#agentKey').value=settings.agentKey||'';
+  if($('#serperKey')) $('#serperKey').value=settings.serperKey||'';
   if(settings.photo){
     if($('#sbAvatar')) $('#sbAvatar').innerHTML=`<img src="${settings.photo}">`;
     if($('#photoPv')) $('#photoPv').innerHTML=`<img src="${settings.photo}">`;
@@ -1264,6 +1283,10 @@ function addBubble(role,text,animate){
       cb.onclick=()=>downloadFile(code.name,code.content,code.mime); act.appendChild(cb); }
     const pb=document.createElement('button'); pb.className='ma-btn'; pb.textContent='⬇ PDF';
     pb.onclick=()=>downloadPDF(text); act.appendChild(pb);
+    if(extractMarkdownTable(text)){
+      const eb=document.createElement('button'); eb.className='ma-btn'; eb.textContent='⬇ Excel';
+      eb.onclick=()=>downloadExcel(text); act.appendChild(eb);
+    }
     m.appendChild(act);
   }
   $('#msgs').appendChild(m);
@@ -1316,6 +1339,20 @@ function extractCode(text){
     python:['script.py','text/x-python','Python'],md:['texto.md','text/markdown','MD']};
   const e=map[lang]||['arquivo.txt','text/plain','arquivo'];
   return { name:e[0], mime:e[1], label:e[2], content };
+}
+function extractMarkdownTable(text){
+  return (text||'').match(/^\|.+\|$/m);
+}
+function downloadExcel(text){
+  try{
+    const lines=(text||'').split('\n').filter(l=>/^\|/.test(l.trim())&&!/^\|\s*[-:]+\s*\|/.test(l));
+    if(!lines.length){ toast('Nenhuma tabela encontrada.',true); return; }
+    const rows=lines.map(l=>l.replace(/^\||\|$/g,'').split('|').map(c=>c.trim()));
+    const csv=rows.map(r=>r.map(c=>'"'+c.replace(/"/g,'""')+'"').join(',')).join('\r\n');
+    const bom='﻿'; // BOM para Excel reconhecer UTF-8
+    downloadFile('kairos-tabela-'+Date.now().toString(36)+'.csv', bom+csv, 'text/csv;charset=utf-8');
+    toast('Excel (CSV) baixado — abra no Excel ou Google Sheets.');
+  }catch(e){ toast('Erro ao gerar Excel: '+e.message,true); }
 }
 function downloadFile(name, data, mime, isBlob){
   try{
@@ -1384,6 +1421,35 @@ function renderAiReply(reply){
   if(shown) addBubble('ai',shown,true);
   prompts.forEach(p=>addImageBubble(p));
   return cleaned || shown;
+}
+
+/* ---------- WEB SEARCH ---------- */
+async function webSearch(query){
+  try{
+    if(settings.serperKey){
+      const r=await fetch('https://google.serper.dev/search',{
+        method:'POST',
+        headers:{'X-API-KEY':settings.serperKey,'Content-Type':'application/json'},
+        body:JSON.stringify({q:query,gl:'br',hl:'pt',num:6})
+      });
+      if(!r.ok) throw new Error('serper '+r.status);
+      const j=await r.json();
+      const results=[];
+      if(j.answerBox) results.push('📌 '+j.answerBox.snippet||j.answerBox.answer||'');
+      if(j.knowledgeGraph) results.push('ℹ️ '+j.knowledgeGraph.description||'');
+      (j.organic||[]).slice(0,5).forEach(o=>results.push(`• ${o.title}: ${o.snippet} (${o.link})`));
+      return results.filter(Boolean).join('\n')||'Nenhum resultado relevante.';
+    }
+    // DuckDuckGo fallback (sem chave, dados limitados)
+    const r=await fetch('https://api.duckduckgo.com/?q='+encodeURIComponent(query)+'&format=json&no_html=1&skip_disambig=1');
+    if(!r.ok) throw new Error('ddg '+r.status);
+    const j=await r.json();
+    const parts=[];
+    if(j.AbstractText) parts.push(j.AbstractText);
+    if(j.Answer) parts.push(j.Answer);
+    (j.RelatedTopics||[]).slice(0,4).forEach(t=>{ if(t.Text) parts.push('• '+t.Text); });
+    return parts.join('\n')||'Busca não retornou resultados claros (sem chave Serper).';
+  }catch(e){ return 'Erro na busca: '+e.message; }
 }
 
 /* ---------- CHAT API (Groq ou agente personalizado) ---------- */
@@ -1681,7 +1747,21 @@ async function send(text){
         {type:'image_url',image_url:{url:savedImg.url}}
       ]};
     }
-    const reply=await groqChat(messages,useModel);
+    let reply=await groqChat(messages,useModel);
+    // Handle [BUSCAR: ...] tool tag (up to 2 iterations)
+    for(let si=0;si<2;si++){
+      const bm=reply.match(/\[BUSCAR:\s*([^\]]+)\]/i); if(!bm) break;
+      const q=bm[1].trim();
+      tp.querySelector('.typing').innerHTML='<i></i><i></i><i></i>';
+      setStatus('Buscando: '+q+'…');
+      const res=await webSearch(q);
+      const cleanReply=reply.replace(/\[BUSCAR:[^\]]+\]/gi,'').trim();
+      messages=[...messages,
+        {role:'assistant',content:cleanReply||'Vou buscar isso na web.'},
+        {role:'user',content:`[RESULTADO DA BUSCA: "${q}"]\n${res}\n\nCom base nesses resultados, responda.`}
+      ];
+      reply=await groqChat(messages);
+    }
     tp.remove();
     const spoken=renderAiReply(reply);
     s.msgs.push({role:'assistant',content:spoken});
@@ -1890,6 +1970,7 @@ function saveSettings(){
   if(evs&&evs.value) settings.elevenVoice=evs.value;
   settings.agentUrl=($('#agentUrl')&&$('#agentUrl').value.trim())||'';
   settings.agentKey=($('#agentKey')&&$('#agentKey').value.trim())||'';
+  settings.serperKey=($('#serperKey')&&$('#serperKey').value.trim())||'';
   LS.set('kairos_settings',settings);
   refreshHome(); closeSettings(); toast('Configurações salvas.');
 }
