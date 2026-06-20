@@ -232,10 +232,25 @@
   /* ---------- DOCK ---------- */
   .dock{display:flex;flex-direction:column;gap:6px;padding:8px 4px 2px}
   .attach-preview{display:flex;align-items:center;gap:8px;padding:0 6px 2px}
-  .attach-btn{width:32px;height:32px;flex:0 0 32px;border-radius:10px;border:none;cursor:pointer;
-    background:rgba(139,92,255,.18);display:grid;place-items:center}
+  .attach-btn,.cam-btn{width:32px;height:32px;flex:0 0 32px;border-radius:10px;border:none;
+    cursor:pointer;display:grid;place-items:center}
+  .attach-btn{background:rgba(139,92,255,.18)}
   .attach-btn svg{width:16px;height:16px;stroke:var(--violet);fill:none;stroke-width:1.8}
   .attach-btn:active{background:rgba(139,92,255,.35)}
+  .cam-btn{background:rgba(34,224,255,.12)}
+  .cam-btn svg{width:16px;height:16px;stroke:var(--cyan);fill:none;stroke-width:1.8}
+  .cam-btn:active{background:rgba(34,224,255,.3)}
+  /* Camera modal */
+  #camModal{position:fixed;inset:0;z-index:80;display:none;flex-direction:column;
+    align-items:center;justify-content:center;background:rgba(3,5,15,.95);padding:16px}
+  #camModal.on{display:flex}
+  #camVideo{width:100%;max-width:400px;border-radius:16px;border:1.5px solid rgba(34,224,255,.3)}
+  .cam-controls{display:flex;gap:14px;margin-top:14px}
+  .cam-snap{padding:13px 28px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;
+    font-family:inherit;border:none;
+    background:linear-gradient(135deg,var(--violet),var(--cyan));color:#fff}
+  .cam-close{padding:13px 20px;border-radius:14px;font-size:14px;font-weight:600;cursor:pointer;
+    font-family:inherit;background:var(--glass);border:1px solid var(--glass-brd);color:#cdd6ff}
   .txtfield{flex:1;display:flex;align-items:center;gap:8px;background:var(--glass);
     border:1px solid var(--glass-brd);border-radius:17px;padding:4px 6px 4px 12px;backdrop-filter:blur(16px)}
   .dock-row{display:flex;align-items:center;gap:10px;width:100%}
@@ -412,9 +427,11 @@
   .persona{position:fixed;inset:0;z-index:58;display:none;align-items:center;justify-content:center;padding:22px;
     overflow-y:auto;background:radial-gradient(120% 80% at 50% 10%,rgba(139,92,255,.22),transparent 55%),var(--bg)}
   .persona.on{display:flex}
-  .persona-card{width:100%;max-width:400px;background:var(--glass);border:1px solid var(--glass-brd);
-    backdrop-filter:blur(20px);border-radius:26px;padding:26px 22px 22px;text-align:center;
-    box-shadow:0 20px 60px rgba(0,0,0,.5);margin:auto}
+  .persona-card{width:100%;max-width:400px;max-height:88vh;overflow-y:auto;
+    background:var(--glass);border:1px solid var(--glass-brd);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:26px;
+    padding:22px 18px 20px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);margin:auto}
+  .persona-card::-webkit-scrollbar{display:none}
   .persona-orb{position:relative;width:88px;height:88px;margin:0 auto 16px;display:grid;place-items:center;
     border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(139,92,255,.5),rgba(34,224,255,.2) 60%,transparent 75%);
     box-shadow:0 0 40px rgba(139,92,255,.5);animation:breathe 3.4s ease-in-out infinite}
@@ -684,6 +701,9 @@
         <button class="attach-btn" id="attachBtn" title="Enviar imagem">
           <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
         </button>
+        <button class="cam-btn" id="camBtn" title="Câmera / visão ao vivo">
+          <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
         <input id="txt" type="text" placeholder="Fale ou escreva…" autocomplete="off" enterkeyhint="send">
         <button class="send" id="sendBtn">
           <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
@@ -769,6 +789,14 @@
         <select id="voiceInput" style="flex:1"></select>
         <button id="previewVoiceBtn" type="button" style="padding:10px 14px;border-radius:12px;border:1px solid var(--glass-brd);background:var(--glass);color:#cdd6ff;font-size:13px;font-weight:600;cursor:pointer;flex:0 0 auto;font-family:inherit">Ouvir</button>
       </div>
+    </div>
+    <div class="field" style="border-top:1px solid rgba(139,92,255,.2);padding-top:18px;margin-top:6px">
+      <label style="color:#b8a0ff">Agente Personalizado <span style="color:#7a83a8;font-weight:400">(OpenCLAW / VPS)</span></label>
+      <input id="agentUrl" type="url" placeholder="https://seu-vps.com/v1/chat/completions" autocomplete="off">
+      <input id="agentKey" type="password" placeholder="Bearer token / API key do agente (opcional)" autocomplete="off" style="margin-top:8px">
+      <div class="hint" style="margin-top:6px">Endpoint OpenAI-compatível rodando na VPS. Quando preenchido, substitui o Groq nas conversas. Imagens e STT continuam via Groq.</div>
+      <button id="testAgentBtn" type="button" style="margin-top:8px;width:100%;padding:10px;border-radius:12px;border:1px solid rgba(139,92,255,.35);background:rgba(139,92,255,.1);color:#c8b8ff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">⚡ Testar conexão com agente</button>
+      <div id="agentTestResult" style="font-size:12px;color:#7a83a8;margin-top:6px;text-align:center"></div>
     </div>
     <button class="save" id="saveBtn">Salvar</button>
     <div style="text-align:center;font-size:10.5px;color:#5a6296;margin-top:10px" id="buildTag">versão —</div>
@@ -893,6 +921,19 @@
   <div class="pk-hint">Segure aqui por 3 s para destravar</div>
 </div>
 
+<!-- CÂMERA / VISÃO MODAL -->
+<div id="camModal">
+  <video id="camVideo" autoplay playsinline muted></video>
+  <canvas id="camCanvas" style="display:none"></canvas>
+  <div class="cam-controls">
+    <button class="cam-snap" id="camSnap">📸 Capturar e Analisar</button>
+    <button class="cam-close" id="camClose">✕ Fechar</button>
+  </div>
+  <p style="color:#5a6296;font-size:12px;margin-top:10px;text-align:center">
+    A câmera analisa o que você aponta: rostos, marcas, objetos, texto, ambiente.
+  </p>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -907,7 +948,8 @@ const LS = {
 
 /* ---------- STATE ---------- */
 let settings = LS.get('kairos_settings',{
-  name:'Matheus', photo:'', apiKey:'', model:'llama-3.3-70b-versatile', voice:'', rate:1
+  name:'Matheus', photo:'', apiKey:'', model:'llama-3.3-70b-versatile', voice:'', rate:1,
+  elevenKey:'', elevenVoice:'', agentUrl:'', agentKey:''
 });
 // normaliza velocidades antigas para os três valores suportados
 if(settings.rate===1.2) settings.rate=1.25;
@@ -927,7 +969,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v18 · 19/06';              // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v19 · 20/06';              // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -939,9 +981,18 @@ if(!LS.get('kairos_mig2', false)){
 /* A chave Groq NUNCA é embutida no app (red line). É inserida em Configurações
    e guardada só neste aparelho (localStorage). Na primeira abertura, o app pede a chave. */
 
+/* ---------- GEOLOCATION CONTEXT ---------- */
+let geoCtx='';
+if('geolocation' in navigator){
+  navigator.geolocation.getCurrentPosition(p=>{
+    geoCtx=`Localização atual do Matheus (aproximada): lat ${p.coords.latitude.toFixed(4)}, lon ${p.coords.longitude.toFixed(4)}, precisão ~${Math.round(p.coords.accuracy)}m.`;
+  },()=>{},{timeout:8000,enableHighAccuracy:false});
+}
+
 /* ---------- SYSTEM PROMPT ---------- */
 function systemPrompt(){
   const facts = memory.length ? '\n\nMEMÓRIA (fatos de conversas anteriores — use só quando fizer sentido, sem forçar):\n- '+memory.join('\n- ') : '';
+  const geo = geoCtx ? '\n\n'+geoCtx : '';
   if(!personaReady()){
     return `Você é um agente de IA que ACABOU de ser instanciado dentro de um app chamado "Kairos". ATENÇÃO: "Kairos" é apenas o nome do produto/software — NÃO é o seu nome. Você ainda NÃO tem nome, identidade nem personalidade próprios. Quem vai te criar é o Matheus.
 
@@ -959,7 +1010,9 @@ VOCÊ CRIA CONTEÚDO (por voz ou texto). Quando o Matheus pedir, você produz de
 - DOCUMENTOS / PDF: escreva o conteúdo bem formatado; o app gera o PDF pra baixar.
 - IMAGENS / BANNERS / LOGOS / ARTES: quando ele pedir uma imagem, responda com 1 frase curta natural E inclua, em uma linha separada, a tag exatamente neste formato: [IMAGEM: descrição visual rica e detalhada EM INGLÊS]. Para banner, descreva layout, cores, estilo e textos. Pode gerar várias imagens (uma tag por imagem). NUNCA descreva a tag em voz alta nem leia os colchetes — é um comando pro app.
 
-Fale em português do Brasil, natural e humano, como uma conversa real entre duas pessoas. Como é por voz, seja fluido e direto; aprofunde quando ele pedir profundidade.${facts}`;
+VISÃO / CÂMERA: quando o Matheus enviar uma imagem (foto da câmera ou galeria), analise DE VERDADE o que está na imagem — rostos, textos, marcas, objetos, ambiente, situação — e responda de forma precisa e útil. Pode fazer identificação visual, leitura de documentos, análise de produto, reconhecimento de lugar, etc.
+
+Fale em português do Brasil, natural e humano, como uma conversa real entre duas pessoas. Como é por voz, seja fluido e direto; aprofunde quando ele pedir profundidade.${facts}${geo}`;
 }
 
 /* ---------- NEURAL BACKGROUND (state-reactive) ---------- */
@@ -1088,6 +1141,8 @@ function refreshHome(){
   if($('#keyInput')) $('#keyInput').value=settings.apiKey||'';
   if($('#elevenKeyInput')) $('#elevenKeyInput').value=settings.elevenKey||'';
   if($('#modelInput')) $('#modelInput').value=settings.model;
+  if($('#agentUrl')) $('#agentUrl').value=settings.agentUrl||'';
+  if($('#agentKey')) $('#agentKey').value=settings.agentKey||'';
   if(settings.photo){
     if($('#sbAvatar')) $('#sbAvatar').innerHTML=`<img src="${settings.photo}">`;
     if($('#photoPv')) $('#photoPv').innerHTML=`<img src="${settings.photo}">`;
@@ -1274,15 +1329,52 @@ function downloadPDF(text){
   const J=(window.jspdf&&window.jspdf.jsPDF);
   if(!J){ toast('Gerando… abra de novo em 1s.'); return; }
   try{
-    const doc=new J({unit:'pt',format:'a4'}); const M=48, W=595-M*2; let y=64;
-    doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.text((persona&&persona.name)||'Kairos AI',M,y); y+=10;
-    doc.setDrawColor(200); doc.line(M,y,595-M,y); y+=22;
-    doc.setFont('helvetica','normal'); doc.setFontSize(11.5);
-    const clean=text.replace(/```\w*\n?/g,'').replace(/[*_#`>]/g,'');
-    doc.splitTextToSize(clean,W).forEach(line=>{
-      if(y>800){ doc.addPage(); y=64; } doc.text(line,M,y); y+=17;
+    const doc=new J({unit:'pt',format:'a4'});
+    const M=52, PW=595, W=PW-M*2; let y=58;
+    // Header bar
+    doc.setFillColor(12,14,35); doc.rect(0,0,PW,42,'F');
+    doc.setTextColor(34,224,255); doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text((persona&&persona.name)||'Kairos AI', M, 27);
+    doc.setTextColor(120,130,180); doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    doc.text(new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'}), PW-M, 27, {align:'right'});
+    // Divider
+    doc.setDrawColor(34,224,255); doc.setLineWidth(.5); doc.line(M,50,PW-M,50); y=66;
+    // Parse markdown-ish formatting
+    const lines=text.replace(/```[\s\S]*?```/g,s=>s).split('\n');
+    lines.forEach(raw=>{
+      if(y>780){ doc.addPage(); y=48; doc.setDrawColor(34,224,255); doc.line(M,44,PW-M,44); }
+      const isBullet=/^[\s]*[-•*]\s/.test(raw);
+      const isH1=/^#{1,2}\s/.test(raw);
+      const isH2=/^#{3}\s/.test(raw);
+      const isCode=/^```/.test(raw);
+      const clean=raw.replace(/^#{1,6}\s*/,'').replace(/\*\*([^*]+)\*\*/g,'$1')
+        .replace(/\*([^*]+)\*/g,'$1').replace(/`([^`]+)`/g,'$1')
+        .replace(/^[-•*]\s+/,'• ');
+      if(!clean.trim()){y+=6;return;}
+      if(isH1){
+        doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(34,224,255);
+        doc.text(clean, M, y); y+=20; doc.setTextColor(40,44,70); doc.line(M,y-4,M+W,y-4);
+      } else if(isH2){
+        doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(139,92,255);
+        doc.text(clean, M, y); y+=18;
+      } else if(isCode){
+        // skip code fence markers
+      } else {
+        doc.setFont(isBullet?'helvetica':'helvetica', isBullet?'normal':'normal');
+        doc.setFontSize(11); doc.setTextColor(30,34,60);
+        const lx=isBullet?M+6:M;
+        const wrapped=doc.splitTextToSize(clean, isBullet?W-6:W);
+        wrapped.forEach(l=>{
+          if(y>780){doc.addPage();y=48;}
+          doc.text(l,lx,y); y+=15.5;
+        });
+      }
     });
-    doc.save('kairos-documento.pdf'); toast('PDF baixado.');
+    // Footer
+    doc.setFontSize(9); doc.setTextColor(120,130,180);
+    doc.text('Gerado por Kairos AI · kairos.digital', PW/2, 826, {align:'center'});
+    doc.save('kairos-'+((persona&&persona.name)||'documento').toLowerCase().replace(/\s+/g,'-')+'-'+Date.now().toString(36)+'.pdf');
+    toast('PDF baixado.');
   }catch(e){ toast('Falha no PDF: '+e.message,true); }
 }
 /* Mostra a resposta da IA: texto limpo + imagens; devolve o texto pra falar */
@@ -1294,14 +1386,19 @@ function renderAiReply(reply){
   return cleaned || shown;
 }
 
-/* ---------- GROQ API ---------- */
+/* ---------- CHAT API (Groq ou agente personalizado) ---------- */
 async function groqChat(messages,model){
-  const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+settings.apiKey,'Content-Type':'application/json'},
-    body:JSON.stringify({model:model||settings.model,messages,temperature:.7,max_tokens:1024})
-  });
-  if(!r.ok){const e=await r.text();throw new Error('LLM '+r.status+': '+e.slice(0,140));}
+  // Vision model always uses Groq (custom agents may not support it)
+  const isVision=model&&model.includes('vision');
+  const useCustom=!isVision&&settings.agentUrl&&settings.agentUrl.trim();
+  const url=useCustom?settings.agentUrl.trim():'https://api.groq.com/openai/v1/chat/completions';
+  const key=useCustom?(settings.agentKey||'none'):settings.apiKey;
+  const hdrs={'Content-Type':'application/json'};
+  if(key) hdrs['Authorization']='Bearer '+key;
+  const body={messages,temperature:.7,max_tokens:1024};
+  if(!useCustom||model) body.model=model||settings.model;
+  const r=await fetch(url,{method:'POST',headers:hdrs,body:JSON.stringify(body)});
+  if(!r.ok){const e=await r.text();throw new Error((useCustom?'Agente':'LLM')+' '+r.status+': '+e.slice(0,160));}
   const j=await r.json(); return j.choices[0].message.content.trim();
 }
 async function groqSTT(blob){
@@ -1711,11 +1808,17 @@ function toggleAmbient(){
 function refreshStatus(){
   document.body.classList.toggle('online', online);
   document.body.classList.toggle('offline', !online);
-  $('#brandSub').textContent = !online ? 'AGENTE OFFLINE' : (ambient ? 'ONLINE · ESCUTA 24H' : 'ONLINE');
+  $('#brandSub').textContent = !online ? 'AGENTE OFFLINE' :
+    (settings.agentUrl ? 'AGENT CONECTADO' : (ambient ? 'ONLINE · ESCUTA 24H' : 'ONLINE'));
   const st=$('#statusStat');
   if(st) st.innerHTML = online
     ? '<span class="mini-dot"></span>Online'
     : '<span class="mini-dot" style="background:#ff5b5b;box-shadow:0 0 8px #ff5b5b"></span>Offline';
+  if($('#ncStatus')) $('#ncStatus').textContent = online ? 'ATIVO' : 'OFFLINE';
+  if($('#modNeuralSt')) $('#modNeuralSt').textContent = online ? 'ATIVO' : 'OFFLINE';
+  const nd=$('#modNeuralDot');
+  if(nd){ nd.classList.toggle('live', online); nd.classList.toggle('mod-dot-off', !online); }
+  refreshHome();
 }
 function toggleOnline(){
   online=!online; LS.set('kairos_online',online);
@@ -1785,7 +1888,8 @@ function saveSettings(){
   settings.elevenKey=$('#elevenKeyInput').value.trim();
   const evs=$('#elevenVoiceSelect');
   if(evs&&evs.value) settings.elevenVoice=evs.value;
-  // preserve existing voice if select is empty (voices not loaded yet)
+  settings.agentUrl=($('#agentUrl')&&$('#agentUrl').value.trim())||'';
+  settings.agentKey=($('#agentKey')&&$('#agentKey').value.trim())||'';
   LS.set('kairos_settings',settings);
   refreshHome(); closeSettings(); toast('Configurações salvas.');
 }
@@ -1818,6 +1922,25 @@ $('#previewVoiceBtn').onclick=()=>{
   speechSynthesis.cancel(); speechSynthesis.speak(u);
 };
 $('#loadElevenVoicesBtn').onclick=()=>{ loadElevenVoices(); };
+$('#testAgentBtn').onclick=async()=>{
+  const url=($('#agentUrl')&&$('#agentUrl').value.trim());
+  const key=($('#agentKey')&&$('#agentKey').value.trim());
+  const res=$('#agentTestResult');
+  if(!url){ res.textContent='⚠ Cole a URL do agente acima.'; return; }
+  res.textContent='⏳ Testando…'; res.style.color='#7a83a8';
+  try{
+    const hdrs={'Content-Type':'application/json'};
+    if(key) hdrs['Authorization']='Bearer '+key;
+    const r=await fetch(url,{method:'POST',headers:hdrs,
+      body:JSON.stringify({messages:[{role:'user',content:'ping'}],max_tokens:8,temperature:0})
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const j=await r.json(); const rep=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'ok';
+    res.textContent='✅ Conectado! Resposta: "'+rep.slice(0,60)+'"'; res.style.color='#00e09a';
+  }catch(e){
+    res.textContent='❌ Erro: '+e.message+' (verifique URL, CORS e chave)'; res.style.color='#ff7070';
+  }
+};
 let previewAudio=null;
 $('#elevenVoicePreviewBtn').onclick=async()=>{
   const sel=$('#elevenVoiceSelect'); const voiceId=sel?sel.value:'';
@@ -1868,6 +1991,34 @@ $('#attachInput').addEventListener('change',e=>{
   e.target.value='';
 });
 $('#attachClear').onclick=()=>{ attachedImg=null; $('#attachPreview').style.display='none'; $('#attachThumb').src=''; };
+
+/* ── CÂMERA / VISÃO AO VIVO ── */
+let camStream=null;
+$('#camBtn').onclick=async()=>{
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    $('#camVideo').srcObject=camStream;
+    $('#camModal').classList.add('on');
+  }catch(e){ toast('Sem acesso à câmera: '+e.message,true); }
+};
+$('#camClose').onclick=()=>{
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  $('#camModal').classList.remove('on');
+};
+$('#camSnap').onclick=()=>{
+  const v=$('#camVideo'), cv=$('#camCanvas');
+  cv.width=v.videoWidth||640; cv.height=v.videoHeight||480;
+  cv.getContext('2d').drawImage(v,0,0);
+  const dataUrl=cv.toDataURL('image/jpeg',.85);
+  attachedImg={url:dataUrl,type:'image/jpeg'};
+  $('#attachThumb').src=dataUrl;
+  $('#attachPreview').style.display='flex';
+  $('#attachPreview').style.alignItems='center';
+  $('#attachPreview').style.gap='8px';
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  $('#camModal').classList.remove('on');
+  toast('📸 Capturado. Escreva o que quer analisar e envie, ou só envie.');
+};
 
 /* Module panel clickable items */
 $('#modNeural').onclick=()=>{ primeTTS(); toggleOnline(); };
@@ -2258,6 +2409,7 @@ function armFone(){
   }catch(e){ foneErr='falha: '+e.message; updateArmFoneUI(); foneDiag(); }
 }
 function updateArmFoneUI(){
+  refreshHome(); // update config % progress bar (foneArmed counts toward it)
   const btn=$('#armFoneBtn'); if(!btn) return;
   const svg='<svg viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0116 0v2"/><path d="M4 14a2 2 0 012 2v2a2 2 0 01-2 2 2 2 0 01-2-2v-2a2 2 0 012-2zM20 14a2 2 0 00-2 2v2a2 2 0 002 2 2 2 0 002-2v-2a2 2 0 00-2-2z"/></svg>';
   if(foneArmed && !foneErr){
