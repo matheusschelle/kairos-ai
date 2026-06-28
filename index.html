@@ -2728,6 +2728,10 @@ async function routeVault(){
 async function cgMfaEnroll(){
   cgSub('Ative a verificação em 2 etapas');
   cgSet('<p style="font-size:12.5px;color:var(--ink-dim);line-height:1.45;margin-bottom:10px">Escaneie o QR no seu app autenticador (Google Authenticator, Authy…) e digite o código de 6 dígitos.</p><div id="cgQr" style="display:flex;justify-content:center;margin:6px 0">⏳</div><div class="auth-field"><label>Código (6 dígitos)</label><input id="cgCode" inputmode="numeric" maxlength="6" placeholder="000000"></div><button class="auth-btn" id="cgGo">Ativar 2FA</button>');
+  // limpa fatores TOTP não verificados que ficaram de tentativas anteriores (evita "friendly name already exists")
+  try{ const { data:lf }=await supa.auth.mfa.listFactors();
+    for(const s of ((lf&&lf.all)||[])){ if(s.factor_type==='totp'&&s.status!=='verified'){ try{ await supa.auth.mfa.unenroll({factorId:s.id}); }catch(e){} } }
+  }catch(e){}
   const { data, error }=await supa.auth.mfa.enroll({factorType:'totp'});
   if(error) return cgError(error.message);
   const factorId=data.id;
