@@ -796,10 +796,10 @@
       <div class="hint">Com a chave, o agente pode pesquisar na web em tempo real. Sem ela, usa o DuckDuckGo (limitado).</div>
     </div>
     <div class="field" style="border-top:1px solid rgba(139,92,255,.2);padding-top:18px;margin-top:6px">
-      <label style="color:#b8a0ff">Agente Personalizado <span style="color:#7a83a8;font-weight:400">(OpenCLAW / VPS)</span></label>
-      <input id="agentUrl" type="url" placeholder="https://seu-vps.com/v1/chat/completions" autocomplete="off">
+      <label style="color:#b8a0ff">URL do Agente (VPS) <span style="color:#7a83a8;font-weight:400">(OpenCLAW / tunnel)</span></label>
+      <input id="agentUrl" type="url" placeholder="https://...trycloudflare.com/v1/chat/completions" autocomplete="off">
       <input id="agentKey" type="password" placeholder="Bearer token / API key do agente (opcional)" autocomplete="off" style="margin-top:8px">
-      <div class="hint" style="margin-top:6px">Endpoint OpenAI-compatível rodando na VPS. Quando preenchido, substitui o Groq nas conversas. Imagens e STT continuam via Groq.</div>
+      <div class="hint" style="margin-top:6px">Cole aqui a URL atual do seu agente (termina em /v1/chat/completions ou a rota correta). Quando o tunnel mudar, é só atualizar esta URL — sem mexer no código. Vazio = usa o Groq. Imagens e STT continuam via Groq.</div>
       <button id="testAgentBtn" type="button" style="margin-top:8px;width:100%;padding:10px;border-radius:12px;border:1px solid rgba(139,92,255,.35);background:rgba(139,92,255,.1);color:#c8b8ff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">⚡ Testar conexão com agente</button>
       <div id="agentTestResult" style="font-size:12px;color:#7a83a8;margin-top:6px;text-align:center"></div>
     </div>
