@@ -2683,7 +2683,12 @@ function cgLogin(){
         '<div class="auth-field"><label>Senha</label><input id="cgPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>'+
         '<button class="auth-btn" id="cgGo">Entrar</button>'+
         '<div class="auth-switch" id="cgAlt">Criar conta</div>');
-  $('#cgGo').onclick=()=>cgGuard(async()=>{ const { error }=await supa.auth.signInWithPassword({email:$('#cgEmail').value.trim(),password:$('#cgPass').value}); if(error) throw error; await routeAfterAuth(); });
+  $('#cgGo').onclick=()=>cgGuard(async()=>{
+    const email=$('#cgEmail').value.trim();
+    const { error }=await supa.auth.signInWithPassword({email,password:$('#cgPass').value});
+    if(error){ if(/confirm/i.test(error.message)) return cgConfirm(email); throw error; }
+    await routeAfterAuth();
+  });
   $('#cgPass').addEventListener('keydown',ev=>{ if(ev.key==='Enter') $('#cgGo').click(); });
   $('#cgAlt').onclick=cgSignup;
 }
@@ -2704,7 +2709,8 @@ function cgSignup(){
 }
 function cgConfirm(email){
   cgSub('Confirme seu email');
-  cgSet('<p style="font-size:13px;color:var(--ink-dim);line-height:1.5;margin-bottom:14px">Enviei um link de confirmação para <b>'+email+'</b>. Abra o email, confirme, e volte aqui pra entrar.</p><button class="auth-btn" id="cgGo">Voltar pro login</button>');
+  cgSet('<p style="font-size:13px;color:var(--ink-dim);line-height:1.5;margin-bottom:12px">Abra o link de confirmação que enviei para <b>'+email+'</b> (olhe também o spam). Se o link expirou, reenvie abaixo.</p><button class="auth-btn" id="cgResend" style="margin-bottom:8px">Reenviar email de confirmação</button><button class="auth-btn" id="cgGo">Voltar pro login</button>');
+  $('#cgResend').onclick=()=>cgGuard(async()=>{ const { error }=await supa.auth.resend({type:'signup',email,options:{emailRedirectTo:location.href.split('#')[0]}}); if(error) throw error; cgMsg('Email reenviado! Olhe a caixa de entrada e o spam.',true); });
   $('#cgGo').onclick=cgLogin;
 }
 async function routeAfterAuth(){
@@ -2727,15 +2733,24 @@ async function routeVault(){
 }
 async function cgMfaEnroll(){
   cgSub('Ative a verificação em 2 etapas');
-  cgSet('<p style="font-size:12.5px;color:var(--ink-dim);line-height:1.45;margin-bottom:10px">Escaneie o QR no seu app autenticador (Google Authenticator, Authy…) e digite o código de 6 dígitos.</p><div id="cgQr" style="display:flex;justify-content:center;margin:6px 0">⏳</div><div class="auth-field"><label>Código (6 dígitos)</label><input id="cgCode" inputmode="numeric" maxlength="6" placeholder="000000"></div><button class="auth-btn" id="cgGo">Ativar 2FA</button>');
+  cgSet('<p style="font-size:12.5px;color:var(--ink-dim);line-height:1.45;margin-bottom:10px">Escaneie o QR no seu app autenticador (Google Authenticator, Authy…). No mesmo celular? Toque em "Abrir no app" ou digite a chave manual.</p><div id="cgQr" style="display:flex;justify-content:center;margin:6px 0">⏳</div><div id="cgSecret"></div><div class="auth-field"><label>Código (6 dígitos)</label><input id="cgCode" inputmode="numeric" maxlength="6" placeholder="000000"></div><button class="auth-btn" id="cgGo">Ativar 2FA</button>');
   // limpa fatores TOTP não verificados que ficaram de tentativas anteriores (evita "friendly name already exists")
   try{ const { data:lf }=await supa.auth.mfa.listFactors();
     for(const s of ((lf&&lf.all)||[])){ if(s.factor_type==='totp'&&s.status!=='verified'){ try{ await supa.auth.mfa.unenroll({factorId:s.id}); }catch(e){} } }
   }catch(e){}
   const { data, error }=await supa.auth.mfa.enroll({factorType:'totp'});
   if(error) return cgError(error.message);
-  const factorId=data.id;
-  $('#cgQr').innerHTML='<img alt="QR" style="width:168px;height:168px;background:#fff;border-radius:10px;padding:6px" src="'+data.totp.qr_code+'">';
+  const factorId=data.id, secret=data.totp.secret, uri=data.totp.uri;
+  // QR via propriedade .src — o data-URI SVG tem aspas que quebram o innerHTML
+  const qr=$('#cgQr'); qr.innerHTML='';
+  const img=document.createElement('img'); img.alt='QR'; img.style.cssText='width:170px;height:170px;background:#fff;border-radius:10px;padding:6px'; img.src=data.totp.qr_code; qr.appendChild(img);
+  const sec=$('#cgSecret');
+  const open=document.createElement('a'); open.textContent='Abrir no app autenticador ↗'; open.href=uri; open.style.cssText='display:block;text-align:center;color:#22e0ff;font-weight:600;font-size:13px;margin:4px 0 6px';
+  const lbl=document.createElement('div'); lbl.textContent='ou digite esta chave no app (manual / time-based):'; lbl.style.cssText='font-size:11px;color:var(--ink-dim);text-align:center;margin-bottom:4px';
+  const key=document.createElement('div'); key.textContent=secret; key.style.cssText='font-family:monospace;font-size:14px;letter-spacing:2px;text-align:center;word-break:break-all;background:rgba(8,10,26,.7);border:1px solid var(--glass-brd);border-radius:10px;padding:10px;margin-bottom:6px';
+  const copy=document.createElement('button'); copy.className='auth-btn'; copy.textContent='Copiar chave'; copy.style.marginBottom='10px';
+  copy.onclick=()=>{ try{ navigator.clipboard.writeText(secret); cgMsg('Chave copiada!',true);}catch(e){} };
+  sec.appendChild(open); sec.appendChild(lbl); sec.appendChild(key); sec.appendChild(copy);
   $('#cgGo').onclick=()=>cgGuard(async()=>{
     const ch=await supa.auth.mfa.challenge({factorId}); if(ch.error) throw ch.error;
     const v=await supa.auth.mfa.verify({factorId,challengeId:ch.data.id,code:$('#cgCode').value.trim()}); if(v.error) throw v.error;
@@ -2809,8 +2824,13 @@ async function cloudBoot(){
   try{ supa=window.supabase.createClient(SB_URL,SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}); }
   catch(e){ return cgFatal('Falha ao iniciar Supabase: '+e.message); }
   $('#cloudGate').classList.add('on');
-  try{ const { data:{ session } }=await supa.auth.getSession(); if(!session) return cgLogin(); await routeAfterAuth(); }
-  catch(e){ cgLogin(); }
+  const hadErr=/error=|error_code=/.test(location.hash||'');
+  try{
+    const { data:{ session } }=await supa.auth.getSession();
+    if(location.hash) try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+    if(!session){ cgLogin(); if(hadErr) cgMsg('O link de confirmação expirou. Entre na conta e use "Reenviar email".'); return; }
+    await routeAfterAuth();
+  }catch(e){ cgLogin(); }
 }
 
 /* ---------- INIT ---------- */
