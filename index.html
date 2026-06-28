@@ -797,9 +797,9 @@
     </div>
     <div class="field" style="border-top:1px solid rgba(139,92,255,.2);padding-top:18px;margin-top:6px">
       <label style="color:#b8a0ff">URL do Agente (VPS) <span style="color:#7a83a8;font-weight:400">(OpenCLAW / tunnel)</span></label>
-      <input id="agentUrl" type="url" placeholder="https://...trycloudflare.com/v1/chat/completions" autocomplete="off">
+      <input id="agentUrl" type="url" placeholder="https://agente.kairos.digital/api/command" autocomplete="off">
       <input id="agentKey" type="password" placeholder="Bearer token / API key do agente (opcional)" autocomplete="off" style="margin-top:8px">
-      <div class="hint" style="margin-top:6px">Cole aqui a URL atual do seu agente (termina em /v1/chat/completions ou a rota correta). Quando o tunnel mudar, é só atualizar esta URL — sem mexer no código. Vazio = usa o Groq. Imagens e STT continuam via Groq.</div>
+      <div class="hint" style="margin-top:6px">Cole a URL do seu agente Kairos terminando em <b>/api/command</b>. No app você digita comandos (ex: /status, /post, /manus) ou conversa — igual ao Telegram, e ele executa de verdade. Se a URL mudar, é só atualizar aqui. Vazio = usa o Groq. Imagens e voz continuam via Groq.</div>
       <button id="testAgentBtn" type="button" style="margin-top:8px;width:100%;padding:10px;border-radius:12px;border:1px solid rgba(139,92,255,.35);background:rgba(139,92,255,.1);color:#c8b8ff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">⚡ Testar conexão com agente</button>
       <div id="agentTestResult" style="font-size:12px;color:#7a83a8;margin-top:6px;text-align:center"></div>
     </div>
@@ -1457,14 +1457,27 @@ async function groqChat(messages,model){
   // Vision model always uses Groq (custom agents may not support it)
   const isVision=model&&model.includes('vision');
   const useCustom=!isVision&&settings.agentUrl&&settings.agentUrl.trim();
-  const url=useCustom?settings.agentUrl.trim():'https://api.groq.com/openai/v1/chat/completions';
-  const key=useCustom?(settings.agentKey||'none'):settings.apiKey;
+  if(useCustom){
+    // Agente Kairos (VPS): contrato { message } -> { reply }, mesmo despachante do Telegram/WhatsApp.
+    // Executa comandos (/status, /post, /manus…) e conversa. O contexto fica no lado da VPS.
+    const url=settings.agentUrl.trim();
+    const last=[...messages].reverse().find(m=>m.role==='user');
+    const text=(last&&typeof last.content==='string')?last.content:'';
+    const hdrs={'Content-Type':'application/json'};
+    if(settings.agentKey) hdrs['Authorization']='Bearer '+settings.agentKey;
+    const r=await fetch(url,{method:'POST',headers:hdrs,body:JSON.stringify({message:text})});
+    if(!r.ok){const e=await r.text();throw new Error('Agente '+r.status+': '+e.slice(0,160));}
+    const j=await r.json();
+    // aceita { reply } (Kairos) ou OpenAI { choices } (fallback p/ outros endpoints)
+    const out=(j&&j.reply!=null)?j.reply:(j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content);
+    return (out||'').toString().trim();
+  }
+  const url='https://api.groq.com/openai/v1/chat/completions';
   const hdrs={'Content-Type':'application/json'};
-  if(key) hdrs['Authorization']='Bearer '+key;
-  const body={messages,temperature:.7,max_tokens:1024};
-  if(!useCustom||model) body.model=model||settings.model;
+  if(settings.apiKey) hdrs['Authorization']='Bearer '+settings.apiKey;
+  const body={messages,temperature:.7,max_tokens:1024,model:model||settings.model};
   const r=await fetch(url,{method:'POST',headers:hdrs,body:JSON.stringify(body)});
-  if(!r.ok){const e=await r.text();throw new Error((useCustom?'Agente':'LLM')+' '+r.status+': '+e.slice(0,160));}
+  if(!r.ok){const e=await r.text();throw new Error('LLM '+r.status+': '+e.slice(0,160));}
   const j=await r.json(); return j.choices[0].message.content.trim();
 }
 async function groqSTT(blob){
@@ -2013,10 +2026,10 @@ $('#testAgentBtn').onclick=async()=>{
     const hdrs={'Content-Type':'application/json'};
     if(key) hdrs['Authorization']='Bearer '+key;
     const r=await fetch(url,{method:'POST',headers:hdrs,
-      body:JSON.stringify({messages:[{role:'user',content:'ping'}],max_tokens:8,temperature:0})
+      body:JSON.stringify({message:'/ping'})
     });
     if(!r.ok) throw new Error('HTTP '+r.status);
-    const j=await r.json(); const rep=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'ok';
+    const j=await r.json(); const rep=((j&&j.reply!=null)?j.reply:(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content))||'ok';
     res.textContent='✅ Conectado! Resposta: "'+rep.slice(0,60)+'"'; res.style.color='#00e09a';
   }catch(e){
     res.textContent='❌ Erro: '+e.message+' (verifique URL, CORS e chave)'; res.style.color='#ff7070';
