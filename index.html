@@ -12,6 +12,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <title>Kairos AI</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#05060f;
@@ -877,6 +878,23 @@
     <button class="auth-btn" id="authBtn">Entrar</button>
     <div class="auth-msg" id="authMsg"></div>
     <div class="auth-switch" id="authSwitch">Criar acesso</div>
+  </div>
+</div>
+
+<!-- LOGIN SEGURO NA NUVEM (Supabase: email+senha + 2FA + PIN) -->
+<div id="cloudGate" class="auth">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="21" stroke="url(#hg)" stroke-width="1.5" opacity=".5"/>
+        <path d="M16 13h16M16 35h16M16 13c0 6 16 12 16 22M32 13c0 6-16 12-16 22" stroke="url(#hg)" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="24" cy="24" r="2.6" fill="#fff"/>
+      </svg>
+    </div>
+    <h2>Kairos AI</h2>
+    <p class="auth-sub" id="cgSub">Acesse sua conta</p>
+    <div id="cgBody"></div>
+    <div class="auth-msg" id="cgMsg"></div>
   </div>
 </div>
 
@@ -1985,6 +2003,7 @@ function saveSettings(){
   settings.agentKey=($('#agentKey')&&$('#agentKey').value.trim())||'';
   settings.serperKey=($('#serperKey')&&$('#serperKey').value.trim())||'';
   LS.set('kairos_settings',settings);
+  syncVault();
   refreshHome(); closeSettings(); toast('Configurações salvas.');
 }
 
@@ -2550,6 +2569,7 @@ async function createPersona(){
   if(!name){ $('#personaErr').textContent='Me dê um nome primeiro.'; return; }
   persona={ name, personality: pers || 'Um parceiro de pensamento livre, curioso e criativo, que troca ideia de igual pra igual.', created:true, createdAt:Date.now() };
   LS.set('kairos_persona',persona);
+  syncVault();
   const pv=$('#pVoiceInput'); if(pv){ settings.voice=pv.value; LS.set('kairos_settings',settings); }
   stopSpeaking();
   foneMeta();
@@ -2598,6 +2618,197 @@ $('#pPreviewVoiceBtn').onclick=()=>{
   speechSynthesis.cancel(); speechSynthesis.speak(u);
 };
 
+/* ================= LOGIN SEGURO NA NUVEM: Supabase Auth + 2FA + PIN (cofre cifrado) =================
+   email+senha (Supabase Auth) + TOTP (2FA) + PIN que cifra os segredos (envelope encryption).
+   Os segredos (URL/chave do agente, Groq, ElevenLabs, persona…) sobem CIFRADOS: no servidor fica
+   só ciphertext. PIN ou código de resgate abrem o cofre. Logou de qualquer aparelho => tudo pronto. */
+const SB_URL='https://faajowrdwfffoicakaax.supabase.co';
+const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhYWpvd3Jkd2ZmZm9pY2FrYWF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMjMxMTAsImV4cCI6MjA5NDc5OTExMH0.1XvcAd2QTSnNDOzRqX6dMZl-m_6Nqj2Ux4D2NdUQKp8';
+let supa=null, _dek=null; // _dek: chave de dados (CryptoKey) em memória durante a sessão
+
+const _te=new TextEncoder(), _td=new TextDecoder();
+const _b64=b=>btoa(String.fromCharCode.apply(null,new Uint8Array(b)));
+const _ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+function _salt(){ return _b64(crypto.getRandomValues(new Uint8Array(16))); }
+async function _kdf(secret,saltB64){
+  const base=await crypto.subtle.importKey('raw',_te.encode(secret),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:_ub(saltB64),iterations:210000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function _enc(key,bytes){ const iv=crypto.getRandomValues(new Uint8Array(12)); const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,bytes); return {iv:_b64(iv),data:_b64(ct)}; }
+async function _dec(key,ivB64,dataB64){ const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:_ub(ivB64)},key,_ub(dataB64)); return new Uint8Array(pt); }
+async function _impDEK(raw){ return crypto.subtle.importKey('raw',raw,{name:'AES-GCM',length:256},true,['encrypt','decrypt']); } // extraível p/ re-wrap ao trocar PIN
+function _recCode(){ const al='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r=crypto.getRandomValues(new Uint8Array(20)); let o=''; for(let i=0;i<20;i++)o+=al[r[i]%al.length]; return o.match(/.{4}/g).join('-'); }
+
+function _secrets(){ return { settings:{agentUrl:settings.agentUrl||'',agentKey:settings.agentKey||'',apiKey:settings.apiKey||'',elevenKey:settings.elevenKey||'',elevenVoice:settings.elevenVoice||'',serperKey:settings.serperKey||'',voice:settings.voice||'',model:settings.model||'',name:settings.name||''}, persona:persona||null }; }
+function _apply(o){ if(o&&o.settings){ Object.assign(settings,o.settings); LS.set('kairos_settings',settings); } if(o&&o.persona){ persona=o.persona; LS.set('kairos_persona',persona); } }
+
+async function _buildVault(pin,rec){
+  const rawArr=crypto.getRandomValues(new Uint8Array(32));
+  _dek=await _impDEK(rawArr);
+  const enc=await _enc(_dek,_te.encode(JSON.stringify(_secrets())));
+  const ps=_salt(), rs=_salt();
+  const pk=await _kdf(pin,ps), rk=await _kdf(rec,rs);
+  const pw=await _enc(pk,rawArr), rw=await _enc(rk,rawArr);
+  return { enc_iv:enc.iv, enc_data:enc.data, pin_salt:ps, pin_iv:pw.iv, pin_wrap:pw.data, rec_salt:rs, rec_iv:rw.iv, rec_wrap:rw.data };
+}
+async function _unlockVault(row,secret,which){
+  const salt=which==='pin'?row.pin_salt:row.rec_salt, iv=which==='pin'?row.pin_iv:row.rec_iv, wrap=which==='pin'?row.pin_wrap:row.rec_wrap;
+  const k=await _kdf(secret,salt);
+  const rawArr=await _dec(k,iv,wrap);            // lança erro se PIN/código errado (GCM)
+  _dek=await _impDEK(rawArr);
+  const plain=await _dec(_dek,row.enc_iv,row.enc_data);
+  _apply(JSON.parse(_td.decode(plain)));
+}
+async function syncVault(){ // re-cifra os segredos no cofre quando settings/persona mudam
+  try{
+    if(!supa||!_dek) return;
+    const { data:{ user } }=await supa.auth.getUser(); if(!user) return;
+    const enc=await _enc(_dek,_te.encode(JSON.stringify(_secrets())));
+    await supa.from('vault').update({enc_iv:enc.iv,enc_data:enc.data,updated_at:new Date().toISOString()}).eq('user_id',user.id);
+  }catch(e){}
+}
+
+/* ---- UI do gate ---- */
+function cgMsg(t,ok){ const m=$('#cgMsg'); if(m){ m.textContent=t||''; m.style.color=ok?'#00e09a':'#ff7b7b'; } }
+function cgSub(t){ const s=$('#cgSub'); if(s) s.textContent=t; }
+function cgSet(html){ $('#cgBody').innerHTML=html; cgMsg(''); }
+function cgDone(){ $('#cloudGate').classList.remove('on'); afterLogin(); }
+async function cgGuard(fn){ try{ cgMsg(''); await fn(); }catch(e){ cgMsg((e&&e.message)||String(e)); } }
+function cgError(t){ cgSub('Atenção'); cgSet('<p style="font-size:13px;color:#ffb4b4;line-height:1.5;margin-bottom:14px">'+t+'</p><button class="auth-btn" id="cgRetry">Tentar de novo</button>'); $('#cgRetry').onclick=()=>routeAfterAuth(); }
+function cgFatal(t){ cgSub('Login na nuvem indisponível'); cgSet('<p style="font-size:13px;color:var(--ink-dim);line-height:1.5;margin-bottom:14px">'+t+'</p><button class="auth-btn" id="cgLocal">Entrar em modo local (temporário)</button>'); $('#cloudGate').classList.add('on'); $('#cgLocal').onclick=()=>{ $('#cloudGate').classList.remove('on'); afterLogin(); }; }
+
+function cgLogin(){
+  cgSub('Acesse sua conta');
+  cgSet('<div class="auth-field"><label>Email</label><input id="cgEmail" type="email" autocomplete="username" placeholder="voce@email.com"></div>'+
+        '<div class="auth-field"><label>Senha</label><input id="cgPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>'+
+        '<button class="auth-btn" id="cgGo">Entrar</button>'+
+        '<div class="auth-switch" id="cgAlt">Criar conta</div>');
+  $('#cgGo').onclick=()=>cgGuard(async()=>{ const { error }=await supa.auth.signInWithPassword({email:$('#cgEmail').value.trim(),password:$('#cgPass').value}); if(error) throw error; await routeAfterAuth(); });
+  $('#cgPass').addEventListener('keydown',ev=>{ if(ev.key==='Enter') $('#cgGo').click(); });
+  $('#cgAlt').onclick=cgSignup;
+}
+function cgSignup(){
+  cgSub('Crie sua conta');
+  cgSet('<div class="auth-field"><label>Email</label><input id="cgEmail" type="email" autocomplete="username" placeholder="voce@email.com"></div>'+
+        '<div class="auth-field"><label>Senha</label><input id="cgPass" type="password" autocomplete="new-password" placeholder="mínimo 8 caracteres"></div>'+
+        '<button class="auth-btn" id="cgGo">Criar conta</button>'+
+        '<div class="auth-switch" id="cgAlt">Já tenho conta</div>');
+  $('#cgGo').onclick=()=>cgGuard(async()=>{
+    const email=$('#cgEmail').value.trim(), pass=$('#cgPass').value;
+    if(pass.length<8) throw new Error('A senha precisa de pelo menos 8 caracteres.');
+    const { data, error }=await supa.auth.signUp({email,password:pass,options:{emailRedirectTo:location.href.split('#')[0]}});
+    if(error) throw error;
+    if(data.session) await routeAfterAuth(); else cgConfirm(email);
+  });
+  $('#cgAlt').onclick=cgLogin;
+}
+function cgConfirm(email){
+  cgSub('Confirme seu email');
+  cgSet('<p style="font-size:13px;color:var(--ink-dim);line-height:1.5;margin-bottom:14px">Enviei um link de confirmação para <b>'+email+'</b>. Abra o email, confirme, e volte aqui pra entrar.</p><button class="auth-btn" id="cgGo">Voltar pro login</button>');
+  $('#cgGo').onclick=cgLogin;
+}
+async function routeAfterAuth(){
+  try{ const { data:aal }=await supa.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(aal&&aal.nextLevel==='aal2'&&aal.currentLevel!=='aal2') return cgMfaChallenge();
+  }catch(e){}
+  await routeVault();
+}
+async function routeVault(){
+  const { data:{ user } }=await supa.auth.getUser();
+  if(!user) return cgLogin();
+  const res=await supa.from('vault').select('*').eq('user_id',user.id).maybeSingle();
+  if(res.error) return cgError('Erro ao acessar o cofre: '+res.error.message+'. (Já rodou o SQL do cofre no Supabase?)');
+  if(!res.data){
+    const { data:f }=await supa.auth.mfa.listFactors();
+    if(!(f&&f.totp&&f.totp.length)) return cgMfaEnroll();
+    return cgPinSet();
+  }
+  return cgPinUnlock(res.data);
+}
+async function cgMfaEnroll(){
+  cgSub('Ative a verificação em 2 etapas');
+  cgSet('<p style="font-size:12.5px;color:var(--ink-dim);line-height:1.45;margin-bottom:10px">Escaneie o QR no seu app autenticador (Google Authenticator, Authy…) e digite o código de 6 dígitos.</p><div id="cgQr" style="display:flex;justify-content:center;margin:6px 0">⏳</div><div class="auth-field"><label>Código (6 dígitos)</label><input id="cgCode" inputmode="numeric" maxlength="6" placeholder="000000"></div><button class="auth-btn" id="cgGo">Ativar 2FA</button>');
+  const { data, error }=await supa.auth.mfa.enroll({factorType:'totp'});
+  if(error) return cgError(error.message);
+  const factorId=data.id;
+  $('#cgQr').innerHTML='<img alt="QR" style="width:168px;height:168px;background:#fff;border-radius:10px;padding:6px" src="'+data.totp.qr_code+'">';
+  $('#cgGo').onclick=()=>cgGuard(async()=>{
+    const ch=await supa.auth.mfa.challenge({factorId}); if(ch.error) throw ch.error;
+    const v=await supa.auth.mfa.verify({factorId,challengeId:ch.data.id,code:$('#cgCode').value.trim()}); if(v.error) throw v.error;
+    await routeVault();
+  });
+}
+async function cgMfaChallenge(){
+  cgSub('Verificação em 2 etapas');
+  const { data:f, error }=await supa.auth.mfa.listFactors();
+  if(error) return cgError(error.message);
+  const factor=f&&f.totp&&f.totp[0];
+  if(!factor) return routeVault();
+  cgSet('<p style="font-size:12.5px;color:var(--ink-dim);margin-bottom:10px">Digite o código do seu app autenticador.</p><div class="auth-field"><label>Código (6 dígitos)</label><input id="cgCode" inputmode="numeric" maxlength="6" placeholder="000000"></div><button class="auth-btn" id="cgGo">Verificar</button>');
+  $('#cgGo').onclick=()=>cgGuard(async()=>{
+    const ch=await supa.auth.mfa.challenge({factorId:factor.id}); if(ch.error) throw ch.error;
+    const v=await supa.auth.mfa.verify({factorId:factor.id,challengeId:ch.data.id,code:$('#cgCode').value.trim()}); if(v.error) throw v.error;
+    await routeVault();
+  });
+  $('#cgCode').addEventListener('keydown',ev=>{ if(ev.key==='Enter') $('#cgGo').click(); });
+}
+function cgPinSet(){
+  cgSub('Crie seu PIN');
+  cgSet('<p style="font-size:12.5px;color:var(--ink-dim);line-height:1.45;margin-bottom:10px">PIN de 6 dígitos. Ele cifra suas chaves (agente, Groq…) — nem o servidor lê sem ele.</p><div class="auth-field"><label>PIN (6 dígitos)</label><input id="cgPin" type="password" inputmode="numeric" maxlength="6" placeholder="••••••"></div><div class="auth-field"><label>Repita o PIN</label><input id="cgPin2" type="password" inputmode="numeric" maxlength="6" placeholder="••••••"></div><button class="auth-btn" id="cgGo">Definir PIN</button>');
+  $('#cgGo').onclick=()=>cgGuard(async()=>{
+    const p=$('#cgPin').value.trim(), p2=$('#cgPin2').value.trim();
+    if(!/^\d{6}$/.test(p)) throw new Error('O PIN precisa ter 6 dígitos.');
+    if(p!==p2) throw new Error('Os PINs não conferem.');
+    const rec=_recCode(); const row=await _buildVault(p,rec);
+    const { data:{ user } }=await supa.auth.getUser();
+    const ins=await supa.from('vault').insert(Object.assign({user_id:user.id},row));
+    if(ins.error) throw new Error('Não consegui salvar o cofre: '+ins.error.message);
+    cgRecShow(rec);
+  });
+}
+function cgRecShow(rec){
+  cgSub('Guarde seu código de resgate');
+  cgSet('<p style="font-size:12.5px;color:var(--ink-dim);line-height:1.45;margin-bottom:10px">Se esquecer o PIN, este código é a ÚNICA forma de recuperar suas chaves. Anote num lugar seguro — não mostro de novo.</p><div style="font-family:monospace;font-size:17px;letter-spacing:2px;text-align:center;background:rgba(8,10,26,.7);border:1px solid var(--glass-brd);border-radius:12px;padding:14px;margin-bottom:12px;color:#c8f5e6">'+rec+'</div><button class="auth-btn" id="cgCopy" style="margin-bottom:8px">Copiar código</button><button class="auth-btn" id="cgGo">Já anotei, continuar</button>');
+  $('#cgCopy').onclick=()=>{ try{ navigator.clipboard.writeText(rec); cgMsg('Copiado!',true); }catch(e){} };
+  $('#cgGo').onclick=cgDone;
+}
+function cgPinUnlock(row){
+  cgSub('Digite seu PIN');
+  cgSet('<div class="auth-field"><label>PIN</label><input id="cgPin" type="password" inputmode="numeric" maxlength="6" placeholder="••••••"></div><button class="auth-btn" id="cgGo">Desbloquear</button><div class="auth-switch" id="cgAlt">Esqueci o PIN — usar código de resgate</div>');
+  $('#cgGo').onclick=()=>cgGuard(async()=>{ try{ await _unlockVault(row,$('#cgPin').value.trim(),'pin'); }catch(e){ throw new Error('PIN incorreto.'); } cgDone(); });
+  $('#cgPin').addEventListener('keydown',ev=>{ if(ev.key==='Enter') $('#cgGo').click(); });
+  $('#cgAlt').onclick=()=>cgRecUnlock(row);
+}
+function cgRecUnlock(row){
+  cgSub('Código de resgate');
+  cgSet('<div class="auth-field"><label>Código de resgate</label><input id="cgRecIn" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off"></div><button class="auth-btn" id="cgGo">Recuperar</button><div class="auth-switch" id="cgAlt">Voltar pro PIN</div>');
+  $('#cgGo').onclick=()=>cgGuard(async()=>{ try{ await _unlockVault(row,$('#cgRecIn').value.trim().toUpperCase(),'rec'); }catch(e){ throw new Error('Código de resgate inválido.'); } cgMsg('Recuperado! Crie um PIN novo.',true); setTimeout(()=>cgReSetPin(),700); });
+  $('#cgAlt').onclick=()=>cgPinUnlock(row);
+}
+function cgReSetPin(){
+  cgSub('Crie um novo PIN');
+  cgSet('<div class="auth-field"><label>Novo PIN (6 dígitos)</label><input id="cgPin" type="password" inputmode="numeric" maxlength="6" placeholder="••••••"></div><div class="auth-field"><label>Repita</label><input id="cgPin2" type="password" inputmode="numeric" maxlength="6" placeholder="••••••"></div><button class="auth-btn" id="cgGo">Salvar PIN</button>');
+  $('#cgGo').onclick=()=>cgGuard(async()=>{
+    const p=$('#cgPin').value.trim(), p2=$('#cgPin2').value.trim();
+    if(!/^\d{6}$/.test(p)) throw new Error('O PIN precisa ter 6 dígitos.');
+    if(p!==p2) throw new Error('Os PINs não conferem.');
+    const raw=new Uint8Array(await crypto.subtle.exportKey('raw',_dek));
+    const ps=_salt(), pk=await _kdf(p,ps), pw=await _enc(pk,raw);
+    const { data:{ user } }=await supa.auth.getUser();
+    const up=await supa.from('vault').update({pin_salt:ps,pin_iv:pw.iv,pin_wrap:pw.data,updated_at:new Date().toISOString()}).eq('user_id',user.id);
+    if(up.error) throw new Error(up.error.message);
+    cgDone();
+  });
+}
+async function cloudBoot(){
+  if(!window.supabase||!window.supabase.createClient) return cgFatal('Não consegui carregar o módulo de login seguro (rede/CDN?).');
+  try{ supa=window.supabase.createClient(SB_URL,SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}); }
+  catch(e){ return cgFatal('Falha ao iniciar Supabase: '+e.message); }
+  $('#cloudGate').classList.add('on');
+  try{ const { data:{ session } }=await supa.auth.getSession(); if(!session) return cgLogin(); await routeAfterAuth(); }
+  catch(e){ cgLogin(); }
+}
+
 /* ---------- INIT ---------- */
 loadVoices();
 refreshHome();
@@ -2605,12 +2816,9 @@ renderSessions();
 showChat(false);
 refreshStatus();
 
-/* Acesso FIXO em qualquer aparelho — sempre sobrescreve o que estiver salvo */
-LS.set('kairos_account',{ user:'matheus', pass:enc('kairos2026'), name:'Matheus' });
-
-/* Gate de login: com "manter conectado" entra direto; senão pede a senha */
-if(LS.get('kairos_remember',false)){ afterLogin(); }
-else { showGate(); }
+/* Login seguro na nuvem (Supabase Auth + 2FA TOTP + PIN com cofre cifrado).
+   Substitui o acesso local fixo antigo. O #authGate local fica inativo. */
+cloudBoot();
 
 /* service worker (offline) */
 if('serviceWorker' in navigator){
