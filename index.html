@@ -1747,7 +1747,8 @@ async function send(text){
   const hasImg=!!attachedImg;
   if(!text&&!hasImg) return;
   if(!online){ toast('Agente offline. Ligue o agente (power) pra conversar.'); return; }
-  if(!settings.apiKey){ toast('Configure a chave Groq nas Configurações.'); openSettings(); return; }
+  const usingAgent=!!(settings.agentUrl&&settings.agentUrl.trim());
+  if(!settings.apiKey && (!usingAgent || hasImg)){ toast('Configure a chave Groq nas Configurações.'); openSettings(); return; }
   if(!currentId) newSession();
   const s=curSession();
   showChat(true);
@@ -2641,7 +2642,7 @@ async function _impDEK(raw){ return crypto.subtle.importKey('raw',raw,{name:'AES
 function _recCode(){ const al='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r=crypto.getRandomValues(new Uint8Array(20)); let o=''; for(let i=0;i<20;i++)o+=al[r[i]%al.length]; return o.match(/.{4}/g).join('-'); }
 
 function _secrets(){ return { settings:{agentUrl:settings.agentUrl||'',agentKey:settings.agentKey||'',apiKey:settings.apiKey||'',elevenKey:settings.elevenKey||'',elevenVoice:settings.elevenVoice||'',serperKey:settings.serperKey||'',voice:settings.voice||'',model:settings.model||'',name:settings.name||''}, persona:persona||null }; }
-function _apply(o){ if(o&&o.settings){ Object.assign(settings,o.settings); LS.set('kairos_settings',settings); } if(o&&o.persona){ persona=o.persona; LS.set('kairos_persona',persona); } }
+function _apply(o){ if(o&&o.settings){ for(const k in o.settings){ const v=o.settings[k]; if(v!==''&&v!=null) settings[k]=v; } LS.set('kairos_settings',settings); } if(o&&o.persona){ persona=o.persona; LS.set('kairos_persona',persona); } }
 
 async function _buildVault(pin,rec){
   const rawArr=crypto.getRandomValues(new Uint8Array(32));
