@@ -1059,16 +1059,23 @@ window._neuralState='idle';
   let branches=[], sparks=[];
   function genNeuron(){
     branches=[]; sparks=[];
-    const cx=W*.62, cy=H*.5, base=Math.min(W,H), main=12;
+    const cx=W*.5, cy=H*.46, base=Math.min(W,H), main=15;
     for(let b=0;b<main;b++){
-      const a0=(b/main)*Math.PI*2+(Math.random()-.5)*.35;
-      let ang=a0, px=cx, py=cy; const pts=[{x:cx,y:cy}];
+      const a0=(b/main)*Math.PI*2+(Math.random()-.5)*.3;
+      let ang=a0, px=cx, py=cy; const pts=[{x:cx,y:cy,ph:0,amp:0}];
       const len=base*(Math.random()*.22+.30), segs=3+Math.floor(Math.random()*2);
-      for(let s=0;s<segs;s++){ ang+=(Math.random()-.5)*.6; const sl=len/segs*(1-s*.12); px+=Math.cos(ang)*sl; py+=Math.sin(ang)*sl; pts.push({x:px,y:py}); }
+      for(let s=0;s<segs;s++){ ang+=(Math.random()-.5)*.6; const sl=len/segs*(1-s*.12); px+=Math.cos(ang)*sl; py+=Math.sin(ang)*sl; pts.push({x:px,y:py,ph:Math.random()*6.28,amp:base*.007*(s+1)}); }
       branches.push(pts);
-      if(Math.random()<.85){ const fi=1+Math.floor(Math.random()*(pts.length-1)); let fx=pts[fi].x, fy=pts[fi].y, fa=ang+(Math.random()<.5?1:-1)*(Math.random()*.7+.5); const fp=[{x:fx,y:fy}]; for(let s=0;s<2;s++){ fa+=(Math.random()-.5)*.6; fx+=Math.cos(fa)*len*.34; fy+=Math.sin(fa)*len*.34; fp.push({x:fx,y:fy}); } branches.push(fp); }
+      const nf=1+Math.floor(Math.random()*2); // dendritos finos
+      for(let q=0;q<nf;q++){
+        const fi=1+Math.floor(Math.random()*(pts.length-1)); let fx=pts[fi].x, fy=pts[fi].y, fa=ang+(Math.random()<.5?1:-1)*(Math.random()*.9+.4);
+        const fp=[{x:fx,y:fy,ph:pts[fi].ph,amp:pts[fi].amp}]; fp.fine=true;
+        const fseg=2+Math.floor(Math.random()*2);
+        for(let s=0;s<fseg;s++){ fa+=(Math.random()-.5)*.7; fx+=Math.cos(fa)*len*.22; fy+=Math.sin(fa)*len*.22; fp.push({x:fx,y:fy,ph:Math.random()*6.28,amp:base*.009*(s+2)}); }
+        branches.push(fp);
+      }
     }
-    for(let i=0;i<26;i++) sparks.push({b:Math.floor(Math.random()*branches.length), t:Math.random(), sp:Math.random()*.006+.0035});
+    for(let i=0;i<30;i++) sparks.push({b:Math.floor(Math.random()*branches.length), t:Math.random(), sp:Math.random()*.006+.0035});
   }
   function rs(){
     W=c.width=innerWidth*devicePixelRatio; H=c.height=innerHeight*devicePixelRatio;
@@ -1089,7 +1096,7 @@ window._neuralState='idle';
     x.clearRect(0,0,W,H);
     t+=0.016;
     const ns=window._neuralState||'idle';
-    const cx=W*.62, cy=H*.5;
+    const cx=W*.5, cy=H*.46;
     const connDist=(ns==='thinking'?145:110)*devicePixelRatio;
     for(let i=0;i<P.length;i++){
       const p=P[i];
@@ -1133,24 +1140,28 @@ window._neuralState='idle';
     }
     /* ---- NEURÔNIO central: soma (núcleo) + axônios + faíscas ---- */
     {
-      const ncx=W*.62, ncy=H*.5, base=Math.min(W,H), act=ns!=='idle';
+      const ncx=W*.5, ncy=H*.46, base=Math.min(W,H), act=ns!=='idle';
+      const AP=p=>[ p.x+Math.sin(t*1.3+p.ph)*p.amp, p.y+Math.cos(t*1.05+p.ph)*p.amp ]; // axônios ondulam
       let hg=x.createRadialGradient(ncx,ncy,0,ncx,ncy,base*.50);
       hg.addColorStop(0,'rgba(139,92,255,'+(act?.34:.26)+')');
       hg.addColorStop(.45,'rgba(90,70,220,.10)'); hg.addColorStop(1,'rgba(80,60,200,0)');
       x.fillStyle=hg; x.beginPath(); x.arc(ncx,ncy,base*.50,0,7); x.fill();
       x.lineCap='round';
       for(const pts of branches){
-        x.beginPath(); x.moveTo(pts[0].x,pts[0].y);
-        for(let k=1;k<pts.length;k++) x.lineTo(pts[k].x,pts[k].y);
-        x.strokeStyle='rgba(170,130,255,.50)'; x.lineWidth=devicePixelRatio*2.4;
-        x.shadowBlur=16*devicePixelRatio; x.shadowColor='rgba(150,100,255,.85)'; x.stroke();
+        const fine=pts.fine, a0=AP(pts[0]);
+        x.beginPath(); x.moveTo(a0[0],a0[1]);
+        for(let k=1;k<pts.length;k++){ const a=AP(pts[k]); x.lineTo(a[0],a[1]); }
+        x.strokeStyle=fine?'rgba(150,110,255,.30)':'rgba(175,135,255,.52)';
+        x.lineWidth=devicePixelRatio*(fine?1.1:2.4);
+        x.shadowBlur=(fine?8:16)*devicePixelRatio; x.shadowColor='rgba(150,100,255,.8)'; x.stroke();
       }
       x.shadowBlur=0;
       for(const s of sparks){
         s.t+=s.sp*(ns==='thinking'?1.8:ns==='speaking'?1.5:1); if(s.t>1) s.t-=1;
         const pts=branches[s.b]; if(!pts||pts.length<2) continue;
         const seg=(pts.length-1)*s.t, si=Math.min(pts.length-2,Math.floor(seg)), f=seg-si;
-        const ax=pts[si].x+(pts[si+1].x-pts[si].x)*f, ay=pts[si].y+(pts[si+1].y-pts[si].y)*f;
+        const A=AP(pts[si]), B=AP(pts[si+1]);
+        const ax=A[0]+(B[0]-A[0])*f, ay=A[1]+(B[1]-A[1])*f;
         x.beginPath(); x.arc(ax,ay,3*devicePixelRatio,0,7);
         x.fillStyle='rgba(150,225,255,.98)'; x.shadowBlur=15*devicePixelRatio; x.shadowColor='rgba(120,220,255,1)'; x.fill();
       }
