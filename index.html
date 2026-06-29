@@ -1307,6 +1307,15 @@ function addBubble(role,text,animate){
       eb.onclick=()=>downloadExcel(text); act.appendChild(eb);
     }
     m.appendChild(act);
+  } else if(role==='user' && text && text.trim()){
+    const act=document.createElement('div'); act.className='msg-actions';
+    const copyBtn=document.createElement('button'); copyBtn.className='ma-btn'; copyBtn.textContent='Copiar';
+    copyBtn.onclick=()=>{
+      (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(text):Promise.reject())
+        .then(()=>toast('Copiado!')).catch(()=>{ try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');ta.remove();toast('Copiado!');}catch(e){toast('Não foi possível copiar.',true);} });
+    };
+    act.appendChild(copyBtn);
+    m.appendChild(act);
   }
   $('#msgs').appendChild(m);
   $('#msgs').scrollTop=$('#msgs').scrollHeight;
