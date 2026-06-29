@@ -174,8 +174,8 @@
   .sg2:active{transform:scale(.97);border-color:rgba(34,224,255,.45)}
 
   /* ORB: absolute center-bottom overlay */
-  .orb-wrap{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
-    width:148px;height:148px;display:grid;place-items:center;z-index:2;pointer-events:none}
+  .orb-wrap{position:fixed;top:46%;left:50%;transform:translate(-50%,-50%);
+    width:148px;height:148px;display:grid;place-items:center;z-index:4;pointer-events:auto;cursor:pointer}
   .orb-ring{position:absolute;border-radius:50%;border:1.5px solid transparent}
   .orb-ring.r1{inset:0;border-top-color:rgba(34,224,255,.7);border-right-color:rgba(34,224,255,.15);
     animation:spin 7s linear infinite}
@@ -673,8 +673,8 @@
       </div>
     </div>
 
-    <!-- ORB (absolute, center-bottom) -->
-    <div class="orb-wrap">
+    <!-- ORB (centro do neurônio — botão de falar) -->
+    <div class="orb-wrap" id="orbBtn" title="Tocar para falar">
       <div class="orb-ring r1"></div>
       <div class="orb-ring r2"></div>
       <div class="orb-ring r3"></div>
@@ -2089,6 +2089,7 @@ $('#settingsBtn').onclick=()=>{ closeSidebar(); openSettings(); };
 $('#earBtn').onclick=()=>{ primeTTS(); toggleAmbient(); };
 $('#powerBtn').onclick=()=>{ primeTTS(); toggleOnline(); };
 $('#micBtn').onclick=()=>{ primeTTS(); playChime(listening?'send':'listen'); toggleMic(); };   // push-to-talk com som
+{ const _ob=$('#orbBtn'); if(_ob) _ob.onclick=()=>{ primeTTS(); playChime(listening?'send':'listen'); toggleMic(); }; }  // orbe central = falar
 $('#sendBtn').onclick=()=>{ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v); };
 $('#txt').addEventListener('keydown',e=>{ if(e.key==='Enter'){ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v);} });
 $('#saveBtn').onclick=saveSettings;
