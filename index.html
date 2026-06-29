@@ -400,7 +400,7 @@
 
   /* ---------- AUTH / LOGIN ---------- */
   .auth{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:24px;
-    background:radial-gradient(120% 80% at 50% 0%,rgba(139,92,255,.18),transparent 55%),var(--bg)}
+    background:radial-gradient(120% 80% at 50% 0%,rgba(139,92,255,.16),transparent 55%),rgba(5,6,15,.62)}
   .auth.on{display:flex}
   .auth-card{width:100%;max-width:380px;background:var(--glass);border:1px solid var(--glass-brd);
     backdrop-filter:blur(20px);border-radius:26px;padding:30px 24px 24px;text-align:center;
@@ -1059,16 +1059,16 @@ window._neuralState='idle';
   let branches=[], sparks=[];
   function genNeuron(){
     branches=[]; sparks=[];
-    const cx=W*.62, cy=H*.5, base=Math.min(W,H), main=9;
+    const cx=W*.62, cy=H*.5, base=Math.min(W,H), main=12;
     for(let b=0;b<main;b++){
       const a0=(b/main)*Math.PI*2+(Math.random()-.5)*.35;
       let ang=a0, px=cx, py=cy; const pts=[{x:cx,y:cy}];
-      const len=base*(Math.random()*.16+.18), segs=3+Math.floor(Math.random()*2);
+      const len=base*(Math.random()*.22+.30), segs=3+Math.floor(Math.random()*2);
       for(let s=0;s<segs;s++){ ang+=(Math.random()-.5)*.6; const sl=len/segs*(1-s*.12); px+=Math.cos(ang)*sl; py+=Math.sin(ang)*sl; pts.push({x:px,y:py}); }
       branches.push(pts);
-      if(Math.random()<.75){ const fi=1+Math.floor(Math.random()*(pts.length-1)); let fx=pts[fi].x, fy=pts[fi].y, fa=ang+(Math.random()<.5?1:-1)*(Math.random()*.7+.5); const fp=[{x:fx,y:fy}]; for(let s=0;s<2;s++){ fa+=(Math.random()-.5)*.6; fx+=Math.cos(fa)*len*.28; fy+=Math.sin(fa)*len*.28; fp.push({x:fx,y:fy}); } branches.push(fp); }
+      if(Math.random()<.85){ const fi=1+Math.floor(Math.random()*(pts.length-1)); let fx=pts[fi].x, fy=pts[fi].y, fa=ang+(Math.random()<.5?1:-1)*(Math.random()*.7+.5); const fp=[{x:fx,y:fy}]; for(let s=0;s<2;s++){ fa+=(Math.random()-.5)*.6; fx+=Math.cos(fa)*len*.34; fy+=Math.sin(fa)*len*.34; fp.push({x:fx,y:fy}); } branches.push(fp); }
     }
-    for(let i=0;i<16;i++) sparks.push({b:Math.floor(Math.random()*branches.length), t:Math.random(), sp:Math.random()*.006+.0035});
+    for(let i=0;i<26;i++) sparks.push({b:Math.floor(Math.random()*branches.length), t:Math.random(), sp:Math.random()*.006+.0035});
   }
   function rs(){
     W=c.width=innerWidth*devicePixelRatio; H=c.height=innerHeight*devicePixelRatio;
@@ -1134,16 +1134,16 @@ window._neuralState='idle';
     /* ---- NEURÔNIO central: soma (núcleo) + axônios + faíscas ---- */
     {
       const ncx=W*.62, ncy=H*.5, base=Math.min(W,H), act=ns!=='idle';
-      let hg=x.createRadialGradient(ncx,ncy,0,ncx,ncy,base*.34);
-      hg.addColorStop(0,'rgba(139,92,255,'+(act?.22:.16)+')');
-      hg.addColorStop(.5,'rgba(80,60,200,.06)'); hg.addColorStop(1,'rgba(80,60,200,0)');
-      x.fillStyle=hg; x.beginPath(); x.arc(ncx,ncy,base*.34,0,7); x.fill();
+      let hg=x.createRadialGradient(ncx,ncy,0,ncx,ncy,base*.50);
+      hg.addColorStop(0,'rgba(139,92,255,'+(act?.34:.26)+')');
+      hg.addColorStop(.45,'rgba(90,70,220,.10)'); hg.addColorStop(1,'rgba(80,60,200,0)');
+      x.fillStyle=hg; x.beginPath(); x.arc(ncx,ncy,base*.50,0,7); x.fill();
       x.lineCap='round';
       for(const pts of branches){
         x.beginPath(); x.moveTo(pts[0].x,pts[0].y);
         for(let k=1;k<pts.length;k++) x.lineTo(pts[k].x,pts[k].y);
-        x.strokeStyle='rgba(150,110,255,.30)'; x.lineWidth=devicePixelRatio*1.5;
-        x.shadowBlur=9*devicePixelRatio; x.shadowColor='rgba(139,92,255,.55)'; x.stroke();
+        x.strokeStyle='rgba(170,130,255,.50)'; x.lineWidth=devicePixelRatio*2.4;
+        x.shadowBlur=16*devicePixelRatio; x.shadowColor='rgba(150,100,255,.85)'; x.stroke();
       }
       x.shadowBlur=0;
       for(const s of sparks){
@@ -1151,17 +1151,17 @@ window._neuralState='idle';
         const pts=branches[s.b]; if(!pts||pts.length<2) continue;
         const seg=(pts.length-1)*s.t, si=Math.min(pts.length-2,Math.floor(seg)), f=seg-si;
         const ax=pts[si].x+(pts[si+1].x-pts[si].x)*f, ay=pts[si].y+(pts[si+1].y-pts[si].y)*f;
-        x.beginPath(); x.arc(ax,ay,2.1*devicePixelRatio,0,7);
-        x.fillStyle='rgba(130,220,255,.95)'; x.shadowBlur=11*devicePixelRatio; x.shadowColor='rgba(120,220,255,1)'; x.fill();
+        x.beginPath(); x.arc(ax,ay,3*devicePixelRatio,0,7);
+        x.fillStyle='rgba(150,225,255,.98)'; x.shadowBlur=15*devicePixelRatio; x.shadowColor='rgba(120,220,255,1)'; x.fill();
       }
       x.shadowBlur=0;
-      const pulse=.5+Math.sin(t*2.2)*.14, cr=base*.05;
-      let cg=x.createRadialGradient(ncx,ncy,0,ncx,ncy,cr*3.4);
-      cg.addColorStop(0,'rgba(214,196,255,'+(.85*pulse+.35)+')');
-      cg.addColorStop(.3,'rgba(139,92,255,.55)'); cg.addColorStop(1,'rgba(139,92,255,0)');
-      x.fillStyle=cg; x.beginPath(); x.arc(ncx,ncy,cr*3.4,0,7); x.fill();
-      x.beginPath(); x.arc(ncx,ncy,cr*.55,0,7); x.fillStyle='rgba(245,240,255,.95)';
-      x.shadowBlur=26*devicePixelRatio; x.shadowColor='rgba(170,130,255,1)'; x.fill(); x.shadowBlur=0;
+      const pulse=.5+Math.sin(t*2.2)*.16, cr=base*.075;
+      let cg=x.createRadialGradient(ncx,ncy,0,ncx,ncy,cr*3.6);
+      cg.addColorStop(0,'rgba(222,206,255,'+(.95*pulse+.45)+')');
+      cg.addColorStop(.28,'rgba(150,100,255,.7)'); cg.addColorStop(.6,'rgba(110,70,230,.25)'); cg.addColorStop(1,'rgba(110,70,230,0)');
+      x.fillStyle=cg; x.beginPath(); x.arc(ncx,ncy,cr*3.6,0,7); x.fill();
+      x.beginPath(); x.arc(ncx,ncy,cr*.62,0,7); x.fillStyle='rgba(248,244,255,.98)';
+      x.shadowBlur=38*devicePixelRatio; x.shadowColor='rgba(180,140,255,1)'; x.fill(); x.shadowBlur=0;
     }
     if(ns==='speaking'){
       for(let r=0;r<3;r++){
