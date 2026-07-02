@@ -627,6 +627,10 @@
         <div class="mod-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7.7 1.6 1.6 0 01-3.2 0 1.6 1.6 0 00-2.7-.7l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00-.7-2.7 1.6 1.6 0 010-3.2 1.6 1.6 0 00.7-2.7l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 002.7-.7 1.6 1.6 0 013.2 0 1.6 1.6 0 002.7.7l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00.7 2.7 1.6 1.6 0 010 3.2z"/></svg></div>
         <div class="mod-txt"><b>Configurações</b><small>Personalizar</small></div>
       </button>
+      <button class="mod-item" id="modAlexa" onclick="openAlexa()" style="background:none;border:none;width:100%;text-align:left;font-family:inherit">
+        <div class="mod-ico"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="6"/><circle cx="12" cy="14.5" r="2.4"/></svg></div>
+        <div class="mod-txt"><b>Alexa / Casa</b><small>Conectar e testar</small></div>
+      </button>
 
       <!-- Neural card -->
       <div class="neural-card">
@@ -812,6 +816,22 @@
 </div>
 
 <!-- CONTROLE DO FONE -->
+<div class="modal" id="alexa">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>Alexa / Casa Inteligente</h3>
+    <p class="sub">Pra você falar com o Kairos pela Alexa, criamos uma <b>Skill da Alexa</b> (no developer.amazon.com) que manda sua voz pro agente na VPS e fala a resposta de volta. Aqui você confirma se o agente já está pronto pra receber.</p>
+    <div class="fone-result" id="alexaEndpoint" style="font-size:11.5px;word-break:break-all;text-align:left"></div>
+    <button class="fone-act" id="alexaTestBtn">
+      <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+      Testar conexão do agente
+    </button>
+    <div class="fone-result" id="alexaResult"></div>
+    <p class="sub" style="margin-top:14px;text-align:left"><b>Passo a passo (amanhã, eu te guio):</b><br>1️⃣ Criar conta grátis em developer.amazon.com<br>2️⃣ Criar uma Skill personalizada (nome de invocação, ex: "Kairos")<br>3️⃣ Ligar o endpoint da Skill ao agente da VPS (eu preparo o ajuste na VPS)<br>4️⃣ Ativar no app Alexa e falar por voz</p>
+    <p class="sub" style="text-align:left">⚠️ A Skill é criada no site da Amazon + um ajuste na VPS — não dá pra ativar só por aqui. Este botão garante a base: o agente no ar e respondendo.</p>
+  </div>
+</div>
+
 <div class="modal" id="fone">
   <div class="sheet">
     <div class="grab"></div>
@@ -994,7 +1014,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v21 · 02/07 · neuronio+voz';   // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v22 · 02/07 · voz+alexa';   // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -1707,12 +1727,22 @@ async function speakEleven(text){
     a.play().catch(()=>resolve());
   });
 }
+function bestNativeVoice(){
+  if(!voices.length) voices=speechSynthesis.getVoices();
+  if(settings.voice){ const sel=voices.find(x=>x.name===settings.voice); if(sel) return sel; }
+  const ptBR=voices.filter(v=>/pt[-_]?BR/i.test(v.lang));
+  const ptAny=voices.filter(v=>/pt/i.test(v.lang));
+  const list=(ptBR.length?ptBR:(ptAny.length?ptAny:voices));
+  // prefere vozes NEURAIS/naturais (mais humanas), todas grátis
+  const nat=/natural|neural|online|google|premium|enhanced|siri|luciana|francisca|ant[oô]nio|camila|vit[oó]ria|brenda|thalita|multilingual/i;
+  return list.find(v=>nat.test(v.name)) || list[0] || voices[0];
+}
 function speakNative(text){
   return new Promise(res=>{
     try{
       if(!voices.length) voices=speechSynthesis.getVoices();
       speechSynthesis.cancel();
-      const v=voices.find(x=>x.name===settings.voice) || voices.find(x=>/pt[-_]?BR/i.test(x.lang)) || voices.find(x=>/pt/i.test(x.lang));
+      const v=bestNativeVoice();
       const parts=(text.replace(/[⚡*_#`>]/g,'').match(/[^.!?\n]+[.!?\n]?/g)||[text]).map(p=>p.trim()).filter(Boolean);
       if(!parts.length){ res(); return; }
       let done=false; const finish=()=>{ if(!done){ done=true; res(); } };
@@ -2454,6 +2484,25 @@ function toggleHandsfree(){
 $('#foneBtn').onclick=()=>{ closeSidebar(); openFone(); };
 $('#foneClose').onclick=closeFone;
 $('#fone').addEventListener('click',e=>{ if(e.target===$('#fone')) closeFone(); });
+/* ---------- ALEXA / CASA ---------- */
+function openAlexa(){
+  const ep=$('#alexaEndpoint'); if(ep) ep.textContent=settings.agentUrl?('Endpoint do agente: '+settings.agentUrl):'⚠ Configure a URL do agente em Configurações primeiro.';
+  const r=$('#alexaResult'); if(r) r.textContent='';
+  $('#alexa').classList.add('on');
+}
+$('#alexa').addEventListener('click',e=>{ if(e.target===$('#alexa')) $('#alexa').classList.remove('on'); });
+{ const b=$('#alexaTestBtn'); if(b) b.onclick=async()=>{
+  const url=(settings.agentUrl||'').trim(), r=$('#alexaResult');
+  if(!url){ r.textContent='⚠ Sem URL do agente. Configure em Configurações.'; r.style.color='#ff9b9b'; return; }
+  r.textContent='⏳ Testando o agente…'; r.style.color='#7a83a8';
+  try{
+    const hd={'Content-Type':'application/json'}; if(settings.agentKey) hd['Authorization']='Bearer '+settings.agentKey;
+    const res=await fetch(url,{method:'POST',headers:hd,body:JSON.stringify({message:'/ping'})});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const j=await res.json(); const rep=(j&&(j.reply!=null?j.reply:(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)))||'ok';
+    r.textContent='✅ Agente no ar! Resposta: "'+String(rep).slice(0,60)+'". Base pronta pra ligar na Alexa.'; r.style.color='#00e09a';
+  }catch(e){ r.textContent='❌ Agente não respondeu: '+e.message+' (verifique a URL/tunnel em Configurações).'; r.style.color='#ff7070'; }
+}; }
 $('#testVoiceBtn').onclick=testVoice;
 $('#testMicBtn').onclick=testMic;
 $('#hfSwitch').onclick=()=>{ primeTTS(); toggleHandsfree(); };
