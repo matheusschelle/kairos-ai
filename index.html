@@ -1678,17 +1678,25 @@ function stopSpeaking(){
 }
 async function speakEleven(text){
   const key=settings.elevenKey;
+  if(!key) throw new Error('sem chave ElevenLabs salva');
   const voice=settings.elevenVoice||'21m00Tcm4TlvDq8ikWAM'; // Rachel (multilingual)
   const clean=text.replace(/[⚡*_#`>]/g,'').trim();
   if(!clean) return;
-  const res=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(voice),{
-    method:'POST',
-    headers:{'xi-api-key':key,'Content-Type':'application/json','Accept':'audio/mpeg'},
-    body:JSON.stringify({ text:clean, model_id:'eleven_turbo_v2_5',
-      voice_settings:{ stability:0.5, similarity_boost:0.8, style:0.2 } })
-  });
-  if(!res.ok){ throw new Error('ElevenLabs '+res.status); }
-  const blob=await res.blob();
+  async function req(model){
+    const res=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(voice),{
+      method:'POST',
+      headers:{'xi-api-key':key,'Content-Type':'application/json','Accept':'audio/mpeg'},
+      body:JSON.stringify({ text:clean, model_id:model, voice_settings:{ stability:0.5, similarity_boost:0.85 } })
+    });
+    if(!res.ok){ let d=''; try{ d=(await res.text()).replace(/\s+/g,' ').slice(0,180); }catch(e){} const err=new Error('ElevenLabs '+res.status+(d?': '+d:'')); err.status=res.status; throw err; }
+    return res.blob();
+  }
+  let blob;
+  try{ blob=await req('eleven_turbo_v2_5'); }
+  catch(e){ // erro de modelo/parametro (4xx que NAO seja chave/cota) -> tenta o modelo universal
+    if(e.status&&e.status>=400&&e.status<500&&e.status!==401&&e.status!==429){ blob=await req('eleven_multilingual_v2'); }
+    else throw e;
+  }
   const a=getTtsAudio();
   return new Promise(resolve=>{
     try{ a.src=URL.createObjectURL(blob); }catch(e){ resolve(); return; }
@@ -1721,12 +1729,16 @@ function speakNative(text){
 }
 async function speakAsync(text){
   if(!text) return;
-  // Âncora e TTS são elementos separados — âncora usa srcObject do AudioContext (nunca para).
+  // Se a chave ElevenLabs foi digitada mas não salva, recupera do campo e persiste.
+  if(!settings.elevenKey){ const inp=$('#elevenKeyInput'); if(inp&&inp.value.trim()){ settings.elevenKey=inp.value.trim(); LS.set('kairos_settings',settings); try{ syncVault(); }catch(e){} } }
   try{
     if(settings.elevenKey){
       try{ speechSynthesis.cancel(); }catch(e){}
       try{ await speakEleven(text); return; }
-      catch(e){ /* falhou (chave/quota) → cai pra voz nativa */ }
+      catch(e){ // não cai calado: mostra o motivo real (no máx. uma vez a cada 20s)
+        const now=Date.now();
+        if(!window._elevWarn || now-window._elevWarn>20000){ window._elevWarn=now; toast('Voz premium falhou → voz nativa. '+((e&&e.message)||''), true); }
+      }
     }
     await speakNative(text);
   } finally {
