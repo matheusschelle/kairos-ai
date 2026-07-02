@@ -790,7 +790,8 @@
       <button id="loadElevenVoicesBtn" type="button" style="width:100%;padding:11px;border-radius:12px;border:1px solid rgba(139,92,255,.4);background:rgba(139,92,255,.12);color:#c8b8ff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:6px">↻ Carregar vozes do ElevenLabs</button>
       <div class="hint">Prévia usa a amostra de cada voz (sem créditos). Salve para aplicar.</div>
     </div>
-    <div class="field"><label>Voz nativa (fallback, sem ElevenLabs)</label>
+    <div class="field"><label>🔊 Voz do agente (grátis · natural)</label>
+      <div class="hint" style="margin:-4px 0 8px">Escolha uma voz com <b>Google</b>, <b>Natural</b> ou <b>Online</b> no nome — são as mais humanas. Toque em Ouvir pra testar. (No PC, o Edge tem as melhores vozes pt-BR.)</div>
       <div style="display:flex;gap:10px;align-items:center">
         <select id="voiceInput" style="flex:1"></select>
         <button id="previewVoiceBtn" type="button" style="padding:10px 14px;border-radius:12px;border:1px solid var(--glass-brd);background:var(--glass);color:#cdd6ff;font-size:13px;font-weight:600;cursor:pointer;flex:0 0 auto;font-family:inherit">Ouvir</button>
@@ -1014,7 +1015,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v22 · 02/07 · voz+alexa';   // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v23 · 02/07 · voz+alexa';   // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
