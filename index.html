@@ -806,6 +806,7 @@
       <div id="agentTestResult" style="font-size:12px;color:#7a83a8;margin-top:6px;text-align:center"></div>
     </div>
     <button class="save" id="saveBtn">Salvar</button>
+    <button type="button" id="updateBtn" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(34,224,255,.4);background:rgba(34,224,255,.1);color:#bfefff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🔄 Atualizar app (buscar versão nova)</button>
     <div style="text-align:center;font-size:10.5px;color:#5a6296;margin-top:10px" id="buildTag">versão —</div>
   </div>
 </div>
@@ -993,7 +994,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v20 · 20/06';              // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v21 · 02/07 · neuronio+voz';   // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -2105,6 +2106,17 @@ $('#micBtn').onclick=()=>{ primeTTS(); playChime(listening?'send':'listen'); tog
 $('#sendBtn').onclick=()=>{ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v); };
 $('#txt').addEventListener('keydown',e=>{ if(e.key==='Enter'){ primeTTS(); const v=$('#txt').value; $('#txt').value=''; send(v);} });
 $('#saveBtn').onclick=saveSettings;
+/* Botão Atualizar: desregistra service worker + limpa cache + recarrega (versão nova) */
+async function forceUpdate(){
+  toast('Atualizando…');
+  try{ if('serviceWorker' in navigator){ const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.unregister())); } }catch(e){}
+  try{ if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } }catch(e){}
+  location.replace(location.pathname+'?u='+Date.now());
+}
+{ const ub=$('#updateBtn'); if(ub) ub.onclick=forceUpdate; }
+/* Salva a voz do agente e a chave ElevenLabs na hora (sem depender do botão Salvar) */
+{ const evs=$('#elevenVoiceSelect'); if(evs) evs.onchange=()=>{ settings.elevenVoice=evs.value; LS.set('kairos_settings',settings); try{ syncVault(); }catch(e){} toast('Voz do agente salva.'); }; }
+{ const eki=$('#elevenKeyInput'); if(eki) eki.addEventListener('change',()=>{ settings.elevenKey=eki.value.trim(); LS.set('kairos_settings',settings); try{ syncVault(); }catch(e){} }); }
 $('#settings').addEventListener('click',e=>{ if(e.target===$('#settings')) closeSettings(); });
 $('#previewVoiceBtn').onclick=()=>{
   primeTTS();
