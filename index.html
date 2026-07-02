@@ -831,15 +831,13 @@
   <div class="sheet">
     <div class="grab"></div>
     <h3>Alexa / Casa Inteligente</h3>
-    <p class="sub">Pra você falar com o Kairos pela Alexa, criamos uma <b>Skill da Alexa</b> (no developer.amazon.com) que manda sua voz pro agente na VPS e fala a resposta de volta. Aqui você confirma se o agente já está pronto pra receber.</p>
-    <div class="fone-result" id="alexaEndpoint" style="font-size:11.5px;word-break:break-all;text-align:left"></div>
-    <button class="fone-act" id="alexaTestBtn">
-      <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-      Testar conexão do agente
-    </button>
+    <p class="sub">A Skill "Kairos" chama o endpoint abaixo e fala a resposta do agente. Este endereço é <b>estável e permanente</b> — é ele que vai no console da Alexa.</p>
+    <label style="display:block;font-size:10px;letter-spacing:1px;color:var(--ink-dim);font-weight:700;margin-bottom:6px">ENDPOINT DA SKILL</label>
+    <div id="alexaEndpoint" style="font-family:monospace;font-size:12px;word-break:break-all;background:rgba(8,10,26,.7);border:1px solid var(--glass-brd);border-radius:12px;padding:11px;margin-bottom:8px;text-align:left;color:#c8f5e6"></div>
+    <button class="fone-act" id="alexaCopyBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copiar endpoint</button>
+    <button class="fone-act" id="alexaTestBtn"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>Testar (o Kairos está no ar?)</button>
     <div class="fone-result" id="alexaResult"></div>
-    <p class="sub" style="margin-top:14px;text-align:left"><b>Passo a passo (amanhã, eu te guio):</b><br>1️⃣ Criar conta grátis em developer.amazon.com<br>2️⃣ Criar uma Skill personalizada (nome de invocação, ex: "Kairos")<br>3️⃣ Ligar o endpoint da Skill ao agente da VPS (eu preparo o ajuste na VPS)<br>4️⃣ Ativar no app Alexa e falar por voz</p>
-    <p class="sub" style="text-align:left">⚠️ A Skill é criada no site da Amazon + um ajuste na VPS — não dá pra ativar só por aqui. Este botão garante a base: o agente no ar e respondendo.</p>
+    <p class="sub" style="margin-top:14px;text-align:left"><b>2 passos no console (developer.amazon.com):</b><br>1️⃣ Skill "Kairos" → <b>Endpoint</b> → HTTPS → cole o endpoint acima → Save + Build Model.<br>2️⃣ Aba <b>Test</b> → Development → "abrir kairos" → "pergunte quem é você".<br>Pronto: <b>"Alexa, abrir Kairos"</b>.</p>
   </div>
 </div>
 
@@ -1005,7 +1003,8 @@ const LS = {
 /* ---------- STATE ---------- */
 let settings = LS.get('kairos_settings',{
   name:'Matheus', photo:'', apiKey:'', model:'llama-3.3-70b-versatile', voice:'', rate:1,
-  elevenKey:'', elevenVoice:'', agentUrl:'', agentKey:'', serperKey:'', seVoice:'google'
+  elevenKey:'', elevenVoice:'', agentUrl:'', agentKey:'', serperKey:'', seVoice:'google',
+  alexaUrl:'https://python-roving-distance.ngrok-free.dev/alexa-bot'
 });
 // normaliza velocidades antigas para os três valores suportados
 if(settings.rate===1.2) settings.rate=1.25;
@@ -1025,7 +1024,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v24 · 02/07 · voz-natural';   // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v25 · 02/07 · alexa';   // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -2193,7 +2192,7 @@ async function forceUpdate(){
 /* Salva a voz do agente e a chave ElevenLabs na hora (sem depender do botão Salvar) */
 { const evs=$('#elevenVoiceSelect'); if(evs) evs.onchange=()=>{ settings.elevenVoice=evs.value; LS.set('kairos_settings',settings); try{ syncVault(); }catch(e){} toast('Voz ElevenLabs salva.'); }; }
 { const sev=$('#seVoiceSelect'); if(sev) sev.onchange=()=>{ settings.seVoice=sev.value; LS.set('kairos_settings',settings); try{ syncVault(); }catch(e){} toast('Voz do agente salva.'); }; }
-{ const sb=$('#seVoicePreviewBtn'); if(sb) sb.onclick=async()=>{ primeTTS(); const v=$('#seVoiceSelect'); if(v) settings.seVoice=v.value; const ok=await speakNaturalFree('Olá, eu sou o seu agente Kairos. Esta é a minha voz.'); audioTtsActive=false; if(!ok) toast('Não consegui carregar a voz natural agora — tente de novo.',true); }; }
+{ const sb=$('#seVoicePreviewBtn'); if(sb) sb.onclick=async()=>{ primeTTS(); const v=$('#seVoiceSelect'); if(v) settings.seVoice=v.value; const msg='Olá, eu sou o seu agente Kairos. Esta é a minha voz.'; const ok=await speakNaturalFree(msg); audioTtsActive=false; if(!ok){ toast('Voz natural indisponível no navegador agora — usando a voz do aparelho.',true); try{ await speakNative(msg); }catch(e){} } }; }
 { const eki=$('#elevenKeyInput'); if(eki) eki.addEventListener('change',()=>{ settings.elevenKey=eki.value.trim(); LS.set('kairos_settings',settings); try{ syncVault(); }catch(e){} }); }
 $('#settings').addEventListener('click',e=>{ if(e.target===$('#settings')) closeSettings(); });
 $('#previewVoiceBtn').onclick=()=>{
@@ -2534,10 +2533,11 @@ $('#foneClose').onclick=closeFone;
 $('#fone').addEventListener('click',e=>{ if(e.target===$('#fone')) closeFone(); });
 /* ---------- ALEXA / CASA ---------- */
 function openAlexa(){
-  const ep=$('#alexaEndpoint'); if(ep) ep.textContent=settings.agentUrl?('Endpoint do agente: '+settings.agentUrl):'⚠ Configure a URL do agente em Configurações primeiro.';
+  const ep=$('#alexaEndpoint'); if(ep) ep.textContent=settings.alexaUrl||'(endpoint não configurado)';
   const r=$('#alexaResult'); if(r) r.textContent='';
   $('#alexa').classList.add('on');
 }
+{ const cb=$('#alexaCopyBtn'); if(cb) cb.onclick=()=>{ const u=settings.alexaUrl||''; (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Endpoint copiado!')).catch(()=>{ try{const t=document.createElement('textarea');t.value=u;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();toast('Endpoint copiado!');}catch(e){toast('Copie manualmente.',true);} }); }; }
 $('#alexa').addEventListener('click',e=>{ if(e.target===$('#alexa')) $('#alexa').classList.remove('on'); });
 { const b=$('#alexaTestBtn'); if(b) b.onclick=async()=>{
   const url=(settings.agentUrl||'').trim(), r=$('#alexaResult');
