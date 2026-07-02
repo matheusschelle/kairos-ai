@@ -1582,7 +1582,7 @@ async function groqChat(messages,model){
     const last=[...messages].reverse().find(m=>m.role==='user');
     const text=(last&&typeof last.content==='string')?last.content:'';
     const hdrs={'Content-Type':'application/json'};
-    if(settings.agentKey) hdrs['Authorization']='Bearer '+settings.agentKey;
+    if(settings.agentKey) hdrs['X-API-Key']=settings.agentKey;
     const r=await fetch(url,{method:'POST',headers:hdrs,body:JSON.stringify({message:text})});
     if(!r.ok){const e=await r.text();throw new Error('Agente '+r.status+': '+e.slice(0,160));}
     const j=await r.json();
