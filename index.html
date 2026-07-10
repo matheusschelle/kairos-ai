@@ -787,8 +787,9 @@
         <select id="elevenVoiceSelect" style="flex:1;background:rgba(8,10,26,.7);border:1px solid var(--glass-brd);border-radius:13px;padding:11px 14px;color:var(--ink);font-size:14px;outline:none;font-family:inherit;appearance:none;-webkit-appearance:none"><option value="">Carregue as vozes abaixo ↓</option></select>
         <button id="elevenVoicePreviewBtn" type="button" style="padding:10px 14px;border-radius:12px;border:1px solid var(--glass-brd);background:var(--glass);color:#cdd6ff;font-size:13px;font-weight:600;cursor:pointer;flex:0 0 auto;font-family:inherit">Ouvir</button>
       </div>
-      <button id="loadElevenVoicesBtn" type="button" style="width:100%;padding:11px;border-radius:12px;border:1px solid rgba(139,92,255,.4);background:rgba(139,92,255,.12);color:#c8b8ff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:6px">↻ Carregar vozes do ElevenLabs</button>
-      <div class="hint">Prévia usa a amostra de cada voz (sem créditos). Salve para aplicar.</div>
+      <button id="loadBrVoicesBtn" type="button" style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(0,200,120,.45);background:linear-gradient(90deg,rgba(0,180,90,.20),rgba(255,220,0,.13));color:#c6f7d4;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:6px">🇧🇷 Buscar vozes brasileiras (naturais)</button>
+      <button id="loadElevenVoicesBtn" type="button" style="width:100%;padding:11px;border-radius:12px;border:1px solid rgba(139,92,255,.4);background:rgba(139,92,255,.12);color:#c8b8ff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:6px">↻ Carregar vozes da conta</button>
+      <div class="hint">🇧🇷 = vozes <b>nativas do Brasil</b> (som humano, sem sotaque). A prévia é grátis; ao escolher, a voz é instalada na sua conta ElevenLabs. As "gringas" (Rachel etc.) falam português com sotaque.</div>
     </div>
     <div class="field"><label>🔊 Voz do agente (natural · grátis)</label>
       <div class="hint" style="margin:-4px 0 8px">Vozes em português naturais (AWS Polly), grátis e sem chave — funcionam em qualquer navegador. Toque em Ouvir pra testar.</div>
@@ -1024,7 +1025,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v25 · 02/07 · alexa';   // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v26 · 10/07 · voz BR'; // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -1627,15 +1628,60 @@ function loadVoices(){
 }
 speechSynthesis.onvoiceschanged=loadVoices;
 
+let brVoices=[];               // vozes NATIVAS do Brasil (biblioteca compartilhada ElevenLabs)
+const addedVoiceMap={};        // shared voice_id -> voice_id já instalado na conta (evita reinstalar)
+function brLabel(v){ const g=v.gender==='female'?' ♀':v.gender==='male'?' ♂':''; return v.name+g; }
 function populateElevenSelect(){
   const sel=$('#elevenVoiceSelect'); if(!sel) return;
-  if(!elevenVoices.length){ sel.innerHTML='<option value="">Clique em "Carregar vozes" →</option>'; return; }
+  if(!elevenVoices.length && !brVoices.length){ sel.innerHTML='<option value="">Toque em 🇧🇷 Buscar vozes brasileiras ↓</option>'; return; }
+  let html='<option value="">Padrão (Rachel — americana ⚠ sotaque)</option>';
+  if(brVoices.length) html+='<optgroup label="🇧🇷 Nativas do Brasil (natural)">'+brVoices.map(v=>`<option value="shared:${v.public_owner_id}:${v.voice_id}">${brLabel(v)}</option>`).join('')+'</optgroup>';
   const custom=elevenVoices.filter(v=>v.category==='cloned'||v.category==='generated');
   const premade=elevenVoices.filter(v=>v.category!=='cloned'&&v.category!=='generated');
-  let html='<option value="">Padrão (Rachel — multilingual)</option>';
-  if(custom.length) html+='<optgroup label="Minhas vozes">'+custom.map(v=>`<option value="${v.voice_id}">${v.name}</option>`).join('')+'</optgroup>';
-  if(premade.length) html+='<optgroup label="Biblioteca ElevenLabs">'+premade.map(v=>`<option value="${v.voice_id}">${v.name}</option>`).join('')+'</optgroup>';
+  if(custom.length) html+='<optgroup label="Minhas vozes (já instaladas)">'+custom.map(v=>`<option value="${v.voice_id}">${v.name}</option>`).join('')+'</optgroup>';
+  if(premade.length) html+='<optgroup label="Biblioteca da conta (gringas)">'+premade.map(v=>`<option value="${v.voice_id}">${v.name}</option>`).join('')+'</optgroup>';
   sel.innerHTML=html; sel.value=settings.elevenVoice||'';
+}
+// Busca ao vivo as vozes brasileiras da biblioteca; prévia é grátis (preview_url), instala só ao escolher.
+async function loadBrazilianVoices(){
+  const key=settings.elevenKey||($('#elevenKeyInput')?$('#elevenKeyInput').value.trim():'');
+  if(!key){ toast('Configure e salve a chave ElevenLabs primeiro.',true); return; }
+  const btn=$('#loadBrVoicesBtn');
+  if(btn){ btn.textContent='🇧🇷 Buscando…'; btn.disabled=true; }
+  try{
+    const r=await fetch('https://api.elevenlabs.io/v1/shared-voices?language=pt&page_size=100&sort=trending',{
+      headers:{'xi-api-key':key,'Accept':'application/json'}
+    });
+    if(!r.ok){ let d=''; try{const j=await r.json(); d=(j.detail&&(j.detail.message||j.detail))||'';}catch(e){} throw new Error('HTTP '+r.status+(d?' — '+d:'')); }
+    const j=await r.json(); const all=j.voices||[];
+    const isBR=v=>{ const loc=(v.locale||'').toLowerCase(), acc=(v.accent||'').toLowerCase();
+      return loc==='pt-br'||loc==='pt_br'||acc.includes('brazil')||acc.includes('brasil')||
+        (v.verified_languages||[]).some(x=>((x.locale||'').toLowerCase()==='pt-br')||((x.accent||'').toLowerCase().includes('brazil'))); };
+    let list=all.filter(v=>isBR(v)&&v.free_users_allowed!==false);
+    if(!list.length) list=all.filter(isBR);
+    if(!list.length) list=all;
+    brVoices=list.slice(0,40);
+    populateElevenSelect();
+    if(brVoices.length) toast('🇧🇷 '+brVoices.length+' vozes brasileiras. Escolha → Ouvir.');
+    else toast('Nenhuma voz BR retornada. Tente "Carregar vozes da conta".',true);
+  }catch(e){ toast('Erro ao buscar vozes BR: '+e.message,true); }
+  if(btn){ btn.textContent='🇧🇷 Buscar vozes brasileiras (naturais)'; btn.disabled=false; }
+}
+// Instala uma voz da biblioteca na conta e devolve o voice_id novo (o que o TTS usa).
+async function installSharedVoice(publicOwnerId, sharedId, name){
+  if(addedVoiceMap[sharedId]) return addedVoiceMap[sharedId];
+  const key=settings.elevenKey; if(!key) throw new Error('Sem chave ElevenLabs.');
+  const r=await fetch('https://api.elevenlabs.io/v1/voices/add/'+encodeURIComponent(publicOwnerId)+'/'+encodeURIComponent(sharedId),{
+    method:'POST', headers:{'xi-api-key':key,'Content-Type':'application/json'},
+    body:JSON.stringify({ new_name:('BR · '+(name||'voz')).slice(0,45) })
+  });
+  if(!r.ok){
+    let d=''; try{const j=await r.json(); d=(j.detail&&(j.detail.message||j.detail))||''; if(typeof d==='object') d=JSON.stringify(d);}catch(e){}
+    if(r.status===400 && /max|limit|too many|slot/i.test(d)) throw new Error('Limite de vozes atingido. Apague uma voz em elevenlabs.io › Voices e escolha de novo.');
+    throw new Error('Falha ao instalar ('+r.status+')'+(d?' — '+d:''));
+  }
+  const j=await r.json(); const newId=j.voice_id;
+  addedVoiceMap[sharedId]=newId; return newId;
 }
 async function loadElevenVoices(){
   // Prioriza a chave já salva; fallback pro campo digitado mas não salvo
@@ -1741,22 +1787,23 @@ async function speakNaturalFree(text){
 async function speakEleven(text){
   const key=settings.elevenKey;
   if(!key) throw new Error('sem chave ElevenLabs salva');
-  const voice=settings.elevenVoice||'21m00Tcm4TlvDq8ikWAM'; // Rachel (multilingual)
+  const voice=settings.elevenVoice||'21m00Tcm4TlvDq8ikWAM'; // fallback Rachel (americana → sotaque; troque por voz BR)
   const clean=text.replace(/[⚡*_#`>]/g,'').trim();
   if(!clean) return;
   async function req(model){
     const res=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(voice),{
       method:'POST',
       headers:{'xi-api-key':key,'Content-Type':'application/json','Accept':'audio/mpeg'},
-      body:JSON.stringify({ text:clean, model_id:model, voice_settings:{ stability:0.5, similarity_boost:0.85 } })
+      // multilingual_v2 = fala MUITO mais natural em pt-BR; style baixo + speaker_boost = som humano, sem robô
+      body:JSON.stringify({ text:clean, model_id:model, voice_settings:{ stability:0.45, similarity_boost:0.9, style:0.0, use_speaker_boost:true } })
     });
     if(!res.ok){ let d=''; try{ d=(await res.text()).replace(/\s+/g,' ').slice(0,180); }catch(e){} const err=new Error('ElevenLabs '+res.status+(d?': '+d:'')); err.status=res.status; throw err; }
     return res.blob();
   }
   let blob;
-  try{ blob=await req('eleven_turbo_v2_5'); }
-  catch(e){ // erro de modelo/parametro (4xx que NAO seja chave/cota) -> tenta o modelo universal
-    if(e.status&&e.status>=400&&e.status<500&&e.status!==401&&e.status!==429){ blob=await req('eleven_multilingual_v2'); }
+  try{ blob=await req('eleven_multilingual_v2'); }        // natural primeiro
+  catch(e){ // erro de modelo/parametro (4xx que NAO seja chave/cota) -> tenta o turbo
+    if(e.status&&e.status>=400&&e.status<500&&e.status!==401&&e.status!==429){ blob=await req('eleven_turbo_v2_5'); }
     else throw e;
   }
   const a=getTtsAudio();
@@ -2144,18 +2191,25 @@ function openSettings(){
   refreshHome(); loadVoices();
   $('#buildTag').textContent='versão '+APP_BUILD;
   $('#settings').classList.add('on');
-  if(elevenVoices.length) populateElevenSelect();
-  else if(settings.elevenKey) loadElevenVoices();
+  if(elevenVoices.length||brVoices.length) populateElevenSelect();
+  else if(settings.elevenKey) loadBrazilianVoices();   // já traz as vozes BR de cara
 }
 function closeSettings(){ $('#settings').classList.remove('on'); }
-function saveSettings(){
+async function saveSettings(){
   settings.name=$('#nameInput').value.trim()||'Matheus';
   settings.apiKey=$('#keyInput').value.trim();
   settings.model=$('#modelInput').value;
   settings.voice=$('#voiceInput').value;
   settings.elevenKey=$('#elevenKeyInput').value.trim();
   const evs=$('#elevenVoiceSelect');
-  if(evs&&evs.value) settings.elevenVoice=evs.value;
+  if(evs&&evs.value){
+    if(evs.value.indexOf('shared:')===0){        // voz BR da biblioteca → instala e guarda o id novo
+      const p=evs.value.split(':'); const sv=brVoices.find(v=>v.voice_id===p[2]);
+      toast('Instalando voz brasileira…');
+      try{ settings.elevenVoice=await installSharedVoice(p[1],p[2],sv?sv.name:'voz'); toast('🇧🇷 Voz instalada!'); }
+      catch(e){ toast(e.message,true); return; }
+    } else settings.elevenVoice=evs.value;
+  }
   settings.agentUrl=($('#agentUrl')&&$('#agentUrl').value.trim())||'';
   settings.agentKey=($('#agentKey')&&$('#agentKey').value.trim())||'';
   settings.serperKey=($('#serperKey')&&$('#serperKey').value.trim())||'';
@@ -2190,7 +2244,15 @@ async function forceUpdate(){
 }
 { const ub=$('#updateBtn'); if(ub) ub.onclick=forceUpdate; }
 /* Salva a voz do agente e a chave ElevenLabs na hora (sem depender do botão Salvar) */
-{ const evs=$('#elevenVoiceSelect'); if(evs) evs.onchange=()=>{ settings.elevenVoice=evs.value; LS.set('kairos_settings',settings); try{ syncVault(); }catch(e){} toast('Voz ElevenLabs salva.'); }; }
+{ const evs=$('#elevenVoiceSelect'); if(evs) evs.onchange=async()=>{
+    if(evs.value.indexOf('shared:')===0){       // voz BR da biblioteca → instala e guarda o id novo
+      const p=evs.value.split(':'); const sv=brVoices.find(v=>v.voice_id===p[2]);
+      toast('Instalando voz brasileira…');
+      try{ settings.elevenVoice=await installSharedVoice(p[1],p[2],sv?sv.name:'voz'); }
+      catch(e){ toast(e.message,true); return; }
+    } else settings.elevenVoice=evs.value;
+    LS.set('kairos_settings',settings); try{ syncVault(); }catch(e){} toast('🇧🇷 Voz do agente salva.');
+  }; }
 { const sev=$('#seVoiceSelect'); if(sev) sev.onchange=()=>{ settings.seVoice=sev.value; LS.set('kairos_settings',settings); try{ syncVault(); }catch(e){} toast('Voz do agente salva.'); }; }
 { const sb=$('#seVoicePreviewBtn'); if(sb) sb.onclick=async()=>{ primeTTS(); const v=$('#seVoiceSelect'); if(v) settings.seVoice=v.value; const msg='Olá, eu sou o seu agente Kairos. Esta é a minha voz.'; const ok=await speakNaturalFree(msg); audioTtsActive=false; if(!ok){ toast('Voz natural indisponível no navegador agora — usando a voz do aparelho.',true); try{ await speakNative(msg); }catch(e){} } }; }
 { const eki=$('#elevenKeyInput'); if(eki) eki.addEventListener('change',()=>{ settings.elevenKey=eki.value.trim(); LS.set('kairos_settings',settings); try{ syncVault(); }catch(e){} }); }
@@ -2206,6 +2268,7 @@ $('#previewVoiceBtn').onclick=()=>{
   speechSynthesis.cancel(); speechSynthesis.speak(u);
 };
 $('#loadElevenVoicesBtn').onclick=()=>{ loadElevenVoices(); };
+$('#loadBrVoicesBtn').onclick=()=>{ loadBrazilianVoices(); };
 $('#testAgentBtn').onclick=async()=>{
   const url=($('#agentUrl')&&$('#agentUrl').value.trim());
   const key=($('#agentKey')&&$('#agentKey').value.trim());
@@ -2228,11 +2291,22 @@ $('#testAgentBtn').onclick=async()=>{
 let previewAudio=null;
 $('#elevenVoicePreviewBtn').onclick=async()=>{
   const sel=$('#elevenVoiceSelect'); const voiceId=sel?sel.value:'';
-  const voice=elevenVoices.find(v=>v.voice_id===voiceId);
   // Para qualquer fala em curso
   stopSpeaking();
   try{ if(previewAudio){ previewAudio.pause(); previewAudio.src=''; } }catch(e){}
 
+  // Voz brasileira da biblioteca (ainda não instalada) → prévia GRÁTIS via preview_url
+  if(voiceId.indexOf('shared:')===0){
+    const sv=brVoices.find(v=>v.voice_id===voiceId.split(':')[2]);
+    if(sv&&sv.preview_url){
+      previewAudio=new Audio(); previewAudio.setAttribute('playsinline',''); previewAudio.setAttribute('webkit-playsinline','');
+      previewAudio.src=sv.preview_url;
+      const pr=previewAudio.play(); if(pr&&pr.catch) pr.catch(err=>toast('Erro no preview: '+(err&&err.message||err),true));
+      toast('▶ Prévia: '+sv.name+' — escolha pra instalar');
+    } else toast('Sem amostra. Escolha a voz pra instalar e ouvir.',true);
+    return;
+  }
+  const voice=elevenVoices.find(v=>v.voice_id===voiceId);
   if(voice&&voice.preview_url){
     // Novo <audio> criado no clique = gesto iOS válido; sem conflito com getTtsAudio()
     previewAudio=new Audio();
