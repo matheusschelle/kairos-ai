@@ -591,6 +591,58 @@
   .mstr-meta{margin-top:8px;font-size:11px;font-weight:600;color:#f5d98a;display:flex;gap:12px;flex-wrap:wrap;
     border-top:1px solid rgba(245,201,105,.2);padding-top:8px}
   .mstr-meta span{white-space:nowrap}
+  /* o atributo hidden precisa vencer classes com display:flex/grid */
+  [hidden]{display:none !important}
+  /* ===== FAIXA DE INFO DA ABA (modelo + custo/economia) ===== */
+  .agent-info{margin:0 2px 8px;padding:7px 11px;border-radius:11px;font-size:11.5px;line-height:1.4;
+    border:1px solid var(--glass-brd);background:rgba(8,10,26,.45);color:var(--ink-dim);display:flex;gap:8px;
+    align-items:center;flex-wrap:wrap;flex:0 0 auto}
+  .agent-info b{color:var(--ink);font-weight:700}
+  .agent-info .ai-cost{margin-left:auto;font-weight:700;color:#f5d98a;font-variant-numeric:tabular-nums}
+  .agent-info .ai-tag{font-size:10px;font-weight:800;letter-spacing:.4px;padding:2px 7px;border-radius:999px;text-transform:uppercase}
+  .agent-info.k .ai-tag{background:rgba(34,224,255,.16);color:#8fe9ff}
+  .agent-info.o .ai-tag{background:rgba(139,92,255,.18);color:#c4aaff}
+  .agent-info.m .ai-tag{background:rgba(245,201,105,.18);color:#ffdd8a}
+  /* ===== ARQUIVOS GERADOS ===== */
+  .mstr-files{margin-top:10px;display:flex;flex-direction:column;gap:7px}
+  .mstr-files-h,.mstr-mirror-h{font-size:10px;font-weight:800;letter-spacing:.8px;color:#f5d98a;text-transform:uppercase;margin-bottom:2px}
+  .fcard{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:11px;
+    border:1px solid var(--glass-brd);background:rgba(8,10,26,.5)}
+  .fcard .fico{font-size:16px;flex:0 0 auto}
+  .fcard .fmeta{min-width:0;flex:1}
+  .fcard .fname{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fcard .fsub{font-size:10.5px;color:var(--ink-dim)}
+  .fcard .fnew{color:#7bf0bf;font-weight:700}
+  .fbtns{display:flex;gap:6px;flex:0 0 auto}
+  .fbtn{font-family:inherit;font-size:11px;font-weight:700;padding:6px 11px;border-radius:9px;cursor:pointer;
+    border:1px solid;text-decoration:none;display:inline-block;white-space:nowrap}
+  .fbtn.view{border-color:rgba(34,224,255,.45);background:rgba(34,224,255,.12);color:#8fe9ff}
+  .fbtn.dl{border-color:rgba(61,240,154,.45);background:rgba(61,240,154,.12);color:#7bf0bf}
+  .fbtn:hover{filter:brightness(1.25)}
+  /* ===== ESPELHO DO SANDBOX ===== */
+  .mstr-mirror-wrap{margin-top:10px}
+  .mstr-mirror-btn{width:100%;font-family:inherit;font-size:12px;font-weight:700;padding:8px;border-radius:10px;
+    cursor:pointer;border:1px dashed rgba(245,201,105,.4);background:rgba(245,201,105,.07);color:#f5d98a}
+  .mstr-mirror{margin-top:8px;display:flex;flex-direction:column;gap:6px;max-height:230px;overflow-y:auto}
+  /* ===== VISUALIZADOR DE ARQUIVO ===== */
+  .fv-overlay{position:fixed;inset:0;z-index:1200;background:rgba(4,6,16,.72);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;padding:14px}
+  .fv-box{width:min(920px,100%);max-height:88vh;display:flex;flex-direction:column;border-radius:18px;
+    border:1px solid var(--glass-brd);background:#0b0e22;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden}
+  .fv-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--glass-brd);flex:0 0 auto}
+  .fv-title{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+  .fv-actions{display:flex;gap:6px;flex:0 0 auto}
+  .fv-close{font-family:inherit;background:rgba(255,61,120,.14);border:1px solid rgba(255,61,120,.4);color:#ff9fb4;
+    width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:14px;flex:0 0 auto}
+  .fv-body{overflow:auto;padding:0;background:#070912}
+  .fv-body pre{margin:0;padding:14px 16px;font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;
+    line-height:1.6;color:#d4dcff;white-space:pre-wrap;word-break:break-word;tab-size:2}
+  .fv-body img{max-width:100%;display:block;margin:0 auto}
+  .fv-body iframe{width:100%;height:70vh;border:0;background:#fff}
+  .fv-empty{padding:26px 16px;text-align:center;color:var(--ink-dim);font-size:13px}
+  /* syntax highlight leve */
+  .tk-str{color:#9ef0b4}.tk-com{color:#6b74a0;font-style:italic}.tk-kw{color:#ff9fd6}
+  .tk-num{color:#f5c969}.tk-tag{color:#8fe9ff}.tk-attr{color:#c4aaff}.tk-prop{color:#8fe9ff}
 </style>
 </head>
 <body class="online">
@@ -635,6 +687,9 @@
     <button class="atab" data-agent="maestro" type="button"><span class="atab-dot"></span>Maestro</button>
   </div>
 
+  <!-- FAIXA DE INFO DA ABA: modelo em uso + custo/economia -->
+  <div class="agent-info" id="agentInfo"></div>
+
   <!-- PAINEL AO VIVO DO MAESTRO (só na aba Maestro) -->
   <div class="mstr-panel" id="maestroPanel" hidden>
     <div class="mstr-top">
@@ -653,6 +708,23 @@
     </div>
     <div class="mstr-live" id="mstrLive">Mande um comando por voz ou texto — ele roda no sandbox da VPS.</div>
     <div class="mstr-meta" id="mstrMeta" hidden></div>
+    <div class="mstr-files" id="mstrFiles" hidden></div>
+    <div class="mstr-mirror-wrap">
+      <button class="mstr-mirror-btn" id="mstrMirrorBtn" type="button">📂 Ver arquivos no sandbox (espelho)</button>
+      <div class="mstr-mirror" id="mstrMirror" hidden></div>
+    </div>
+  </div>
+
+  <!-- VISUALIZADOR DE ARQUIVO (VER) -->
+  <div class="fv-overlay" id="fileViewer" hidden>
+    <div class="fv-box">
+      <div class="fv-head">
+        <span class="fv-title" id="fvTitle">arquivo</span>
+        <div class="fv-actions" id="fvActions"></div>
+        <button class="fv-close" id="fvClose" type="button">✕</button>
+      </div>
+      <div class="fv-body" id="fvBody"></div>
+    </div>
   </div>
 
   <!-- HOME -->
@@ -1123,7 +1195,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v27 · 11/07 · 3 agentes + Maestro ao vivo'; // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v28 · 11/07 · entrega de arquivos + funil haiku'; // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -2186,6 +2258,9 @@ async function sendMaestro(text){
       if(m.model) bits.push('modelo '+m.model); }
     else if(j && j.action){ bits.push('ação: '+j.action); }
     mstrMeta(bits.map(b=>'<span>'+b+'</span>').join(''));
+    maestroRenderFiles((j&&j.files)||[]);
+    if(m){ if(m.costUsd!=null) mstrLastCost=Number(m.costUsd); if(m.model) mstrLastModel=m.model; agentCost.maestro=(agentCost.maestro||0)+(m.costUsd!=null?Number(m.costUsd):0); }
+    updateAgentInfo();
     speak(short);
   }catch(e){
     mstrHealthStop(); mstrStopTimer(); mstrStep('run','err'); mstrSetStatus('err','erro');
@@ -2204,6 +2279,85 @@ async function maestroCtl(path,label){
     toast(short); speak(short);
   }catch(e){ toast('Maestro '+label+': '+e.message,true); mstrLive('⚠ '+label+' falhou: '+e.message); }
 }
+
+/* ===== ENTREGA: arquivos gerados, visualizador, espelho, faixa de custo ===== */
+let mstrLastCost=null, mstrLastModel=null, mstrFilesData=[];
+const agentCost={kairos:0,openclaw:0,maestro:0};
+function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function fileIco(t){ return t==='image'?'🖼️':t==='html'?'🌐':t==='binary'?'📦':'📄'; }
+function humanSize(n){ n=+n||0; return n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB'; }
+// highlight leve em PASSADA ÚNICA (nunca re-escaneia a própria marcação)
+function highlight(code,name){
+  const e=(name.split('.').pop()||'').toLowerCase();
+  const src=esc(code);
+  if(['html','htm','xml','svg','vue'].includes(e)) return src.replace(/(&lt;\/?[a-zA-Z][\w:-]*)/g,'<span class="tk-tag">$1</span>');
+  const KW=/^(function|const|let|var|return|if|else|for|while|import|export|from|new|async|await|def|end|then|true|false|null|None|True|False|print|echo)$/;
+  return src.replace(/(\/\*[\s\S]*?\*\/|\/\/[^\n]*|#[^\n]*)|("[^"\n]*"|'[^'\n]*'|`[^`]*`)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)/g,
+    (m,com,str,num,ident)=> com?'<span class="tk-com">'+com+'</span>' : str?'<span class="tk-str">'+str+'</span>'
+      : num?'<span class="tk-num">'+num+'</span>' : ident?(KW.test(ident)?'<span class="tk-kw">'+ident+'</span>':ident) : m);
+}
+function fileCardHtml(f,i,ns){
+  const nw = f.change==='new' ? '<span class="fnew">novo</span> · ' : f.change==='modified' ? '<span class="fnew" style="color:#ffdd8a">alterado</span> · ' : '';
+  const base=maestroBase();
+  const dl = base + (f.download || ('/file?path='+encodeURIComponent(f.path)+'&download=1'));
+  return '<div class="fcard"><span class="fico">'+fileIco(f.type)+'</span>'+
+    '<div class="fmeta"><div class="fname">'+esc(f.name)+'</div>'+
+    '<div class="fsub">'+nw+esc(f.type)+' · '+humanSize(f.size)+'</div></div>'+
+    '<div class="fbtns"><button class="fbtn view" data-i="'+i+'" type="button">VER</button>'+
+    '<a class="fbtn dl" href="'+dl+'" download="'+esc(f.name)+'" target="_blank" rel="noopener">BAIXAR</a></div></div>';
+}
+function wireFileCards(box,files){ box.querySelectorAll('.fbtn.view').forEach(btn=>{ btn.onclick=()=>maestroOpenFile(files[+btn.dataset.i]); }); }
+function maestroRenderFiles(files){
+  mstrFilesData=files||[];
+  const box=mstrEl('mstrFiles'); if(!box) return;
+  if(!files||!files.length){ box.hidden=true; box.innerHTML=''; return; }
+  box.hidden=false;
+  box.innerHTML='<div class="mstr-files-h">Arquivos gerados ('+files.length+')</div>'+files.map((f,i)=>fileCardHtml(f,i,'gen')).join('');
+  wireFileCards(box,files);
+}
+async function maestroOpenFile(f){
+  if(!f) return;
+  const base=maestroBase();
+  const ov=mstrEl('fileViewer'), title=mstrEl('fvTitle'), body=mstrEl('fvBody'), acts=mstrEl('fvActions');
+  if(!ov) return;
+  const fileUrl=base+(f.url||('/file?path='+encodeURIComponent(f.path)));
+  const dlUrl=base+(f.download||('/file?path='+encodeURIComponent(f.path)+'&download=1'));
+  title.textContent=f.name;
+  acts.innerHTML='<a class="fbtn dl" href="'+dlUrl+'" download="'+esc(f.name)+'" target="_blank" rel="noopener">⬇ BAIXAR</a>'+
+    (f.type==='html'?'<a class="fbtn view" href="'+fileUrl+'" target="_blank" rel="noopener">↗ PREVIEW</a>':'');
+  ov.hidden=false;
+  if(f.type==='image'){ body.innerHTML='<img src="'+fileUrl+'" alt="'+esc(f.name)+'">'; return; }
+  if(f.type==='binary'){ body.innerHTML='<div class="fv-empty">Arquivo binário — toque BAIXAR pra salvar no celular.</div>'; return; }
+  body.innerHTML='<div class="fv-empty">carregando…</div>';
+  let content=f.content;
+  if(content==null){ try{ const r=await fetch(fileUrl); content=await r.text(); }catch(e){ body.innerHTML='<div class="fv-empty">Não consegui abrir: '+esc(e.message)+'</div>'; return; } }
+  body.innerHTML='<pre>'+highlight(content,f.name)+'</pre>';
+}
+function closeViewer(){ const ov=mstrEl('fileViewer'); if(ov) ov.hidden=true; const b=mstrEl('fvBody'); if(b) b.innerHTML=''; }
+async function maestroLoadMirror(){
+  const base=maestroBase(), box=mstrEl('mstrMirror'), btn=mstrEl('mstrMirrorBtn');
+  if(!base){ toast('Configure a URL do Maestro.'); return; }
+  if(box.hidden===false){ box.hidden=true; box.innerHTML=''; btn.textContent='📂 Ver arquivos no sandbox (espelho)'; return; }
+  btn.textContent='📂 Atualizando…';
+  try{
+    const r=await fetch(base+'/files'); const j=await r.json(); const files=(j&&j.files)||[];
+    if(!files.length){ box.innerHTML='<div class="fv-empty" style="padding:12px">Sandbox vazio.</div>'; }
+    else { box.innerHTML='<div class="mstr-mirror-h">Sandbox: '+esc(j.sandbox||'')+' ('+files.length+' arquivos)</div>'+files.map((f,i)=>fileCardHtml(f,i,'mir')).join(''); wireFileCards(box,files); }
+    box.hidden=false; btn.textContent='📂 Esconder espelho';
+  }catch(e){ box.innerHTML='<div class="fv-empty" style="padding:12px">Erro ao listar: '+esc(e.message)+'</div>'; box.hidden=false; btn.textContent='📂 Ver arquivos no sandbox (espelho)'; }
+}
+function updateAgentInfo(){
+  const el=mstrEl('agentInfo'); if(!el) return;
+  el.classList.remove('k','o','m');
+  if(activeAgent==='kairos'){ el.classList.add('k');
+    el.innerHTML='<span class="ai-tag">Kairos</span><span>Conversa normal (<b>Groq</b>). Não cria arquivos.</span>'; }
+  else if(activeAgent==='openclaw'){ el.classList.add('o');
+    el.innerHTML='<span class="ai-tag">Econômica</span><span><b>Gemini 2.5 Flash</b> — grátis/barato pra conversa e tarefa leve.</span>'; }
+  else { el.classList.add('m');
+    const c = mstrLastCost!=null ? '$'+mstrLastCost.toFixed(4)+' · '+(mstrLastModel||'haiku') : '—';
+    el.innerHTML='<span class="ai-tag">Trabalho</span><span><b>haiku</b> por padrão (centavos). opus/fable = caro, só se você pedir na fala.</span><span class="ai-cost" title="custo da última tarefa">última: '+c+'</span>'; }
+}
+
 function updateAgentTabsAvail(){
   const oc=document.querySelector('.atab[data-agent="openclaw"]'); const ms=document.querySelector('.atab[data-agent="maestro"]');
   if(oc) oc.classList.toggle('unavail', !(settings.agentUrl&&settings.agentUrl.trim()));
@@ -2217,13 +2371,20 @@ function setAgent(agent){
   const txt=$('#txt'); if(txt){ txt.placeholder = agent==='maestro' ? 'Comando pro Maestro (voz ou texto)…'
     : agent==='openclaw' ? 'Comando pro Openclaw…' : 'Fale ou escreva…'; }
   if(agent==='maestro' && !mstrBusy){ mstrResetSteps(); mstrMeta(''); mstrSetStatus('idle','ocioso');
+    maestroRenderFiles([]);
+    const mb=mstrEl('mstrMirror'); if(mb){ mb.hidden=true; mb.innerHTML=''; }
+    const mbtn=mstrEl('mstrMirrorBtn'); if(mbtn) mbtn.textContent='📂 Ver arquivos no sandbox (espelho)';
     if(!maestroBase()) mstrLive('Cole a URL do Maestro em Configurações → "URL do Maestro (voz→terminal)".');
     else mstrLive('Pronto. Mande um comando por voz ou texto — roda no sandbox da VPS.'); }
   updateAgentTabsAvail();
+  updateAgentInfo();
 }
 document.querySelectorAll('.atab').forEach(b=>{ b.addEventListener('click',()=>{ if(typeof primeTTS==='function') primeTTS(); setAgent(b.dataset.agent); }); });
 if(mstrEl('mstrKill')) mstrEl('mstrKill').onclick=()=>maestroCtl('/kill','PARAR');
 if(mstrEl('mstrResume')) mstrEl('mstrResume').onclick=()=>maestroCtl('/resume','LIBERAR');
+if(mstrEl('mstrMirrorBtn')) mstrEl('mstrMirrorBtn').onclick=maestroLoadMirror;
+if(mstrEl('fvClose')) mstrEl('fvClose').onclick=closeViewer;
+if(mstrEl('fileViewer')) mstrEl('fileViewer').addEventListener('click',e=>{ if(e.target.id==='fileViewer') closeViewer(); });
 if($('#testMaestroBtn')) $('#testMaestroBtn').onclick=async()=>{
   const rEl=$('#maestroTestResult');
   const base=(($('#maestroUrl')&&$('#maestroUrl').value.trim())||settings.maestroUrl||'').replace(/\/+$/,'');
