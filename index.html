@@ -1058,7 +1058,7 @@
     </div>
     <div class="field" style="border-top:1px solid rgba(245,201,105,.25);padding-top:18px;margin-top:6px">
       <label style="color:#f5c969">URL do Maestro <span style="color:#7a83a8;font-weight:400">(voz→terminal)</span></label>
-      <input id="maestroUrl" type="url" placeholder="https://...trycloudflare.com" autocomplete="off">
+      <input id="maestroUrl" type="url" placeholder="https://kairos-maestro.tail250cee.ts.net" autocomplete="off">
       <div class="hint" style="margin-top:6px">Cole a URL https do seu <b>Maestro</b> na VPS (túnel Cloudflare). É <b>separado</b> do agente OpenCLAW acima. Com a aba <b>Maestro</b> ativa, sua voz/texto vira comando de terminal no sandbox. Vazio = aba Maestro fica desativada.</div>
       <button id="testMaestroBtn" type="button" style="margin-top:8px;width:100%;padding:10px;border-radius:12px;border:1px solid rgba(245,201,105,.4);background:rgba(245,201,105,.12);color:#f5d98a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">⚡ Testar conexão com o Maestro</button>
       <div id="maestroTestResult" style="font-size:12px;color:#7a83a8;margin-top:6px;text-align:center"></div>
@@ -1250,9 +1250,12 @@ let settings = LS.get('kairos_settings',{
   alexaUrl:'https://python-roving-distance.ngrok-free.dev/alexa-bot',
   maestroUrl:''
 });
-// Alvo ativo do comando (aba selecionada): 'kairos' | 'openclaw' | 'maestro'. Persiste a última escolha.
+// URL fixa do Maestro (Tailscale Funnel). Migra automático quem tinha o quick tunnel antigo do Cloudflare.
+const MAESTRO_FIXED_URL='https://kairos-maestro.tail250cee.ts.net';
+if(!settings.maestroUrl || /trycloudflare\.com/i.test(settings.maestroUrl)){ settings.maestroUrl=MAESTRO_FIXED_URL; LS.set('kairos_settings',settings); }
+// Alvo ativo do comando (aba selecionada): 'kairos' | 'openclaw' | 'maestro' | 'central'. Persiste a última escolha.
 let activeAgent = LS.get('kairos_agent','kairos');
-if(!['kairos','openclaw','maestro'].includes(activeAgent)) activeAgent='kairos';
+if(!['kairos','openclaw','maestro','central'].includes(activeAgent)) activeAgent='kairos';
 // normaliza velocidades antigas para os três valores suportados
 if(settings.rate===1.2) settings.rate=1.25;
 else if(settings.rate===1.4) settings.rate=1.5;
@@ -1271,7 +1274,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v30 · 12/07 · threads + Central ao vivo'; // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v31 · 12/07 · URL fixa Tailscale'; // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
