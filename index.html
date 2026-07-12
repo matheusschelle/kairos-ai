@@ -690,6 +690,26 @@
   .ctr-empty{color:var(--ink-dim);font-size:12px;padding:4px 2px}
   .ctr-graph{border:1px solid var(--glass-brd);border-radius:12px;background:rgba(4,6,16,.4);overflow-x:auto}
   .ctr-graph svg{display:block;min-width:320px;width:100%;height:auto}
+  /* ===== MODO EDITAR O APP ===== */
+  .thr-appedit{flex:0 0 auto;font-family:inherit;font-size:12px;font-weight:800;padding:8px 11px;border-radius:12px;cursor:pointer;
+    border:1px solid rgba(139,92,255,.45);background:rgba(139,92,255,.12);color:#c4aaff;white-space:nowrap}
+  .thr-appedit.on{background:linear-gradient(135deg,#8b5cff,#b18cff);color:#0c0620;border-color:transparent;box-shadow:0 3px 14px rgba(139,92,255,.4)}
+  .mstr-app{margin-top:10px;padding:11px;border-radius:13px;border:1px solid rgba(139,92,255,.4);background:rgba(139,92,255,.09)}
+  .mstr-app .ap-h{font-size:10px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:#c4aaff;margin-bottom:6px}
+  .mstr-app .ap-sum{font-size:12.5px;line-height:1.45;color:#dfe4ff;margin-bottom:8px;white-space:pre-wrap}
+  .mstr-app .ap-files{font-size:11px;color:var(--ink-dim);margin-bottom:9px}
+  .mstr-app .ap-prev{display:inline-block;text-decoration:none;font-weight:800;font-size:13px;padding:9px 14px;border-radius:11px;
+    border:1px solid rgba(34,224,255,.5);background:rgba(34,224,255,.14);color:#8fe9ff;margin-bottom:9px}
+  .mstr-app .ap-btns{display:flex;gap:7px;flex-wrap:wrap}
+  .ap-btn{font-family:inherit;font-size:12px;font-weight:800;padding:9px 13px;border-radius:11px;cursor:pointer;border:1px solid;flex:1;min-width:120px}
+  .ap-btn.pub{border-color:rgba(61,240,154,.5);background:rgba(61,240,154,.15);color:#7bf0bf}
+  .ap-btn.disc{border-color:rgba(255,61,120,.5);background:rgba(255,61,120,.13);color:#ff9fb4}
+  .ap-btn.roll{border-color:rgba(245,201,105,.5);background:rgba(245,201,105,.13);color:#f5d98a}
+  .ap-btn:hover{filter:brightness(1.2)}
+  .mstr-app .ap-note{font-size:10.5px;color:var(--ink-dim);margin-top:8px;line-height:1.4}
+  .mstr-app .ap-badge{display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.4px}
+  .ap-badge.ready{background:rgba(34,224,255,.18);color:#8fe9ff}.ap-badge.published{background:rgba(61,240,154,.18);color:#7bf0bf}
+  .ap-badge.build_failed{background:rgba(255,61,120,.2);color:#ff9fb4}.ap-badge.discarded{background:rgba(139,147,196,.18);color:#aab2dd}
 </style>
 </head>
 <body class="online">
@@ -742,6 +762,7 @@
   <div class="mstr-panel" id="maestroPanel" hidden>
     <div class="thr-bar">
       <button class="thr-new" id="thrNew" type="button">＋ Nova tarefa</button>
+      <button class="thr-appedit" id="thrAppEdit" type="button" title="Ligar o modo de melhorar o próprio app (preview → produção)">🛠️ Editar o app</button>
       <div class="thr-list" id="thrList"></div>
     </div>
     <div class="thr-detail" id="thrDetail">
@@ -762,6 +783,7 @@
       <div class="mstr-live" id="mstrLive">Mande um comando por voz ou texto — vira uma tarefa (thread) no sandbox da VPS.</div>
       <div class="mstr-events" id="mstrEvents" hidden></div>
       <div class="mstr-meta" id="mstrMeta" hidden></div>
+      <div class="mstr-app" id="mstrApp" hidden></div>
       <div class="mstr-files" id="mstrFiles" hidden></div>
       <div class="mstr-mirror-wrap">
         <button class="mstr-mirror-btn" id="mstrMirrorBtn" type="button">📂 Ver arquivos no sandbox (espelho)</button>
@@ -1274,7 +1296,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v31 · 12/07 · URL fixa Tailscale'; // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v32 · 12/07 · Maestro edita o app por voz'; // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -2220,7 +2242,7 @@ async function send(text){
     attachedImg=null;
     if($('#attachPreview')) $('#attachPreview').style.display='none';
     if($('#attachThumb')) $('#attachThumb').src='';
-    sendMaestro(text);
+    if(appEditMode) routeAppEdit(text); else sendMaestro(text);
     return;
   }
 
@@ -2374,6 +2396,7 @@ function renderThreadDetail(t){
   if(t.runs) bits.push(t.runs+' comando'+(t.runs>1?'s':'')+' na thread');
   mstrMeta(bits.length?bits.map(b=>'<span>'+b+'</span>').join(''):'');
   maestroRenderFiles(t.files||[]);
+  renderAppBlock(t);
   if(t.costUsd!=null) mstrLastCost=Number(t.costUsd); if(t.model) mstrLastModel=t.model; updateAgentInfo();
 }
 async function openThread(id){
@@ -2408,12 +2431,92 @@ function thrNew(){ activeThreadId=null; LS.set('kairos_maestro_thread',''); mstr
   const txt=$('#txt'); if(txt) txt.focus();
 }
 
+/* ===== MODO "EDITAR O APP" (devops por voz: preview → produção com confirmação) ===== */
+let appEditMode = (LS.get('kairos_app_edit','')===true || LS.get('kairos_app_edit','')==='true');
+function setAppEdit(on){
+  appEditMode=!!on; LS.set('kairos_app_edit',appEditMode);
+  const b=mstrEl('thrAppEdit'); if(b) b.classList.toggle('on',appEditMode);
+  const txt=$('#txt'); if(txt && activeAgent==='maestro') txt.placeholder = appEditMode?'Fale a melhoria do app…':'Comando pro Maestro (voz ou texto)…';
+  if(appEditMode) mstrLive('🛠️ Modo EDITAR O APP ligado. Fale/escreva a melhoria — vira um preview antes de publicar. Produção só com "pode publicar".');
+}
+// frases de confirmação por voz/texto (só valem no modo editar o app)
+function appPhrase(text){
+  const t=(text||'').toLowerCase();
+  if(/\b(pode publicar|sobe pra produ|sobe para produ|publica isso|publicar agora|manda pra produ|manda para produ)\b/.test(t)) return 'publish';
+  if(/\b(descarta|descartar|joga fora|jogar fora|n[aã]o gostei|esquece isso|cancela isso)\b/.test(t)) return 'discard';
+  if(/\b(volta pro anterior|volta para o anterior|voltar pro anterior|rollback|reverte|reverter|desfaz|desfazer)\b/.test(t)) return 'rollback';
+  return null;
+}
+// roteia um comando no modo editar-o-app: frase de confirmação OU nova melhoria
+function routeAppEdit(text){
+  const ph=appPhrase(text);
+  if(ph==='publish'){ appPublish(); return; }
+  if(ph==='discard'){ appDiscard(); return; }
+  if(ph==='rollback'){ appRollback(); return; }
+  sendAppImprove(text);
+}
+async function sendAppImprove(text){
+  const base=maestroBase(); if(!base){ toast('Configure a URL do Maestro.'); openSettings(); return; }
+  setState('thinking'); setStatus('Editando o app…');
+  mstrResetSteps(); mstrMeta(''); maestroRenderFiles([]); mstrEventsRender([]); renderAppBlock(null);
+  mstrSetStatus('sending','enviando'); mstrStep('send','active'); mstrLive('preparando cópia do app (git fetch)…');
+  try{
+    const r=await fetch(base+'/app/improve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,async:true})});
+    const j=await r.json(); setState(''); setStatus('');
+    if(j&&j.threadId){ activeThreadId=j.threadId; LS.set('kairos_maestro_thread',activeThreadId); announced[j.threadId]='running';
+      mstrStep('send','done'); mstrSetStatus('running','rodando'); mstrStep('run','active');
+      if(mstrEl('mstrBadge')) mstrEl('mstrBadge').textContent='🛠️ '+(j.title||'melhoria');
+      await mstrTick(); mstrStartLive();
+    } else { mstrSetStatus('err','erro'); mstrLive('⚠ '+((j&&j.error)||'não iniciou')); }
+  }catch(e){ setState(''); setStatus(''); mstrSetStatus('err','erro'); mstrLive('⚠ Não alcancei o Maestro: '+e.message); toast('Maestro: '+e.message,true); }
+}
+async function appAction(path,label,okMsg){
+  const base=maestroBase(); if(!base) return;
+  const body={}; if(activeThreadId) body.threadId=activeThreadId;
+  toast(label+'…'); mstrLive(label+'…');
+  try{
+    const r=await fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const j=await r.json();
+    if(j&&j.ok){ const extra=j.appBuild?(' ('+j.appBuild+')'):(j.prodCommit?(' ('+j.prodCommit+')'):''); const m=okMsg+extra; toast(m); mstrLive('✅ '+m); speak(m); }
+    else { const err='⚠ '+((j&&j.error)||'falhou'); toast(err,true); mstrLive(err); speak('Deu problema: '+((j&&j.error)||'')); }
+    await mstrTick();
+  }catch(e){ toast('⚠ '+e.message,true); mstrLive('⚠ '+e.message); }
+}
+function appPublish(){ appAction('/app/publish','Publicando em produção','Publicado em produção'); }
+function appDiscard(){ appAction('/app/discard','Descartando preview','Preview descartado'); }
+function appRollback(){ appAction('/app/rollback','Revertendo produção','Produção revertida pra versão anterior'); }
+function renderAppBlock(t){
+  const box=mstrEl('mstrApp'); if(!box) return;
+  const a=t&&t.app; if(!a){ box.hidden=true; box.innerHTML=''; return; }
+  box.hidden=false; const base=maestroBase();
+  const badgeTxt={preview_ready:'preview pronto',published:'publicado',build_failed:'build quebrou',discarded:'descartado',no_change:'sem mudança',error:'erro'}[a.status]||a.status||'';
+  let html='<div class="ap-h">🛠️ Editar o app · <span class="ap-badge '+(a.status||'')+'">'+esc(badgeTxt)+'</span></div>';
+  if(a.summary) html+='<div class="ap-sum">'+esc(a.summary)+'</div>';
+  if(a.changedFiles&&a.changedFiles.length) html+='<div class="ap-files">📄 arquivos: '+esc(a.changedFiles.join(', '))+'</div>';
+  if(a.status==='preview_ready'){
+    html+='<a class="ap-prev" href="'+base+(a.previewPath||'/preview/')+'" target="_blank" rel="noopener">👀 Abrir preview no navegador</a>';
+    html+='<div class="ap-btns"><button class="ap-btn pub" id="apPub" type="button">✅ PUBLICAR</button><button class="ap-btn disc" id="apDisc" type="button">🗑️ DESCARTAR</button></div>';
+    html+='<div class="ap-note">Confirme por voz: <b>"pode publicar"</b> sobe pra produção · <b>"descarta"</b> joga fora. Depois de publicado, <b>"volta pro anterior"</b> reverte.</div>';
+  } else if(a.status==='build_failed'){
+    html+='<div class="ap-note" style="color:#ff9fb4">🛑 Não publiquei — o build quebraria. '+esc(a.error||'')+'</div>';
+  } else if(a.status==='published'){
+    html+='<div class="ap-note">✅ Está em produção agora'+(a.prodCommit?(' (commit '+esc(a.prodCommit)+')'):'')+'. Pra desfazer: fale <b>"volta pro anterior"</b> ou toque abaixo.</div>';
+    html+='<div class="ap-btns"><button class="ap-btn roll" id="apRoll" type="button">↩️ VOLTAR PRO ANTERIOR</button></div>';
+  } else if(a.status==='no_change'){
+    html+='<div class="ap-note">O Maestro não mudou nada. Descreva a melhoria de outro jeito.</div>';
+  }
+  box.innerHTML=html;
+  const p=mstrEl('apPub'), d=mstrEl('apDisc'), rr=mstrEl('apRoll');
+  if(p) p.onclick=appPublish; if(d) d.onclick=appDiscard; if(rr) rr.onclick=appRollback;
+}
+
 /* ===== CENTRAL (Fase 3) — dashboard tudo à vista ===== */
 async function renderCentral(){
   const base=maestroBase();
   let mh=null; if(base){ try{ const r=await fetch(base+'/health'); mh=await r.json(); }catch(e){} }
   let ths=mstrThreads; if(base){ try{ const r=await fetch(base+'/threads'); const j=await r.json(); ths=(j&&j.threads)||ths; mstrThreads=ths; }catch(e){} }
-  const ver=mstrEl('ctrVersion'); if(ver) ver.textContent=(typeof APP_BUILD!=='undefined'?APP_BUILD.split('·')[0].trim():'app')+(mh&&mh.version?(' · maestro v'+mh.version):' · maestro offline');
+  let prod=null; if(base){ try{ const r=await fetch(base+'/app/status'); prod=await r.json(); }catch(e){} }
+  const ver=mstrEl('ctrVersion'); if(ver) ver.textContent=(typeof APP_BUILD!=='undefined'?APP_BUILD.split('·')[0].trim():'app')+(mh&&mh.version?(' · maestro v'+mh.version):' · maestro offline')+(prod&&prod.prodBuild?(' · prod: '+prod.prodBuild.split('·')[0].trim()):'');
   const oc=(settings.agentUrl||'').trim();
   const tools=[
     {ico:'⚙️',name:'Maestro',led:mh?'on':'off',stat: mh?('online · '+String(mh.defaultModel||'').replace('claude-','').replace(/-\d.*/,'')+(mh.killSwitch?' · 🛑 travado':'')+(mh.headroom===false?' · headroom off':'')):'offline'},
@@ -2564,6 +2667,8 @@ if(mstrEl('mstrKill')) mstrEl('mstrKill').onclick=()=>maestroCtl('/kill','PARAR'
 if(mstrEl('mstrResume')) mstrEl('mstrResume').onclick=()=>maestroCtl('/resume','LIBERAR');
 if(mstrEl('mstrMirrorBtn')) mstrEl('mstrMirrorBtn').onclick=maestroLoadMirror;
 if(mstrEl('thrNew')) mstrEl('thrNew').onclick=thrNew;
+if(mstrEl('thrAppEdit')) mstrEl('thrAppEdit').onclick=()=>setAppEdit(!appEditMode);
+setAppEdit(appEditMode); // aplica o estado persistido do modo editar-o-app
 if(mstrEl('fvClose')) mstrEl('fvClose').onclick=closeViewer;
 if(mstrEl('fileViewer')) mstrEl('fileViewer').addEventListener('click',e=>{ if(e.target.id==='fileViewer') closeViewer(); });
 if($('#testMaestroBtn')) $('#testMaestroBtn').onclick=async()=>{
@@ -3220,8 +3325,8 @@ async function hfTurn(){
   addBubble('user',txt,true); s.msgs.push({role:'user',content:txt});
   if(s.title==='Nova conversa') s.title=txt.slice(0,42);
   saveSessions(); refreshHome();
-  // aba Maestro ativa: a fala do mãos-livres também vira comando de terminal
-  if(activeAgent==='maestro'){ await sendMaestro(txt); return; }
+  // aba Maestro ativa: a fala do mãos-livres vira tarefa (ou melhoria do app, se o modo estiver ligado)
+  if(activeAgent==='maestro'){ if(appEditMode) routeAppEdit(txt); else await sendMaestro(txt); return; }
   setState('thinking'); setStatus('Pensando…');
   let reply;
   try{ const history=s.msgs.slice(-12).map(m=>({role:m.role,content:m.content}));
