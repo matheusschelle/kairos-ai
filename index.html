@@ -913,6 +913,10 @@
       <div id="acPassForm" style="display:none;margin-top:10px">
         <input id="acNewPass" type="password" placeholder="Nova senha (mín. 8 caracteres)" autocomplete="new-password" style="width:100%;background:rgba(8,10,26,.7);border:1px solid var(--glass-brd);border-radius:11px;padding:10px 13px;color:var(--ink);font-size:14px;outline:none;font-family:inherit;margin-bottom:7px">
         <input id="acNewPass2" type="password" placeholder="Repita a nova senha" autocomplete="new-password" style="width:100%;background:rgba(8,10,26,.7);border:1px solid var(--glass-brd);border-radius:11px;padding:10px 13px;color:var(--ink);font-size:14px;outline:none;font-family:inherit;margin-bottom:7px">
+        <div id="acMfaWrap" style="display:none;margin-bottom:7px">
+          <div class="hint" style="margin-bottom:5px;color:#f5d98a">🔐 Sua conta tem verificação em 2 etapas. Digite o código de 6 dígitos do seu app autenticador (Google Authenticator, Authy) pra confirmar.</div>
+          <input id="acCodeChange" inputmode="numeric" maxlength="6" placeholder="Código do app (000000)" autocomplete="one-time-code" style="width:100%;background:rgba(8,10,26,.7);border:1px solid rgba(245,201,105,.5);border-radius:11px;padding:10px 13px;color:var(--ink);font-size:16px;letter-spacing:4px;text-align:center;outline:none;font-family:inherit">
+        </div>
         <button id="acSavePass" type="button" style="width:100%;padding:10px;border-radius:11px;border:1px solid rgba(0,200,120,.45);background:rgba(0,200,120,.14);color:#bff5cf;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Salvar nova senha</button>
         <div class="hint" id="acPassMsg" style="margin-top:6px"></div>
       </div>
@@ -1195,7 +1199,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v28 · 11/07 · entrega de arquivos + funil haiku'; // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v29 · 11/07 · senha+2FA sem travar'; // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -2589,6 +2593,36 @@ async function initAccountUI(){
   try{ const { data:{ user } }=await supa.auth.getUser(); if($('#acEmail')) $('#acEmail').textContent=(user&&user.email)||'—'; }catch(e){}
 }
 function _acMsg(t,ok){ const m=$('#acPassMsg'); if(m){ m.textContent=t; m.style.color=ok?'#7ee6a6':'#ff9b9b'; } }
+// Traduz erros técnicos do Supabase pra PT-BR simples (nada de "AAL2" na cara do usuário).
+function humanizeAuthError(msg){
+  msg=String(msg||'');
+  if(/AAL2|assurance level|MFA|aal2/i.test(msg)) return 'Sua conta tem verificação em 2 etapas. Digite o código do seu app (Google Authenticator) pra confirmar.';
+  if(/invalid (login )?credentials|invalid email or password/i.test(msg)) return 'E-mail ou senha incorretos.';
+  if(/email not confirmed|not confirmed/i.test(msg)) return 'Confirme seu e-mail pelo link que enviamos antes de entrar.';
+  if(/already registered|already exists|user already/i.test(msg)) return 'Essa conta já existe. Tente entrar ou use "Esqueci minha senha".';
+  if(/invalid.*(totp|code|otp)|code.*(invalid|expired)|not valid|incorrect.*code|verification.*fail/i.test(msg)) return 'Código inválido ou expirado. Abra o app autenticador e digite o número atual (ele muda a cada 30 segundos).';
+  if(/should be different|same (password|as)|different from (the )?old/i.test(msg)) return 'A nova senha precisa ser diferente da senha atual.';
+  if(/weak|at least \d|minimum|too short|6 characters|8 characters/i.test(msg)) return 'Senha fraca. Use pelo menos 8 caracteres.';
+  if(/rate ?limit|too many|for security purposes/i.test(msg)) return 'Muitas tentativas seguidas. Espere um minutinho e tente de novo.';
+  if(/network|failed to fetch|load failed|timeout/i.test(msg)) return 'Sem conexão com o servidor. Cheque a internet e tente de novo.';
+  if(/expired|token.*invalid|invalid.*token/i.test(msg)) return 'Esse link expirou. Peça um novo em "Esqueci minha senha".';
+  return msg;
+}
+// Mostra/esconde o campo de código do 2FA na troca de senha dentro do app.
+function _acShowMfa(show){ const w=$('#acMfaWrap'); if(w) w.style.display=show?'':'none'; if(show){ const c=$('#acCodeChange'); if(c){ c.value=''; setTimeout(()=>c.focus(),40); } } }
+// A conta exige elevar pra AAL2 (2FA ligado e sessão ainda em AAL1)?
+async function _acMfaRequired(){
+  try{ const { data }=await supa.auth.mfa.getAuthenticatorAssuranceLevel();
+    return !!(data && data.nextLevel==='aal2' && data.currentLevel!=='aal2'); }catch(e){ return false; }
+}
+// Eleva a sessão pra AAL2 usando o código do app (challenge + verify do fator TOTP).
+async function _acElevateAAL2(code){
+  const { data:f, error }=await supa.auth.mfa.listFactors(); if(error) throw error;
+  const factor=(f&&f.totp&&f.totp[0]) || (f&&f.all&&f.all.find(x=>x.factor_type==='totp'&&x.status==='verified'));
+  if(!factor) throw new Error('Não encontrei um app autenticador cadastrado nesta conta.');
+  const ch=await supa.auth.mfa.challenge({factorId:factor.id}); if(ch.error) throw ch.error;
+  const v=await supa.auth.mfa.verify({factorId:factor.id,challengeId:ch.data.id,code:(code||'').trim()}); if(v.error) throw v.error;
+}
 function closeSettings(){ $('#settings').classList.remove('on'); }
 async function saveSettings(){
   settings.name=$('#nameInput').value.trim()||'Matheus';
@@ -2669,19 +2703,39 @@ $('#previewVoiceBtn').onclick=()=>{
 $('#loadElevenVoicesBtn').onclick=()=>{ loadElevenVoices(); };
 $('#loadBrVoicesBtn').onclick=()=>{ loadBrazilianVoices(); };
 // --- Conta: trocar senha / sair ---
-if($('#acChangePass')) $('#acChangePass').onclick=()=>{ const f=$('#acPassForm'); if(f){ const show=f.style.display==='none'; f.style.display=show?'':'none'; if(show){ _acMsg(''); $('#acNewPass').focus(); } } };
-if($('#acSavePass')) $('#acSavePass').onclick=async()=>{
+if($('#acChangePass')) $('#acChangePass').onclick=()=>{ const f=$('#acPassForm'); if(f){ const show=f.style.display==='none'; f.style.display=show?'':'none'; if(show){ _acMsg(''); _acShowMfa(false); $('#acNewPass').focus(); } } };
+async function _acDoSavePass(){
   if(!supa) return _acMsg('Login na nuvem indisponível.');
   const p1=$('#acNewPass').value, p2=$('#acNewPass2').value;
   if(p1.length<8) return _acMsg('A senha precisa ter ao menos 8 caracteres.');
   if(p1!==p2) return _acMsg('As senhas não conferem.');
+  const codeEl=$('#acCodeChange'); const code=codeEl?codeEl.value.trim():'';
   const b=$('#acSavePass'); b.disabled=true; b.textContent='Salvando…';
-  try{ const { error }=await supa.auth.updateUser({password:p1}); if(error) throw error;
-    _acMsg('✅ Senha alterada! Use a nova em qualquer aparelho.',true); $('#acNewPass').value=''; $('#acNewPass2').value='';
+  try{
+    // 2FA: se a conta exige verificação em 2 etapas, confirma o código ANTES de trocar a senha.
+    if(await _acMfaRequired()){
+      if(!code || code.length<6){
+        _acShowMfa(true);
+        _acMsg('Sua conta tem verificação em 2 etapas. Digite o código do seu app (Google Authenticator) pra confirmar.');
+        b.disabled=false; b.textContent='Salvar nova senha'; return;
+      }
+      b.textContent='Conferindo código…';
+      await _acElevateAAL2(code);           // eleva a sessão pra AAL2
+    }
+    b.textContent='Salvando…';
+    const { error }=await supa.auth.updateUser({password:p1}); if(error) throw error;
+    _acMsg('✅ Senha alterada! Use a nova em qualquer aparelho.',true);
+    $('#acNewPass').value=''; $('#acNewPass2').value=''; if(codeEl) codeEl.value=''; _acShowMfa(false);
     setTimeout(()=>{ const f=$('#acPassForm'); if(f) f.style.display='none'; },1600);
-  }catch(e){ _acMsg('Erro: '+(e.message||e)); }
+  }catch(e){
+    const raw=(e&&e.message)||String(e);
+    if(/AAL2|assurance level|MFA|aal2/i.test(raw)) _acShowMfa(true); // reativo: revela o campo do código
+    _acMsg(humanizeAuthError(raw));
+  }
   b.disabled=false; b.textContent='Salvar nova senha';
-};
+}
+if($('#acSavePass')) $('#acSavePass').onclick=_acDoSavePass;
+if($('#acCodeChange')) $('#acCodeChange').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); _acDoSavePass(); } });
 let _acLogoutArmed=false;
 if($('#acLogout')) $('#acLogout').onclick=async()=>{
   if(!_acLogoutArmed){ _acLogoutArmed=true; $('#acLogout').textContent='Confirmar saída'; toast('Toque de novo pra sair.'); setTimeout(()=>{ _acLogoutArmed=false; if($('#acLogout')) $('#acLogout').textContent='Sair'; },3500); return; }
@@ -3360,7 +3414,7 @@ function cgMsg(t,ok){ const m=$('#cgMsg'); if(m){ m.textContent=t||''; m.style.c
 function cgSub(t){ const s=$('#cgSub'); if(s) s.textContent=t; }
 function cgSet(html){ $('#cgBody').innerHTML=html; cgMsg(''); }
 function cgDone(){ $('#cloudGate').classList.remove('on'); afterLogin(); }
-async function cgGuard(fn){ try{ cgMsg(''); await fn(); }catch(e){ cgMsg((e&&e.message)||String(e)); } }
+async function cgGuard(fn){ try{ cgMsg(''); await fn(); }catch(e){ cgMsg(humanizeAuthError((e&&e.message)||String(e))); } }
 function cgError(t){ cgSub('Atenção'); cgSet('<p style="font-size:13px;color:#ffb4b4;line-height:1.5;margin-bottom:14px">'+t+'</p><button class="auth-btn" id="cgRetry">Tentar de novo</button>'); $('#cgRetry').onclick=()=>routeAfterAuth(); }
 function cgFatal(t){ cgSub('Login na nuvem indisponível'); cgSet('<p style="font-size:13px;color:var(--ink-dim);line-height:1.5;margin-bottom:14px">'+t+'</p><button class="auth-btn" id="cgLocal">Entrar em modo local (temporário)</button>'); $('#cloudGate').classList.add('on'); $('#cgLocal').onclick=()=>{ $('#cloudGate').classList.remove('on'); afterLogin(); }; }
 
@@ -3400,12 +3454,21 @@ function cgRecoverySetPass(){
   cgSub('Defina a nova senha'); $('#cloudGate').classList.add('on');
   cgSet('<div class="auth-field"><label>Nova senha (mín. 8)</label><input id="cgNP" type="password" autocomplete="new-password" placeholder="••••••••"></div>'+
         '<div class="auth-field"><label>Repita a nova senha</label><input id="cgNP2" type="password" autocomplete="new-password" placeholder="••••••••"></div>'+
+        '<div class="auth-field" id="cgRecMfa" style="display:none"><label>🔐 Código do app autenticador (6 dígitos)</label><input id="cgRecCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000" style="letter-spacing:4px;text-align:center"></div>'+
         '<button class="auth-btn" id="cgGo">Salvar nova senha</button>');
   $('#cgGo').onclick=()=>cgGuard(async()=>{
     const p1=$('#cgNP').value, p2=$('#cgNP2').value;
     if(p1.length<8) throw new Error('A senha precisa ter ao menos 8 caracteres.');
     if(p1!==p2) throw new Error('As senhas não conferem.');
-    const { error }=await supa.auth.updateUser({password:p1}); if(error) throw error;
+    const codeEl=$('#cgRecCode'); const code=codeEl?codeEl.value.trim():'';
+    // se a conta tem 2FA, confirma o código antes de redefinir (respeita AAL2)
+    if(await _acMfaRequired()){
+      if(!code || code.length<6){ const w=$('#cgRecMfa'); if(w) w.style.display=''; if(codeEl) setTimeout(()=>codeEl.focus(),40);
+        cgMsg('Sua conta tem verificação em 2 etapas. Digite o código do seu app (Google Authenticator) pra confirmar.'); return; }
+      await _acElevateAAL2(code);
+    }
+    const { error }=await supa.auth.updateUser({password:p1});
+    if(error){ if(/AAL2|assurance|MFA|aal2/i.test(error.message)){ const w=$('#cgRecMfa'); if(w) w.style.display=''; } throw error; }
     cgMsg('✅ Senha redefinida! Entrando…',true); setTimeout(()=>routeAfterAuth(),900);
   });
 }
