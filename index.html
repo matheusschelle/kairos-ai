@@ -643,6 +643,53 @@
   /* syntax highlight leve */
   .tk-str{color:#9ef0b4}.tk-com{color:#6b74a0;font-style:italic}.tk-kw{color:#ff9fd6}
   .tk-num{color:#f5c969}.tk-tag{color:#8fe9ff}.tk-attr{color:#c4aaff}.tk-prop{color:#8fe9ff}
+  /* 4 abas: um pouco mais compactas */
+  .agent-tabs .atab{font-size:12px;padding:8px 4px;gap:5px;letter-spacing:.2px}
+  .atab[data-agent="central"].active{background:linear-gradient(135deg,#3df09a,#7bf0bf);color:#04140c;box-shadow:0 4px 18px rgba(61,240,154,.35)}
+  /* ===== BARRA DE THREADS ===== */
+  .thr-bar{display:flex;gap:7px;margin:0 2px 8px;align-items:stretch}
+  .thr-new{flex:0 0 auto;font-family:inherit;font-size:12px;font-weight:800;padding:8px 11px;border-radius:12px;cursor:pointer;
+    border:1px solid rgba(245,201,105,.45);background:rgba(245,201,105,.14);color:#f5d98a;white-space:nowrap}
+  .thr-list{display:flex;gap:6px;overflow-x:auto;flex:1;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  .thr-chip{flex:0 0 auto;max-width:190px;display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:12px;cursor:pointer;
+    border:1px solid var(--glass-brd);background:rgba(8,10,26,.5);color:var(--ink-dim);transition:.15s}
+  .thr-chip:hover{color:var(--ink)}
+  .thr-chip.active{border-color:rgba(245,201,105,.6);background:rgba(245,201,105,.14);color:#ffdd8a}
+  .thr-chip .tdot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:var(--ink-dim)}
+  .thr-chip .tdot.running{background:#ffdd8a;animation:mstrPulse 1.1s ease-in-out infinite}
+  .thr-chip .tdot.done{background:#3df09a}.thr-chip .tdot.error{background:#ff3d78}
+  .thr-chip .ttl{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .thr-empty{color:var(--ink-dim);font-size:12px;padding:7px 4px}
+  /* ===== EVENTOS AO VIVO (passo a passo) ===== */
+  .mstr-events{margin-top:9px;display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto;
+    border-left:2px solid rgba(245,201,105,.3);padding:2px 0 2px 10px}
+  .ev{font-size:11.5px;line-height:1.4;color:#cdd6ff;display:flex;gap:6px}
+  .ev .evt{color:#8b93c4;font-variant-numeric:tabular-nums;flex:0 0 auto;font-size:10px;padding-top:1px}
+  .ev.tool{color:#ffdd8a}.ev.think{color:#9fb0e6;font-style:italic}.ev.done{color:#7bf0bf}.ev.error{color:#ff9fb4}.ev.user{color:#8fe9ff}
+  /* ===== PAINEL CENTRAL (dashboard) ===== */
+  .central-panel{flex:0 0 auto;margin:0 2px 8px;padding:12px;border-radius:16px;overflow-y:auto;max-height:calc(100% - 8px);
+    border:1px solid rgba(61,240,154,.3);background:linear-gradient(180deg,rgba(61,240,154,.06),rgba(8,10,26,.5))}
+  .ctr-head{display:flex;align-items:center;gap:9px;margin-bottom:4px}
+  .ctr-title{font-size:13px;font-weight:800;letter-spacing:1px;color:#7bf0bf}
+  .ctr-sub{font-size:11px;color:var(--ink-dim);font-weight:600}
+  .ctr-live-dot{width:8px;height:8px;border-radius:50%;background:#3df09a;margin-left:auto;box-shadow:0 0 8px #3df09a;animation:mstrPulse 1.6s ease-in-out infinite}
+  .ctr-sec-h{font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#7bf0bf;margin:12px 0 6px}
+  .ctr-tools{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .ctr-tool{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:11px;border:1px solid var(--glass-brd);background:rgba(8,10,26,.5)}
+  .ctr-tool .tico{font-size:15px;flex:0 0 auto}
+  .ctr-tool .tinfo{min-width:0;flex:1}
+  .ctr-tool .tname{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ctr-tool .tstat{font-size:10px;color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ctr-tool .tled{width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:var(--ink-dim)}
+  .ctr-tool .tled.on{background:#3df09a;box-shadow:0 0 6px #3df09a}.ctr-tool .tled.off{background:#ff3d78}.ctr-tool .tled.warn{background:#f5c969}
+  .ctr-running,.ctr-cost{display:flex;flex-direction:column;gap:6px}
+  .ctr-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:11px;border:1px solid var(--glass-brd);background:rgba(8,10,26,.5);font-size:12px}
+  .ctr-row .rname{flex:1;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ctr-row .rval{font-weight:700;color:#f5d98a;font-variant-numeric:tabular-nums}
+  .ctr-row .rdot{width:8px;height:8px;border-radius:50%;background:#ffdd8a;animation:mstrPulse 1.1s ease-in-out infinite;flex:0 0 auto}
+  .ctr-empty{color:var(--ink-dim);font-size:12px;padding:4px 2px}
+  .ctr-graph{border:1px solid var(--glass-brd);border-radius:12px;background:rgba(4,6,16,.4);overflow-x:auto}
+  .ctr-graph svg{display:block;min-width:320px;width:100%;height:auto}
 </style>
 </head>
 <body class="online">
@@ -680,39 +727,64 @@
     </div>
   </header>
 
-  <!-- SELETOR DE AGENTE (3 abas) -->
+  <!-- SELETOR DE AGENTE (4 abas) -->
   <div class="agent-tabs" id="agentTabs">
     <button class="atab active" data-agent="kairos" type="button"><span class="atab-dot"></span>Kairos</button>
     <button class="atab" data-agent="openclaw" type="button"><span class="atab-dot"></span>Openclaw</button>
     <button class="atab" data-agent="maestro" type="button"><span class="atab-dot"></span>Maestro</button>
+    <button class="atab" data-agent="central" type="button"><span class="atab-dot"></span>Central</button>
   </div>
 
   <!-- FAIXA DE INFO DA ABA: modelo em uso + custo/economia -->
   <div class="agent-info" id="agentInfo"></div>
 
-  <!-- PAINEL AO VIVO DO MAESTRO (só na aba Maestro) -->
+  <!-- PAINEL DE THREADS DO MAESTRO (só na aba Maestro) -->
   <div class="mstr-panel" id="maestroPanel" hidden>
-    <div class="mstr-top">
-      <span class="mstr-badge">⚙️ MAESTRO</span>
-      <span class="mstr-status idle" id="mstrStatus">ocioso</span>
-      <span class="mstr-timer" id="mstrTimer">0.0s</span>
-      <div class="mstr-ctl">
-        <button class="mstr-btn kill" id="mstrKill" type="button" title="Armar kill-switch (/kill)">■ PARAR</button>
-        <button class="mstr-btn resume" id="mstrResume" type="button" title="Liberar executor (/resume)">▶ LIBERAR</button>
+    <div class="thr-bar">
+      <button class="thr-new" id="thrNew" type="button">＋ Nova tarefa</button>
+      <div class="thr-list" id="thrList"></div>
+    </div>
+    <div class="thr-detail" id="thrDetail">
+      <div class="mstr-top">
+        <span class="mstr-badge" id="mstrBadge">⚙️ MAESTRO</span>
+        <span class="mstr-status idle" id="mstrStatus">ocioso</span>
+        <span class="mstr-timer" id="mstrTimer">0.0s</span>
+        <div class="mstr-ctl">
+          <button class="mstr-btn kill" id="mstrKill" type="button" title="Armar kill-switch (/kill)">■ PARAR</button>
+          <button class="mstr-btn resume" id="mstrResume" type="button" title="Liberar executor (/resume)">▶ LIBERAR</button>
+        </div>
+      </div>
+      <div class="mstr-flow" id="mstrFlow">
+        <span class="mstr-step" data-k="send">1· Enviar</span>
+        <span class="mstr-step" data-k="run">2· Rodar</span>
+        <span class="mstr-step" data-k="done">3· Concluir</span>
+      </div>
+      <div class="mstr-live" id="mstrLive">Mande um comando por voz ou texto — vira uma tarefa (thread) no sandbox da VPS.</div>
+      <div class="mstr-events" id="mstrEvents" hidden></div>
+      <div class="mstr-meta" id="mstrMeta" hidden></div>
+      <div class="mstr-files" id="mstrFiles" hidden></div>
+      <div class="mstr-mirror-wrap">
+        <button class="mstr-mirror-btn" id="mstrMirrorBtn" type="button">📂 Ver arquivos no sandbox (espelho)</button>
+        <div class="mstr-mirror" id="mstrMirror" hidden></div>
       </div>
     </div>
-    <div class="mstr-flow" id="mstrFlow">
-      <span class="mstr-step" data-k="send">1· Enviar</span>
-      <span class="mstr-step" data-k="run">2· Rodar</span>
-      <span class="mstr-step" data-k="done">3· Concluir</span>
+  </div>
+
+  <!-- PAINEL CENTRAL (dashboard, só na aba Central) -->
+  <div class="central-panel" id="centralPanel" hidden>
+    <div class="ctr-head">
+      <span class="ctr-title">🛰️ CENTRAL</span>
+      <span class="ctr-sub" id="ctrVersion">carregando…</span>
+      <span class="ctr-live-dot" id="ctrLiveDot" title="atualizando ao vivo"></span>
     </div>
-    <div class="mstr-live" id="mstrLive">Mande um comando por voz ou texto — ele roda no sandbox da VPS.</div>
-    <div class="mstr-meta" id="mstrMeta" hidden></div>
-    <div class="mstr-files" id="mstrFiles" hidden></div>
-    <div class="mstr-mirror-wrap">
-      <button class="mstr-mirror-btn" id="mstrMirrorBtn" type="button">📂 Ver arquivos no sandbox (espelho)</button>
-      <div class="mstr-mirror" id="mstrMirror" hidden></div>
-    </div>
+    <div class="ctr-sec-h">O que o agente tem</div>
+    <div class="ctr-tools" id="ctrTools"></div>
+    <div class="ctr-sec-h">Rodando agora</div>
+    <div class="ctr-running" id="ctrRunning"></div>
+    <div class="ctr-sec-h">Custo de hoje</div>
+    <div class="ctr-cost" id="ctrCost"></div>
+    <div class="ctr-sec-h">Mapa — agente → funções → tarefas</div>
+    <div class="ctr-graph" id="ctrGraph"></div>
   </div>
 
   <!-- VISUALIZADOR DE ARQUIVO (VER) -->
@@ -1199,7 +1271,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v29 · 11/07 · senha+2FA sem travar'; // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v30 · 12/07 · threads + Central ao vivo'; // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -2126,6 +2198,9 @@ async function send(text){
   if(!text&&!hasImg) return;
   if(!online){ toast('Agente offline. Ligue o agente (power) pra conversar.'); return; }
 
+  // Central é só painel — não recebe comando; manda pro Maestro por padrão.
+  if(activeAgent==='central'){ toast('A aba Central é painel. Abrindo o Maestro pra você comandar.'); setAgent('maestro'); }
+
   // ===== ROUTER POR ABA: Maestro (voz→terminal) =====
   if(activeAgent==='maestro'){
     const base=(settings.maestroUrl||'').trim();
@@ -2223,54 +2298,148 @@ function mstrStartTimer(){ mstrT0=Date.now(); const t=mstrEl('mstrTimer'); if(t)
 function mstrStopTimer(){ clearInterval(mstrTimerId); mstrTimerId=null; return (Date.now()-mstrT0)/1000; }
 function mstrLive(txt){ const el=mstrEl('mstrLive'); if(el) el.textContent=txt; }
 function mstrMeta(html){ const el=mstrEl('mstrMeta'); if(!el) return; if(!html){ el.hidden=true; el.innerHTML=''; } else { el.hidden=false; el.innerHTML=html; } }
-function mstrHealthPoll(){ // heartbeat enquanto roda (o /run só volta no fim): mostra que a VPS responde + kill-switch
-  const base=maestroBase(); if(!base) return; clearInterval(mstrHealthId);
-  mstrHealthId=setInterval(async()=>{ try{
-    const r=await fetch(base+'/health',{method:'GET'}); const j=await r.json();
-    if(mstrBusy){ const secs=((Date.now()-mstrT0)/1000).toFixed(0);
-      mstrLive('rodando no sandbox… '+secs+'s'+(j&&j.killSwitch?' · ⚠ kill-switch ARMADO':'')+(j&&j.headroom===false?' · (headroom off)':'')); }
-  }catch(e){} },2500); }
-function mstrHealthStop(){ clearInterval(mstrHealthId); mstrHealthId=null; }
+/* ===== THREADS (Fase 2) — cada /run vira uma tarefa com passo a passo ao vivo ===== */
+let activeThreadId = LS.get('kairos_maestro_thread','') || null;
+let mstrThreads = [];
+let mstrLiveId = null;
+let mstrDetail = null;
+const announced = {};
+function fmtDur(ms){ ms=+ms||0; const s=ms/1000; return s<60?s.toFixed(1)+'s':Math.floor(s/60)+'m'+String(Math.round(s%60)).padStart(2,'0'); }
+function statusPT(s){ return s==='running'?'rodando':s==='done'?'concluído':s==='error'?'erro':s==='blocked'?'bloqueado':(s||'ocioso'); }
+function statusCls(s){ return s==='running'?'running':s==='done'?'done':(s==='error'||s==='blocked')?'err':'idle'; }
 
 async function sendMaestro(text){
   const base=maestroBase();
   if(!base){ toast('Configure a URL do Maestro.'); openSettings(); return; }
-  if(mstrBusy){ toast('O Maestro ainda está rodando o comando anterior.'); return; }
-  mstrBusy=true; mstrResetSteps(); mstrMeta('');
-  mstrSetStatus('sending','enviando'); mstrStep('send','active'); mstrLive('enviando comando…'); mstrStartTimer();
   setState('thinking'); setStatus('Maestro: enviando…');
+  mstrResetSteps(); mstrMeta(''); maestroRenderFiles([]); mstrEventsRender([]);
+  mstrSetStatus('sending','enviando'); mstrStep('send','active'); mstrLive('enviando comando…');
   try{
-    mstrHealthPoll();
-    mstrStep('send','done'); mstrSetStatus('running','rodando'); mstrStep('run','active'); setStatus('Maestro rodando…');
-    const r=await fetch(base+'/run',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text,tts:false}) });
-    mstrHealthStop();
-    const j=await r.json().catch(()=>({ok:false,fullText:'Resposta inválida do Maestro.',shortText:'Resposta inválida.'}));
-    const secs=mstrStopTimer();
-    const full=(j&&j.fullText)||(j&&j.error)||'(sem retorno)';
-    const short=(j&&j.shortText)||full;
-    addBubble('ai',full,true);
-    const last=$('#msgs').lastElementChild, who=last&&last.querySelector('.who'); if(who) who.textContent='⚙️ MAESTRO';
-    const s2=curSession(); if(s2){ s2.msgs.push({role:'assistant',content:full}); saveSessions(); }
+    const body={text, tts:false, async:true};
+    if(activeThreadId) body.threadId=activeThreadId; // continua a thread ativa (--resume no servidor)
+    const r=await fetch(base+'/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const j=await r.json().catch(()=>({}));
     setState(''); setStatus('');
-    if(j && j.blocked){ mstrStep('run','err'); mstrStep('done','err'); mstrSetStatus('blocked','bloqueado'); mstrLive('🛑 '+short); }
-    else if(j && j.ok===false){ mstrStep('run','err'); mstrStep('done','err'); mstrSetStatus('err','erro'); mstrLive('⚠ '+short); }
-    else { mstrStep('run','done'); mstrStep('done','done'); mstrSetStatus('done','concluído'); mstrLive('✅ '+short); }
-    const m=(j&&j.meta)||null; const bits=['⏱ '+secs.toFixed(1)+'s total'];
-    if(m){ if(m.durationMs!=null) bits.push('exec '+(m.durationMs/1000).toFixed(1)+'s');
-      if(m.numTurns!=null) bits.push('turnos '+m.numTurns);
-      if(m.costUsd!=null) bits.push('custo $'+Number(m.costUsd).toFixed(4));
-      if(m.model) bits.push('modelo '+m.model); }
-    else if(j && j.action){ bits.push('ação: '+j.action); }
-    mstrMeta(bits.map(b=>'<span>'+b+'</span>').join(''));
-    maestroRenderFiles((j&&j.files)||[]);
-    if(m){ if(m.costUsd!=null) mstrLastCost=Number(m.costUsd); if(m.model) mstrLastModel=m.model; agentCost.maestro=(agentCost.maestro||0)+(m.costUsd!=null?Number(m.costUsd):0); }
-    updateAgentInfo();
-    speak(short);
+    if(j && j.threadId){
+      activeThreadId=j.threadId; LS.set('kairos_maestro_thread',activeThreadId); announced[j.threadId]='running';
+      mstrStep('send','done'); mstrSetStatus('running','rodando'); mstrStep('run','active'); mstrLive('rodando no sandbox…');
+      if(mstrEl('mstrBadge')) mstrEl('mstrBadge').textContent='⚙️ '+(j.title||'tarefa');
+      await mstrTick(); mstrStartLive();
+    } else if(j && j.action){ // comando de controle (kill/resume) tratado direto
+      mstrSetStatus('idle','ocioso'); mstrLive('▶ '+(j.shortText||j.action)); if(j.shortText) speak(j.shortText);
+    } else {
+      mstrSetStatus('err','erro'); mstrLive('⚠ '+((j&&(j.error||j.shortText))||'resposta inesperada do Maestro'));
+    }
   }catch(e){
-    mstrHealthStop(); mstrStopTimer(); mstrStep('run','err'); mstrSetStatus('err','erro');
-    mstrLive('⚠ Não alcancei o Maestro: '+e.message+'\n(Confira a URL https na VPS e se o túnel está no ar.)');
-    setState(''); setStatus(''); addBubble('ai','⚠ Não alcancei o Maestro: '+e.message,true); toast('Maestro: '+e.message,true);
-  }finally{ mstrBusy=false; }
+    setState(''); setStatus(''); mstrStep('run','err'); mstrSetStatus('err','erro');
+    mstrLive('⚠ Não alcancei o Maestro: '+e.message+'\n(Confira a URL https e se o túnel está no ar.)');
+    toast('Maestro: '+e.message,true);
+  }
+}
+function mstrEventsRender(events){
+  const box=mstrEl('mstrEvents'); if(!box) return;
+  if(!events||!events.length){ box.hidden=true; box.innerHTML=''; return; }
+  box.hidden=false;
+  box.innerHTML=events.slice(-60).map(e=>{ const d=new Date(e.at||Date.now()); const hh=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    const cls=['tool','think','done','error','user','start'].includes(e.kind)?e.kind:'';
+    return '<div class="ev '+cls+'"><span class="evt">'+hh+'</span><span>'+esc(e.text||e.kind||'')+'</span></div>'; }).join('');
+  box.scrollTop=box.scrollHeight;
+}
+function renderThreadList(){
+  const box=mstrEl('thrList'); if(!box) return;
+  if(!mstrThreads.length){ box.innerHTML='<div class="thr-empty">Sem tarefas ainda — mande um comando pra criar a primeira.</div>'; return; }
+  box.innerHTML=mstrThreads.map(t=>{ const act=t.id===activeThreadId?' active':'';
+    return '<div class="thr-chip'+act+'" data-id="'+t.id+'"><span class="tdot '+statusCls(t.status)+'"></span><span class="ttl">'+esc(t.title||'tarefa')+'</span></div>'; }).join('');
+  box.querySelectorAll('.thr-chip').forEach(ch=>ch.onclick=()=>openThread(ch.dataset.id));
+}
+function renderThreadDetail(t){
+  mstrDetail=t;
+  if(mstrEl('mstrBadge')) mstrEl('mstrBadge').textContent='⚙️ '+(t.title||'tarefa');
+  const running=t.status==='running';
+  mstrSetStatus(statusCls(t.status), statusPT(t.status));
+  mstrStep('send','done'); mstrStep('run', running?'active':(t.status==='done'?'done':(t.status==='error'||t.status==='blocked'?'err':'')));
+  mstrStep('done', t.status==='done'?'done':((t.status==='error'||t.status==='blocked')?'err':''));
+  const lastUser=[...(t.events||[])].reverse().find(e=>e.kind==='user'); const startAt=lastUser?lastUser.at:t.createdAt;
+  const el=mstrEl('mstrTimer'); if(el) el.textContent=fmtDur(running?(Date.now()-startAt):((t.updatedAt||startAt)-startAt));
+  if(running){ const lastEv=(t.events||[]).slice(-1)[0]; mstrLive(lastEv?(lastEv.text||'rodando…'):'rodando no sandbox…'); }
+  else if(t.status==='done') mstrLive('✅ '+(t.lastShort||'concluído'));
+  else if(t.status==='error'||t.status==='blocked') mstrLive('⚠ '+(t.error||t.lastShort||'erro'));
+  else mstrLive('Mande um comando por voz ou texto.');
+  mstrEventsRender(t.events||[]);
+  const bits=[]; if(t.model) bits.push('modelo '+t.model);
+  if(t.totalCostUsd!=null) bits.push('custo $'+Number(t.totalCostUsd).toFixed(4));
+  if(t.runs) bits.push(t.runs+' comando'+(t.runs>1?'s':'')+' na thread');
+  mstrMeta(bits.length?bits.map(b=>'<span>'+b+'</span>').join(''):'');
+  maestroRenderFiles(t.files||[]);
+  if(t.costUsd!=null) mstrLastCost=Number(t.costUsd); if(t.model) mstrLastModel=t.model; updateAgentInfo();
+}
+async function openThread(id){
+  activeThreadId=id; LS.set('kairos_maestro_thread',id); renderThreadList();
+  try{ const r=await fetch(maestroBase()+'/thread?id='+encodeURIComponent(id)); const j=await r.json(); if(j&&j.thread){ announced[id]=j.thread.status; renderThreadDetail(j.thread); } }catch(e){}
+  mstrStartLive();
+}
+async function mstrTick(){
+  const base=maestroBase(); if(!base) return;
+  try{ const r=await fetch(base+'/threads'); const j=await r.json(); mstrThreads=(j&&j.threads)||[]; renderThreadList(); }catch(e){}
+  if(activeThreadId){ try{ const r=await fetch(base+'/thread?id='+encodeURIComponent(activeThreadId)); const j=await r.json();
+    if(j&&j.thread){ renderThreadDetail(j.thread); announceIfDone(j.thread); } }catch(e){} }
+}
+function announceIfDone(t){
+  const prev=announced[t.id]; announced[t.id]=t.status;
+  if(t.status==='running') return;
+  if(prev!=='running') return; // só anuncia a transição rodando->fim que a gente viu
+  if(t.id===activeThreadId){
+    const full=t.lastResult||t.lastShort||'';
+    if(full){ addBubble('ai',full,true); const last=$('#msgs').lastElementChild, who=last&&last.querySelector('.who'); if(who) who.textContent='⚙️ MAESTRO'; const s2=curSession(); if(s2){ s2.msgs.push({role:'assistant',content:full}); saveSessions(); } }
+    if(t.lastShort) speak(t.lastShort);
+  } else if(t.status==='done'){ toast('✅ Tarefa concluída: '+(t.title||'')); }
+}
+function mstrStartLive(){ if(mstrLiveId) return; mstrLiveId=setInterval(()=>{
+  if(activeAgent==='maestro') mstrTick(); else if(activeAgent==='central') renderCentral(); else mstrStopLive(); },2600); }
+function mstrStopLive(){ clearInterval(mstrLiveId); mstrLiveId=null; }
+function thrNew(){ activeThreadId=null; LS.set('kairos_maestro_thread',''); mstrDetail=null;
+  mstrResetSteps(); mstrMeta(''); maestroRenderFiles([]); mstrEventsRender([]); mstrSetStatus('idle','ocioso');
+  if(mstrEl('mstrBadge')) mstrEl('mstrBadge').textContent='⚙️ MAESTRO';
+  const tm=mstrEl('mstrTimer'); if(tm) tm.textContent='0.0s';
+  mstrLive('Nova tarefa: mande um comando por voz ou texto.'); renderThreadList();
+  const txt=$('#txt'); if(txt) txt.focus();
+}
+
+/* ===== CENTRAL (Fase 3) — dashboard tudo à vista ===== */
+async function renderCentral(){
+  const base=maestroBase();
+  let mh=null; if(base){ try{ const r=await fetch(base+'/health'); mh=await r.json(); }catch(e){} }
+  let ths=mstrThreads; if(base){ try{ const r=await fetch(base+'/threads'); const j=await r.json(); ths=(j&&j.threads)||ths; mstrThreads=ths; }catch(e){} }
+  const ver=mstrEl('ctrVersion'); if(ver) ver.textContent=(typeof APP_BUILD!=='undefined'?APP_BUILD.split('·')[0].trim():'app')+(mh&&mh.version?(' · maestro v'+mh.version):' · maestro offline');
+  const oc=(settings.agentUrl||'').trim();
+  const tools=[
+    {ico:'⚙️',name:'Maestro',led:mh?'on':'off',stat: mh?('online · '+String(mh.defaultModel||'').replace('claude-','').replace(/-\d.*/,'')+(mh.killSwitch?' · 🛑 travado':'')+(mh.headroom===false?' · headroom off':'')):'offline'},
+    {ico:'🐙',name:'Openclaw',led: oc?'warn':'off', stat: oc?'Gemini 2.5 Flash · econômico':'sem URL'},
+    {ico:'🧠',name:'Kairos',led: settings.apiKey?'on':'off', stat: settings.apiKey?'Groq · chave ativa':'sem chave'},
+    {ico:'🔎',name:'Busca web',led: settings.serperKey?'on':'warn', stat: settings.serperKey?'Serper ativa':'grátis (fallback)'},
+    {ico:'🔊',name:'Voz',led: settings.elevenKey?'on':'warn', stat: settings.elevenKey?'ElevenLabs premium':'voz grátis'},
+    {ico:'🔐',name:'Conta',led: (window.supa?'on':'warn'), stat:(window.supa?'Supabase · nuvem':'local')},
+  ];
+  const tb=mstrEl('ctrTools'); if(tb) tb.innerHTML=tools.map(t=>'<div class="ctr-tool"><span class="tico">'+t.ico+'</span><span class="tinfo"><div class="tname">'+esc(t.name)+'</div><div class="tstat">'+esc(t.stat)+'</div></span><span class="tled '+t.led+'"></span></div>').join('');
+  const running=ths.filter(t=>t.status==='running');
+  const rb=mstrEl('ctrRunning'); if(rb) rb.innerHTML= running.length? running.map(t=>'<div class="ctr-row"><span class="rdot"></span><span class="rname">'+esc(t.title||'tarefa')+'</span><span class="rval">'+esc(t.model||'…')+'</span></div>').join('') : '<div class="ctr-empty">Nada rodando agora.</div>';
+  const mid=new Date(); mid.setHours(0,0,0,0); let costToday=0; ths.forEach(t=>{ if((t.updatedAt||0)>=mid.getTime()) costToday+=Number(t.totalCostUsd||0); });
+  const cb=mstrEl('ctrCost'); if(cb) cb.innerHTML=
+    '<div class="ctr-row"><span class="rname">⚙️ Maestro (haiku)</span><span class="rval">$'+costToday.toFixed(4)+'</span></div>'+
+    '<div class="ctr-row"><span class="rname">🐙 Openclaw (Gemini)</span><span class="rval">grátis</span></div>'+
+    '<div class="ctr-row"><span class="rname">🧠 Kairos (Groq)</span><span class="rval">grátis</span></div>';
+  renderGraph(mh, running);
+}
+function renderGraph(mh, running){
+  const g=mstrEl('ctrGraph'); if(!g) return;
+  const W=340,H=180, cx=54, cy=H/2;
+  const fns=[{n:'Maestro',on:!!mh,y:28},{n:'Openclaw',on:!!(settings.agentUrl||'').trim(),y:72},{n:'Voz',on:true,y:116},{n:'Busca',on:true,y:156}];
+  let s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+  fns.forEach(f=>{ s+='<line x1="'+cx+'" y1="'+cy+'" x2="170" y2="'+f.y+'" stroke="'+(f.on?'rgba(61,240,154,.4)':'rgba(139,147,196,.25)')+'" stroke-width="1.5"/>'; });
+  (running||[]).slice(0,3).forEach((t,i)=>{ const ty=18+i*22; s+='<line x1="170" y1="28" x2="290" y2="'+ty+'" stroke="rgba(245,221,138,.45)" stroke-width="1.2"/><circle cx="290" cy="'+ty+'" r="4" fill="#ffdd8a"><animate attributeName="opacity" values="1;.4;1" dur="1.2s" repeatCount="indefinite"/></circle>'; });
+  fns.forEach(f=>{ s+='<circle cx="170" cy="'+f.y+'" r="6" fill="'+(f.on?'#3df09a':'#8b93c4')+'"/><text x="182" y="'+(f.y+4)+'" fill="#cdd6ff" font-size="11">'+f.n+'</text>'; });
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="15" fill="rgba(34,224,255,.2)" stroke="#22e0ff" stroke-width="2"/><text x="'+cx+'" y="'+(cy+5)+'" font-size="13" text-anchor="middle">🤖</text>';
+  s+='</svg>'; g.innerHTML=s;
 }
 async function maestroCtl(path,label){
   const base=maestroBase(); if(!base){ toast('Configure a URL do Maestro.'); openSettings(); return; }
@@ -2353,6 +2522,8 @@ async function maestroLoadMirror(){
 function updateAgentInfo(){
   const el=mstrEl('agentInfo'); if(!el) return;
   el.classList.remove('k','o','m');
+  if(activeAgent==='central'){
+    el.innerHTML='<span class="ai-tag" style="background:rgba(61,240,154,.18);color:#7bf0bf">Central</span><span>Painel de controle — o que o agente tem e faz, ao vivo.</span>'; return; }
   if(activeAgent==='kairos'){ el.classList.add('k');
     el.innerHTML='<span class="ai-tag">Kairos</span><span>Conversa normal (<b>Groq</b>). Não cria arquivos.</span>'; }
   else if(activeAgent==='openclaw'){ el.classList.add('o');
@@ -2368,18 +2539,20 @@ function updateAgentTabsAvail(){
   if(ms) ms.classList.toggle('unavail', !(settings.maestroUrl&&settings.maestroUrl.trim()));
 }
 function setAgent(agent){
-  if(!['kairos','openclaw','maestro'].includes(agent)) agent='kairos';
+  if(!['kairos','openclaw','maestro','central'].includes(agent)) agent='kairos';
   activeAgent=agent; LS.set('kairos_agent',agent);
   document.querySelectorAll('.atab').forEach(b=>b.classList.toggle('active', b.dataset.agent===agent));
   const panel=mstrEl('maestroPanel'); if(panel) panel.hidden=(agent!=='maestro');
+  const cpanel=mstrEl('centralPanel'); if(cpanel) cpanel.hidden=(agent!=='central');
   const txt=$('#txt'); if(txt){ txt.placeholder = agent==='maestro' ? 'Comando pro Maestro (voz ou texto)…'
-    : agent==='openclaw' ? 'Comando pro Openclaw…' : 'Fale ou escreva…'; }
-  if(agent==='maestro' && !mstrBusy){ mstrResetSteps(); mstrMeta(''); mstrSetStatus('idle','ocioso');
-    maestroRenderFiles([]);
+    : agent==='openclaw' ? 'Comando pro Openclaw…' : agent==='central' ? 'Central é painel — troque de aba pra comandar' : 'Fale ou escreva…'; }
+  if(agent==='maestro'){
     const mb=mstrEl('mstrMirror'); if(mb){ mb.hidden=true; mb.innerHTML=''; }
     const mbtn=mstrEl('mstrMirrorBtn'); if(mbtn) mbtn.textContent='📂 Ver arquivos no sandbox (espelho)';
-    if(!maestroBase()) mstrLive('Cole a URL do Maestro em Configurações → "URL do Maestro (voz→terminal)".');
-    else mstrLive('Pronto. Mande um comando por voz ou texto — roda no sandbox da VPS.'); }
+    if(!maestroBase()){ mstrLive('Cole a URL do Maestro em Configurações → "URL do Maestro (voz→terminal)".'); renderThreadList(); }
+    else { mstrTick(); mstrStartLive(); }   // carrega threads + detalhe ativo e liga o ao vivo
+  } else if(agent==='central'){ renderCentral(); mstrStartLive(); }
+  else { mstrStopLive(); }
   updateAgentTabsAvail();
   updateAgentInfo();
 }
@@ -2387,6 +2560,7 @@ document.querySelectorAll('.atab').forEach(b=>{ b.addEventListener('click',()=>{
 if(mstrEl('mstrKill')) mstrEl('mstrKill').onclick=()=>maestroCtl('/kill','PARAR');
 if(mstrEl('mstrResume')) mstrEl('mstrResume').onclick=()=>maestroCtl('/resume','LIBERAR');
 if(mstrEl('mstrMirrorBtn')) mstrEl('mstrMirrorBtn').onclick=maestroLoadMirror;
+if(mstrEl('thrNew')) mstrEl('thrNew').onclick=thrNew;
 if(mstrEl('fvClose')) mstrEl('fvClose').onclick=closeViewer;
 if(mstrEl('fileViewer')) mstrEl('fileViewer').addEventListener('click',e=>{ if(e.target.id==='fileViewer') closeViewer(); });
 if($('#testMaestroBtn')) $('#testMaestroBtn').onclick=async()=>{
