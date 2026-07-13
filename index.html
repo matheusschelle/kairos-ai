@@ -784,6 +784,61 @@
   .theme-card .tc-pv{height:34px;border-radius:8px;margin-bottom:7px;display:flex;align-items:center;justify-content:center;
     font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;overflow:hidden}
   .theme-card .tc-name{font-size:11px;font-weight:700;color:#cdd6ff}
+  /* ===== CENTRAL v34: hero + GitHub + hierarquia mobile ===== */
+  .ctr-hero{display:flex;align-items:center;gap:12px;margin:8px 0 2px;padding:12px;border-radius:14px;
+    border:1px solid rgba(61,240,154,.28);background:rgba(8,10,26,.55)}
+  .ctr-hero .hero-main{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+  .ctr-hero .hero-main b{font-size:14.5px;color:var(--ink);display:block}
+  .ctr-hero .hero-main small{font-size:10.5px;color:var(--ink-dim);display:block;margin-top:2px}
+  .ctr-hero .tled.big{width:12px;height:12px;flex:0 0 auto}
+  .ctr-hero .hero-stats{display:flex;gap:14px;flex:0 0 auto}
+  .ctr-hero .hs{text-align:center}
+  .ctr-hero .hs b{font-size:16px;color:#7bf0bf;font-variant-numeric:tabular-nums;display:block}
+  .ctr-hero .hs small{font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-dim)}
+  .ctr-hint{font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink-dim);font-size:10px}
+  .ctr-git{display:flex;flex-direction:column;gap:5px;padding:10px 11px;border-radius:12px;
+    border:1px solid var(--glass-brd);background:rgba(8,10,26,.5)}
+  .git-row{display:flex;gap:10px;font-size:11.5px;line-height:1.5}
+  .git-row .git-k{flex:0 0 108px;color:var(--ink-dim);font-weight:600}
+  .git-row .git-v{color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .git-tok{margin-top:5px;font-size:10.5px;color:#f5d98a;cursor:pointer;line-height:1.4}
+  .ctr-tool.click{cursor:pointer}
+  .ctr-tool.click:hover{border-color:rgba(61,240,154,.4)}
+  @media (max-width:520px){ .ctr-tools{grid-template-columns:1fr 1fr} .ctr-hero .hero-stats{gap:10px} }
+  /* ===== TUTORIAL (botão ?, aulas, tour spotlight) ===== */
+  .help-fab{position:fixed;left:10px;bottom:calc(var(--safe-b) + 108px);z-index:16;width:38px;height:38px;
+    border-radius:50%;border:1px solid rgba(34,224,255,.45);background:rgba(10,14,34,.85);color:#8fe9ff;
+    font-size:17px;font-weight:800;font-family:inherit;cursor:pointer;backdrop-filter:blur(10px);
+    box-shadow:0 4px 16px rgba(0,0,0,.4)}
+  .help-fab:active{transform:scale(.92)}
+  .tut-overlay{position:fixed;inset:0;z-index:1300;background:rgba(3,4,12,.8);backdrop-filter:blur(8px);
+    display:flex;align-items:center;justify-content:center;padding:16px}
+  .tut-card{width:min(480px,100%);max-height:86vh;overflow-y:auto;border-radius:20px;padding:22px 20px;
+    border:1px solid var(--glass-brd);background:#0b0e22;box-shadow:0 22px 60px rgba(0,0,0,.6)}
+  .tut-card h3{font-size:17px;margin-bottom:4px;color:var(--ink)}
+  .tut-card .tut-step{font-size:10px;letter-spacing:1px;color:#8fe9ff;font-weight:800;text-transform:uppercase;margin-bottom:10px}
+  .tut-card p{font-size:13.5px;line-height:1.6;color:#cdd6ff;margin-bottom:10px}
+  .tut-card p b{color:var(--ink)}
+  .tut-nav{display:flex;gap:8px;margin-top:14px}
+  .tut-btn{flex:1;font-family:inherit;font-size:13px;font-weight:800;padding:11px;border-radius:12px;cursor:pointer;border:1px solid}
+  .tut-btn.next{border-color:transparent;background:linear-gradient(135deg,#22e0ff,#8b5cff);color:#061018}
+  .tut-btn.back{border-color:var(--glass-brd);background:var(--glass);color:#cdd6ff}
+  .tut-btn.skip{border-color:transparent;background:none;color:var(--ink-dim);flex:0 0 auto;padding:11px 10px}
+  .tut-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .tut-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;cursor:pointer;
+    border:1px solid var(--glass-brd);background:rgba(8,10,26,.5);color:var(--ink);font-size:13.5px;font-weight:600;text-align:left;font-family:inherit;width:100%}
+  .tut-item small{display:block;font-weight:400;font-size:11px;color:var(--ink-dim);margin-top:1px}
+  .tut-item:hover{border-color:rgba(34,224,255,.4)}
+  /* tour spotlight: recorte + balão */
+  .tour-hole{position:fixed;z-index:1310;border-radius:14px;pointer-events:none;
+    box-shadow:0 0 0 9999px rgba(3,4,12,.82), 0 0 0 3px rgba(34,224,255,.9), 0 0 22px rgba(34,224,255,.55);
+    transition:all .35s cubic-bezier(.6,.2,.2,1)}
+  .tour-tip{position:fixed;z-index:1320;width:min(340px,calc(100vw - 24px));border-radius:16px;padding:14px 15px;
+    border:1px solid rgba(34,224,255,.4);background:#0b0e22;box-shadow:0 14px 44px rgba(0,0,0,.65);
+    transition:all .35s cubic-bezier(.6,.2,.2,1)}
+  .tour-tip b{display:block;font-size:14px;color:var(--ink);margin-bottom:4px}
+  .tour-tip p{font-size:12.5px;line-height:1.55;color:#cdd6ff;margin-bottom:10px}
+  .tour-tip .tut-nav{margin-top:0}
 </style>
 </head>
 <body class="online">
@@ -813,7 +868,7 @@
       <h1>Kairos AI</h1>
       <small id="brandSub">ONLINE</small>
     </div>
-    <div class="ctrl ear" id="earBtn" title="Escuta 24h">
+    <div class="ctrl ear" id="earBtn" title="Escuta 24h (modo ambiente — o agente ouve o entorno e só age quando algo importa)">
       <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg>
     </div>
     <div class="ctrl power" id="powerBtn" title="Ligar / desligar agente">
@@ -846,8 +901,8 @@
         <span class="mstr-timer" id="mstrTimer">0.0s</span>
         <div class="mstr-ctl">
           <button class="mstr-btn cine" id="mstrCine" type="button" title="Terminal ao vivo em tela cheia (modo cinema)">🎬 CINEMA</button>
-          <button class="mstr-btn kill" id="mstrKill" type="button" title="Armar kill-switch (/kill)">■ PARAR</button>
-          <button class="mstr-btn resume" id="mstrResume" type="button" title="Liberar executor (/resume)">▶ LIBERAR</button>
+          <button class="mstr-btn kill" id="mstrKill" type="button" title="Trava TODAS as tarefas do Maestro (kill-switch geral)">■ PARAR TUDO</button>
+          <button class="mstr-btn resume" id="mstrResume" type="button" title="Destrava o Maestro (remove o kill-switch)">▶ LIBERAR</button>
         </div>
       </div>
       <div class="mstr-flow" id="mstrFlow">
@@ -874,15 +929,22 @@
       <span class="ctr-sub" id="ctrVersion">carregando…</span>
       <span class="ctr-live-dot" id="ctrLiveDot" title="atualizando ao vivo"></span>
     </div>
-    <div class="ctr-sec-h">O que o agente tem</div>
-    <div class="ctr-tools" id="ctrTools"></div>
-    <div class="ctr-sec-h">Rodando agora</div>
+    <div class="ctr-hero" id="ctrHero"></div>
+    <div class="ctr-sec-h">⚡ Fazendo agora</div>
     <div class="ctr-running" id="ctrRunning"></div>
-    <div class="ctr-sec-h">Custo de hoje</div>
+    <div class="ctr-sec-h">🧰 O que o agente tem <span class="ctr-hint">· toque no apagado pra configurar</span></div>
+    <div class="ctr-tools" id="ctrTools"></div>
+    <div class="ctr-sec-h">🐙 GitHub</div>
+    <div class="ctr-git" id="ctrGit"></div>
+    <div class="ctr-sec-h">💰 Custo de hoje</div>
     <div class="ctr-cost" id="ctrCost"></div>
-    <div class="ctr-sec-h">Mapa — agente → funções → tarefas</div>
+    <div class="ctr-sec-h">🧠 Mapa vivo — agente → funções → tarefas</div>
     <div class="ctr-graph" id="ctrGraph"></div>
   </div>
+
+  <!-- TUTORIAL: botão ? sempre visível + container das aulas/tour -->
+  <button class="help-fab" id="helpBtn" type="button" title="Central de aulas e tour do app">?</button>
+  <div id="tutRoot"></div>
 
   <!-- VISUALIZADOR DE ARQUIVO (VER) -->
   <div class="fv-overlay" id="fileViewer" hidden>
@@ -1187,6 +1249,11 @@
       <button id="testMaestroBtn" type="button" style="margin-top:8px;width:100%;padding:10px;border-radius:12px;border:1px solid rgba(245,201,105,.4);background:rgba(245,201,105,.12);color:#f5d98a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">⚡ Testar conexão com o Maestro</button>
       <div id="maestroTestResult" style="font-size:12px;color:#7a83a8;margin-top:6px;text-align:center"></div>
     </div>
+    <div class="field" style="border-top:1px solid rgba(61,240,154,.22);padding-top:18px;margin-top:6px">
+      <label style="color:#7bf0bf">GitHub <span style="color:#7a83a8;font-weight:400">(token de leitura — opcional)</span></label>
+      <input id="githubToken" type="password" placeholder="github_pat_… (só leitura)" autocomplete="off">
+      <div class="hint" style="margin-top:6px">Deixa o cartão GitHub da aba <b>Central</b> mais forte (sem limite baixo, repos privados). Token fino, <b>somente leitura</b>, criado em github.com → Settings → Developer settings. Guardado <b>só neste aparelho</b> — nunca vai pro código.</div>
+    </div>
     <div class="field" style="border-top:1px solid rgba(34,224,255,.25);padding-top:18px;margin-top:6px">
       <label style="color:#8fe9ff">🎬 Tema do Terminal ao Vivo <span style="color:#7a83a8;font-weight:400">(modo cinema do Maestro)</span></label>
       <div class="theme-grid" id="themeGrid"></div>
@@ -1380,7 +1447,7 @@ let settings = LS.get('kairos_settings',{
   name:'Matheus', photo:'', apiKey:'', model:'llama-3.3-70b-versatile', voice:'', rate:1,
   elevenKey:'', elevenVoice:'', agentUrl:'', agentKey:'', serperKey:'', seVoice:'google',
   alexaUrl:'https://python-roving-distance.ngrok-free.dev/alexa-bot',
-  maestroUrl:''
+  maestroUrl:'', githubToken:''
 });
 // URL fixa do Maestro (Tailscale Funnel). Migra automático quem tinha o quick tunnel antigo do Cloudflare.
 const MAESTRO_FIXED_URL='https://kairos-maestro.tail250cee.ts.net';
@@ -1406,7 +1473,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v33 · 12/07 · Terminal cinema + engine de temas'; // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v34 · 13/07 · rede neural viva + Central + aulas'; // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -1465,11 +1532,41 @@ PLANILHA / EXCEL: para gerar planilhas, crie uma tabela markdown bem estruturada
 Fale em português do Brasil, natural e humano, como uma conversa real entre duas pessoas. Como é por voz, seja fluido e direto; aprofunde quando ele pedir profundidade.${facts}${geo}`;
 }
 
-/* ---------- NEURAL BACKGROUND (state-reactive) ---------- */
+/* ---------- NEURAL BACKGROUND (NeuralBG · state+task reactive · theme-driven) ----------
+   A "alma" visual do app: neurônio central + axônios + partículas em 3 camadas de
+   profundidade (parallax). Reage à VOZ (listening/thinking/speaking — cores semânticas)
+   e às TAREFAS do Maestro (NeuralBG.task(true) acende o processamento; NeuralBG.burst()
+   dispara um pulso a cada ação do agente). A paleta "idle" vem do TEMA ativo
+   (KairosTheme, chave neural) — Matrix pinta de verde, Âmbar de âmbar, Neon = ciano/magenta.
+   Perf mobile: ~30fps com cap, pausa quando oculto, DPR≤1.5, auto-degradação por EMA,
+   prefers-reduced-motion = 1 frame estático. */
 window._neuralState='idle';
 (function(){
   const c=$('#neural'), x=c.getContext('2d'); let W,H,P=[];
   let branches=[], sparks=[];
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* sombreia o global DENTRO deste escopo: todo uso de devicePixelRatio aqui
+     (velocidades, raios, sombras, canvas) passa a respeitar o teto 1.5 — perf mobile */
+  const devicePixelRatio = Math.min(window.devicePixelRatio||1, 1.5);
+  /* paleta ativa (idle) — default = visual Kairos Neon de sempre; tema pode trocar */
+  let PAL = { n1:'34,224,255', n2:'255,61,240', n3:'139,92,255', link:'110,140,255',
+              axon:'175,135,255', axonFine:'150,110,255', halo:'139,92,255',
+              spark:'150,225,255', soma:'222,206,255', somaCore:'150,100,255' };
+  function hx(h){ const m=/^#?([0-9a-f]{6})$/i.exec(String(h||'').trim()); if(!m) return null;
+    const n=parseInt(m[1],16); return (n>>16&255)+','+(n>>8&255)+','+(n&255); }
+  function applyTheme(t){ try{
+    const nu=(t&&t.neural)||{};
+    const set=(k,v)=>{ const r=hx(v); if(r) PAL[k]=r; };
+    set('n1',nu.node); set('n2',nu.node2||nu.node); set('n3',nu.node3||nu.node);
+    set('link',nu.link||nu.node); set('axon',nu.axon||nu.node); set('axonFine',nu.axon||nu.node);
+    set('halo',nu.halo||nu.axon||nu.node); set('spark',nu.spark||nu.accent||nu.node);
+    set('soma',nu.soma||nu.spark||nu.node); set('somaCore',nu.halo||nu.axon||nu.node);
+    if(RM) drawStatic();
+  }catch(_){}}
+  /* atividade de TAREFA (Maestro trabalhando) — independente do estado de voz */
+  let taskOn=false, burstQ=0;
+  function task(on){ taskOn=!!on; kick(); }
+  function burst(){ burstQ=Math.min(burstQ+1,4); kick(); }
   function genNeuron(){
     branches=[]; sparks=[];
     const cx=W*.5, cy=H*.46, base=Math.min(W,H), main=15;
@@ -1497,21 +1594,37 @@ window._neuralState='idle';
   }
   rs(); addEventListener('resize',rs);
   const N=Math.min(72,Math.floor(innerWidth/5.5));
-  for(let i=0;i<N;i++) P.push({
-    x:Math.random()*W, y:Math.random()*H,
-    vx:(Math.random()-.5)*.3*devicePixelRatio,
-    vy:(Math.random()-.5)*.3*devicePixelRatio,
-    r:(Math.random()*1.8+.6)*devicePixelRatio,
-    ox:0, oy:0
-  });
-  let t=0;
-  function loop(){
+  for(let i=0;i<N;i++){
+    const z=.45+Math.random()*.55; // profundidade: longe = menor, mais lento, mais apagado
+    P.push({
+      x:Math.random()*W, y:Math.random()*H,
+      vx:(Math.random()-.5)*.3*devicePixelRatio*z,
+      vy:(Math.random()-.5)*.3*devicePixelRatio*z,
+      r:(Math.random()*1.8+.6)*devicePixelRatio*z,
+      z, dx:0, dy:0
+    });
+  }
+  let t=0, lastTs=0, ema=33, degrade=0, bursts=[], raf=0;
+  function loop(ts){
+    raf=requestAnimationFrame(loop);
+    if(document.hidden) return;                       // aba oculta: nada de trabalho
+    const target=33;                                  // ~30fps é o teto — suficiente e barato
+    if(ts-lastTs < target) return;
+    const dt=Math.min(160, ts-lastTs||target); lastTs=ts;
+    ema=ema*.95+dt*.05;                               // frame caro sustentado → degrada
+    if(ema>target*1.9 && degrade<2){ degrade++; ema=target; }
     x.clearRect(0,0,W,H);
     t+=0.016;
     const ns=window._neuralState||'idle';
+    const glow=taskOn?(.5+Math.sin(t*3.2)*.5):0;      // respiração do "processando"
+    while(burstQ>0){ burstQ--; bursts.push({t0:t}); }
+    const step=degrade>=2?2:1;                        // nível 2: metade das partículas
+    const shadows=degrade<1;                          // nível 1+: sem shadowBlur (o mais caro)
+    for(const p of P){ p.dx=p.x+Math.sin(t*.11)*26*(1-p.z)*devicePixelRatio;
+                       p.dy=p.y+Math.cos(t*.09)*18*(1-p.z)*devicePixelRatio; }
     const cx=W*.5, cy=H*.46;
-    const connDist=(ns==='thinking'?145:110)*devicePixelRatio;
-    for(let i=0;i<P.length;i++){
+    const connDist=(ns==='thinking'?145:110)*devicePixelRatio*(degrade>=2?.8:1);
+    for(let i=0;i<P.length;i+=step){
       const p=P[i];
       if(ns==='listening'){
         const dx=cx-p.x, dy=cy-p.y, d=Math.hypot(dx,dy)||1;
@@ -1531,61 +1644,79 @@ window._neuralState='idle';
         if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;
       }
       if(ns!=='idle'){p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;}
-      for(let j=i+1;j<P.length;j++){
-        const q=P[j], dx=p.x-q.x, dy=p.y-q.y, d=Math.hypot(dx,dy);
+      for(let j=i+step;j<P.length;j+=step){
+        const q=P[j], dx=p.dx-q.dx, dy=p.dy-q.dy, d=Math.hypot(dx,dy);
         if(d<connDist){
-          const a=(1-d/connDist)*.62;
+          const a=(1-d/connDist)*.62*Math.min(p.z,q.z);
           x.strokeStyle=ns==='listening'?`rgba(255,61,240,${a*.75})`:
             ns==='thinking'?`rgba(245,201,105,${a*.65})`:
-            ns==='speaking'?`rgba(34,224,255,${a*.7})`:`rgba(110,140,255,${a*.55})`;
+            ns==='speaking'?`rgba(34,224,255,${a*.7})`:
+            taskOn?`rgba(${PAL.axon},${a*(.45+glow*.35)})`:`rgba(${PAL.link},${a*.55})`;
           x.lineWidth=devicePixelRatio*.7;
-          x.beginPath(); x.moveTo(p.x,p.y); x.lineTo(q.x,q.y); x.stroke();
+          x.beginPath(); x.moveTo(p.dx,p.dy); x.lineTo(q.dx,q.dy); x.stroke();
         }
       }
       let fc=ns==='listening'?'rgba(255,61,240,.95)':ns==='thinking'?'rgba(245,201,105,.9)':
-        ns==='speaking'?'rgba(34,224,255,.9)':i%3===0?'rgba(34,224,255,.9)':i%3===1?'rgba(255,61,240,.7)':'rgba(139,92,255,.8)';
-      const rMul=ns!=='idle'?1.4:1;
-      x.beginPath(); x.arc(p.x,p.y,p.r*rMul,0,7);
-      x.shadowBlur=(ns!=='idle'?18:8)*devicePixelRatio;
-      x.shadowColor=ns==='listening'?'rgba(255,61,240,.9)':ns==='thinking'?'rgba(245,201,105,.8)':
-        ns==='speaking'?'rgba(34,224,255,.9)':'rgba(110,140,255,.8)';
+        ns==='speaking'?'rgba(34,224,255,.9)':
+        i%3===0?`rgba(${PAL.n1},${.9*p.z})`:i%3===1?`rgba(${PAL.n2},${.7*p.z})`:`rgba(${PAL.n3},${.8*p.z})`;
+      const rMul=(ns!=='idle'?1.4:1)*(taskOn?1+glow*.25:1);
+      x.beginPath(); x.arc(p.dx,p.dy,p.r*rMul,0,7);
+      if(shadows){
+        x.shadowBlur=(ns!=='idle'?18:8)*devicePixelRatio;
+        x.shadowColor=ns==='listening'?'rgba(255,61,240,.9)':ns==='thinking'?'rgba(245,201,105,.8)':
+          ns==='speaking'?'rgba(34,224,255,.9)':`rgba(${PAL.link},.8)`;
+      }
       x.fillStyle=fc; x.fill(); x.shadowBlur=0;
     }
     /* ---- NEURÔNIO central: soma (núcleo) + axônios + faíscas ---- */
     {
-      const ncx=W*.5, ncy=H*.46, base=Math.min(W,H), act=ns!=='idle';
+      const ncx=W*.5, ncy=H*.46, base=Math.min(W,H), act=ns!=='idle'||taskOn;
       const AP=p=>[ p.x+Math.sin(t*1.3+p.ph)*p.amp, p.y+Math.cos(t*1.05+p.ph)*p.amp ]; // axônios ondulam
       let hg=x.createRadialGradient(ncx,ncy,0,ncx,ncy,base*.50);
-      hg.addColorStop(0,'rgba(139,92,255,'+(act?.34:.26)+')');
-      hg.addColorStop(.45,'rgba(90,70,220,.10)'); hg.addColorStop(1,'rgba(80,60,200,0)');
+      hg.addColorStop(0,`rgba(${PAL.halo},`+(act?.34:.26)+')');
+      hg.addColorStop(.45,`rgba(${PAL.halo},.10)`); hg.addColorStop(1,`rgba(${PAL.halo},0)`);
       x.fillStyle=hg; x.beginPath(); x.arc(ncx,ncy,base*.50,0,7); x.fill();
       x.lineCap='round';
       for(const pts of branches){
         const fine=pts.fine, a0=AP(pts[0]);
         x.beginPath(); x.moveTo(a0[0],a0[1]);
         for(let k=1;k<pts.length;k++){ const a=AP(pts[k]); x.lineTo(a[0],a[1]); }
-        x.strokeStyle=fine?'rgba(150,110,255,.30)':'rgba(175,135,255,.52)';
+        x.strokeStyle=fine?`rgba(${PAL.axonFine},${.30+glow*.15})`:`rgba(${PAL.axon},${.52+glow*.2})`;
         x.lineWidth=devicePixelRatio*(fine?1.1:2.4);
-        x.shadowBlur=(fine?8:16)*devicePixelRatio; x.shadowColor='rgba(150,100,255,.8)'; x.stroke();
+        if(shadows){ x.shadowBlur=(fine?8:16)*devicePixelRatio; x.shadowColor=`rgba(${PAL.axon},.8)`; }
+        x.stroke();
       }
       x.shadowBlur=0;
+      /* faíscas: TAREFA rodando acelera forte (feedback de processamento real) */
+      const spMul=(ns==='thinking'?1.8:ns==='speaking'?1.5:1)*(taskOn?1.9:1);
       for(const s of sparks){
-        s.t+=s.sp*(ns==='thinking'?1.8:ns==='speaking'?1.5:1); if(s.t>1) s.t-=1;
+        s.t+=s.sp*spMul; if(s.t>1) s.t-=1;
         const pts=branches[s.b]; if(!pts||pts.length<2) continue;
         const seg=(pts.length-1)*s.t, si=Math.min(pts.length-2,Math.floor(seg)), f=seg-si;
         const A=AP(pts[si]), B=AP(pts[si+1]);
         const ax=A[0]+(B[0]-A[0])*f, ay=A[1]+(B[1]-A[1])*f;
         x.beginPath(); x.arc(ax,ay,3*devicePixelRatio,0,7);
-        x.fillStyle='rgba(150,225,255,.98)'; x.shadowBlur=15*devicePixelRatio; x.shadowColor='rgba(120,220,255,1)'; x.fill();
+        x.fillStyle=`rgba(${PAL.spark},.98)`;
+        if(shadows){ x.shadowBlur=15*devicePixelRatio; x.shadowColor=`rgba(${PAL.spark},1)`; }
+        x.fill();
       }
       x.shadowBlur=0;
-      const pulse=.5+Math.sin(t*2.2)*.16, cr=base*.075;
+      /* BURSTS: cada ação do agente (tool) dispara um anel que sai do núcleo */
+      for(let bi=bursts.length-1;bi>=0;bi--){
+        const ph=(t-bursts[bi].t0)/.9;
+        if(ph>=1){ bursts.splice(bi,1); continue; }
+        x.beginPath(); x.arc(ncx,ncy,ph*base*.34,0,7);
+        x.strokeStyle=`rgba(${PAL.spark},${(1-ph)*.5})`;
+        x.lineWidth=devicePixelRatio*(2.4-ph*1.6); x.stroke();
+      }
+      const pulse=.5+Math.sin(t*(taskOn?3.4:2.2))*.16, cr=base*.075;
       let cg=x.createRadialGradient(ncx,ncy,0,ncx,ncy,cr*3.6);
-      cg.addColorStop(0,'rgba(222,206,255,'+(.95*pulse+.45)+')');
-      cg.addColorStop(.28,'rgba(150,100,255,.7)'); cg.addColorStop(.6,'rgba(110,70,230,.25)'); cg.addColorStop(1,'rgba(110,70,230,0)');
+      cg.addColorStop(0,`rgba(${PAL.soma},`+(.95*pulse+.45)+')');
+      cg.addColorStop(.28,`rgba(${PAL.somaCore},.7)`); cg.addColorStop(.6,`rgba(${PAL.somaCore},.25)`); cg.addColorStop(1,`rgba(${PAL.somaCore},0)`);
       x.fillStyle=cg; x.beginPath(); x.arc(ncx,ncy,cr*3.6,0,7); x.fill();
       x.beginPath(); x.arc(ncx,ncy,cr*.62,0,7); x.fillStyle='rgba(248,244,255,.98)';
-      x.shadowBlur=38*devicePixelRatio; x.shadowColor='rgba(180,140,255,1)'; x.fill(); x.shadowBlur=0;
+      if(shadows){ x.shadowBlur=38*devicePixelRatio; x.shadowColor=`rgba(${PAL.halo},1)`; }
+      x.fill(); x.shadowBlur=0;
     }
     if(ns==='speaking'){
       for(let r=0;r<3;r++){
@@ -1599,9 +1730,14 @@ window._neuralState='idle';
       x.beginPath(); x.arc(cx,cy,rad,0,7);
       x.strokeStyle=`rgba(255,61,240,${al})`; x.lineWidth=devicePixelRatio*2; x.stroke();
     }
-    requestAnimationFrame(loop);
   }
-  loop();
+  /* reduced-motion: desenha UM frame parado e não anima (acessibilidade + bateria) */
+  function drawStatic(){ lastTs=0; loop(1e9); cancelAnimationFrame(raf); raf=0; }
+  function kick(){ if(RM){ drawStatic(); return; } if(!raf) raf=requestAnimationFrame(loop); }
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) kick(); });
+  if(RM) drawStatic(); else raf=requestAnimationFrame(loop);
+  /* API pública: o resto do app avisa a rede neural do que está acontecendo */
+  window.NeuralBG={ task, burst, applyTheme, get level(){ return degrade; } };
 
   /* Mini waveforms */
   function drawWave(canvasEl, color, active, phase){
@@ -1653,6 +1789,7 @@ function refreshHome(){
   if($('#agentUrl')) $('#agentUrl').value=settings.agentUrl||'';
   if($('#agentKey')) $('#agentKey').value=settings.agentKey||'';
   if($('#maestroUrl')) $('#maestroUrl').value=settings.maestroUrl||'';
+  if($('#githubToken')) $('#githubToken').value=settings.githubToken||'';
   if($('#serperKey')) $('#serperKey').value=settings.serperKey||'';
   if(settings.photo){
     if($('#sbAvatar')) $('#sbAvatar').innerHTML=`<img src="${settings.photo}">`;
@@ -2336,6 +2473,13 @@ async function send(text){
   // Central é só painel — não recebe comando; manda pro Maestro por padrão.
   if(activeAgent==='central'){ toast('A aba Central é painel. Abrindo o Maestro pra você comandar.'); setAgent('maestro'); }
 
+  // Openclaw SEM URL configurada: avisa e abre Configurações — nunca cair no Groq em silêncio
+  // (antes o comando ia pro Groq e o usuário achava que falava com o Openclaw).
+  if(activeAgent==='openclaw' && !(settings.agentUrl&&settings.agentUrl.trim())){
+    toast('A aba Openclaw precisa da URL do agente. Cole em Configurações → "URL do Agente (VPS)".',true);
+    openSettings(); return;
+  }
+
   // ===== ROUTER POR ABA: Maestro (voz→terminal) =====
   if(activeAgent==='maestro'){
     const base=(settings.maestroUrl||'').trim();
@@ -2480,7 +2624,10 @@ function mstrEventsRender(events){
     return '<div class="ev '+cls+'"><span class="evt">'+hh+'</span><span>'+esc(e.text||e.kind||'')+'</span></div>'; }).join('');
   box.scrollTop=box.scrollHeight;
   try{ if(window.TermFX) TermFX.feed(events); }catch(_){ } // camada visual (terminal cinema) — só observa
+  // rede neural: cada AÇÃO nova do agente (tool) dispara um pulso saindo do núcleo
+  try{ if(window.NeuralBG){ for(const e of events){ if(e.kind==='tool' && (e.at||0)>_nbLastEv){ _nbLastEv=e.at||Date.now(); NeuralBG.burst(); } } } }catch(_){ }
 }
+let _nbLastEv=0;
 function renderThreadList(){
   const box=mstrEl('thrList'); if(!box) return;
   if(!mstrThreads.length){ box.innerHTML='<div class="thr-empty">Sem tarefas ainda — mande um comando pra criar a primeira.</div>'; return; }
@@ -2518,7 +2665,10 @@ async function openThread(id){
 }
 async function mstrTick(){
   const base=maestroBase(); if(!base) return;
-  try{ const r=await fetch(base+'/threads'); const j=await r.json(); mstrThreads=(j&&j.threads)||[]; renderThreadList(); }catch(e){}
+  try{ const r=await fetch(base+'/threads'); const j=await r.json(); mstrThreads=(j&&j.threads)||[]; renderThreadList();
+    // rede neural acende enquanto houver tarefa rodando (feedback do processamento real)
+    try{ if(window.NeuralBG) NeuralBG.task(mstrThreads.some(t=>t.status==='running')); }catch(_){ }
+  }catch(e){}
   if(activeThreadId){ try{ const r=await fetch(base+'/thread?id='+encodeURIComponent(activeThreadId)); const j=await r.json();
     if(j&&j.thread){ renderThreadDetail(j.thread); announceIfDone(j.thread); } }catch(e){} }
 }
@@ -2623,41 +2773,136 @@ function renderAppBlock(t){
   if(p) p.onclick=appPublish; if(d) d.onclick=appDiscard; if(rr) rr.onclick=appRollback;
 }
 
-/* ===== CENTRAL (Fase 3) — dashboard tudo à vista ===== */
+/* ===== CENTRAL — dashboard tudo à vista (hero + ferramentas + GitHub + mapa vivo) ===== */
+function fmtAgo(ms){ const s=(Date.now()-ms)/1000; return s<90?Math.round(s)+'s':s<5400?Math.round(s/60)+'min':Math.round(s/3600)+'h'; }
 async function renderCentral(){
   const base=maestroBase();
   let mh=null; if(base){ try{ const r=await fetch(base+'/health'); mh=await r.json(); }catch(e){} }
   let ths=mstrThreads; if(base){ try{ const r=await fetch(base+'/threads'); const j=await r.json(); ths=(j&&j.threads)||ths; mstrThreads=ths; }catch(e){} }
   let prod=null; if(base){ try{ const r=await fetch(base+'/app/status'); prod=await r.json(); }catch(e){} }
-  const ver=mstrEl('ctrVersion'); if(ver) ver.textContent=(typeof APP_BUILD!=='undefined'?APP_BUILD.split('·')[0].trim():'app')+(mh&&mh.version?(' · maestro v'+mh.version):' · maestro offline')+(prod&&prod.prodBuild?(' · prod: '+prod.prodBuild.split('·')[0].trim()):'');
+  const ver=mstrEl('ctrVersion'); if(ver) ver.textContent=(typeof APP_BUILD!=='undefined'?APP_BUILD.split('·')[0].trim():'app')+(prod&&prod.prodBuild?(' · em produção: '+prod.prodBuild.split('·')[0].trim()):'');
+  const running=ths.filter(t=>t.status==='running');
+  const mid=new Date(); mid.setHours(0,0,0,0); let costToday=0; ths.forEach(t=>{ if((t.updatedAt||0)>=mid.getTime()) costToday+=Number(t.totalCostUsd||0); });
+  try{ if(window.NeuralBG) NeuralBG.task(running.length>0); }catch(_){ }
+  /* HERO — o resumo num olhar: estado do Maestro, tarefas, custo */
+  const hero=mstrEl('ctrHero');
+  if(hero){
+    const led = mh ? (mh.killSwitch?'warn':'on') : 'off';
+    const stTxt = mh ? (mh.killSwitch?'TRAVADO (kill-switch)':'ONLINE') : 'OFFLINE';
+    hero.innerHTML=
+      '<div class="hero-main"><span class="tled big '+led+'"></span><div><b>Maestro '+stTxt+'</b>'+
+      '<small>'+(mh?('modelo '+String(mh.defaultModel||'').replace('claude-','').replace(/-\d.*/,'')+(mh.headroom===false?' · direto na API':'')):'confira a URL / o túnel na VPS')+'</small></div></div>'+
+      '<div class="hero-stats"><div class="hs"><b>'+running.length+'</b><small>rodando</small></div>'+
+      '<div class="hs"><b>$'+costToday.toFixed(2)+'</b><small>hoje</small></div>'+
+      '<div class="hs"><b>'+ths.length+'</b><small>tarefas</small></div></div>';
+  }
+  /* FAZENDO AGORA — com tempo decorrido, clicável (abre a thread na aba Maestro) */
+  const rb=mstrEl('ctrRunning');
+  if(rb) rb.innerHTML= running.length
+    ? running.map(t=>{ const lu=[...(t.events||[])].reverse&&null; return '<div class="ctr-row click" data-th="'+t.id+'"><span class="rdot"></span><span class="rname">'+esc(t.title||'tarefa')+'</span><span class="rval">'+fmtAgo(t.createdAt||t.updatedAt||Date.now())+' · '+esc(t.model||'…')+'</span></div>'; }).join('')
+    : '<div class="ctr-empty">Nada rodando agora. Fale com o Maestro pra começar uma tarefa.</div>';
+  if(rb) rb.querySelectorAll('.ctr-row.click').forEach(el=>el.onclick=()=>{ setAgent('maestro'); openThread(el.dataset.th); });
+  /* O QUE O AGENTE TEM — apagado é clicável e leva pra configuração */
   const oc=(settings.agentUrl||'').trim();
   const tools=[
-    {ico:'⚙️',name:'Maestro',led:mh?'on':'off',stat: mh?('online · '+String(mh.defaultModel||'').replace('claude-','').replace(/-\d.*/,'')+(mh.killSwitch?' · 🛑 travado':'')+(mh.headroom===false?' · headroom off':'')):'offline'},
-    {ico:'🐙',name:'Openclaw',led: oc?'warn':'off', stat: oc?'Gemini 2.5 Flash · econômico':'sem URL'},
-    {ico:'🧠',name:'Kairos',led: settings.apiKey?'on':'off', stat: settings.apiKey?'Groq · chave ativa':'sem chave'},
-    {ico:'🔎',name:'Busca web',led: settings.serperKey?'on':'warn', stat: settings.serperKey?'Serper ativa':'grátis (fallback)'},
-    {ico:'🔊',name:'Voz',led: settings.elevenKey?'on':'warn', stat: settings.elevenKey?'ElevenLabs premium':'voz grátis'},
-    {ico:'🔐',name:'Conta',led: (window.supa?'on':'warn'), stat:(window.supa?'Supabase · nuvem':'local')},
+    {ico:'⚙️',name:'Maestro',led:mh?(mh.killSwitch?'warn':'on'):'off',stat: mh?('online · '+String(mh.defaultModel||'').replace('claude-','').replace(/-\d.*/,'')):'offline — ver URL', fix:!mh},
+    {ico:'🐙',name:'Openclaw',led: oc?'on':'off', stat: oc?'Gemini 2.5 Flash · econômico':'sem URL — toque', fix:!oc},
+    {ico:'🧠',name:'Kairos',led: settings.apiKey?'on':'off', stat: settings.apiKey?'Groq · chave ativa':'sem chave — toque', fix:!settings.apiKey},
+    {ico:'🔎',name:'Busca web',led: settings.serperKey?'on':'warn', stat: settings.serperKey?'Serper ativa':'grátis (limitada)', fix:!settings.serperKey},
+    {ico:'🔊',name:'Voz',led: settings.elevenKey?'on':'warn', stat: settings.elevenKey?'ElevenLabs premium':'voz grátis', fix:!settings.elevenKey},
+    {ico:'🔐',name:'Conta',led: (window.supa?'on':'warn'), stat:(window.supa?'Supabase · nuvem':'local'), fix:false},
   ];
-  const tb=mstrEl('ctrTools'); if(tb) tb.innerHTML=tools.map(t=>'<div class="ctr-tool"><span class="tico">'+t.ico+'</span><span class="tinfo"><div class="tname">'+esc(t.name)+'</div><div class="tstat">'+esc(t.stat)+'</div></span><span class="tled '+t.led+'"></span></div>').join('');
-  const running=ths.filter(t=>t.status==='running');
-  const rb=mstrEl('ctrRunning'); if(rb) rb.innerHTML= running.length? running.map(t=>'<div class="ctr-row"><span class="rdot"></span><span class="rname">'+esc(t.title||'tarefa')+'</span><span class="rval">'+esc(t.model||'…')+'</span></div>').join('') : '<div class="ctr-empty">Nada rodando agora.</div>';
-  const mid=new Date(); mid.setHours(0,0,0,0); let costToday=0; ths.forEach(t=>{ if((t.updatedAt||0)>=mid.getTime()) costToday+=Number(t.totalCostUsd||0); });
+  const tb=mstrEl('ctrTools');
+  if(tb){
+    tb.innerHTML=tools.map((t,i)=>'<div class="ctr-tool'+(t.fix?' click':'')+'" data-i="'+i+'"><span class="tico">'+t.ico+'</span><span class="tinfo"><div class="tname">'+esc(t.name)+'</div><div class="tstat">'+esc(t.stat)+'</div></span><span class="tled '+t.led+'"></span></div>').join('');
+    tb.querySelectorAll('.ctr-tool.click').forEach(el=>el.onclick=()=>{ openSettings(); toast('Configure aqui e salve.'); });
+  }
+  renderGitCard(ths, prod);
   const cb=mstrEl('ctrCost'); if(cb) cb.innerHTML=
     '<div class="ctr-row"><span class="rname">⚙️ Maestro (haiku)</span><span class="rval">$'+costToday.toFixed(4)+'</span></div>'+
     '<div class="ctr-row"><span class="rname">🐙 Openclaw (Gemini)</span><span class="rval">grátis</span></div>'+
     '<div class="ctr-row"><span class="rname">🧠 Kairos (Groq)</span><span class="rval">grátis</span></div>';
   renderGraph(mh, running);
 }
+/* CARTÃO GITHUB — último commit, branch, preview pendente, produção.
+   Funciona SEM token (repo público, limite 60 req/h — por isso o cache de 90s).
+   Com token (Configurações → GitHub, salvo SÓ neste aparelho) o limite sobe e
+   repos privados passam a funcionar. Token NUNCA vai pro código/git. */
+let _ghCache={t:0,data:null,err:null};
+async function fetchGitHub(){
+  if(Date.now()-_ghCache.t<90000) return _ghCache;
+  _ghCache.t=Date.now();
+  try{
+    const hdrs={'Accept':'application/vnd.github+json'};
+    const tok=(settings.githubToken||'').trim();
+    if(tok) hdrs['Authorization']='Bearer '+tok;
+    const r=await fetch('https://api.github.com/repos/matheusschelle/kairos-ai/commits?per_page=1',{headers:hdrs});
+    if(!r.ok) throw new Error(r.status===403?'limite da API atingido (adicione um token)':'GitHub respondeu '+r.status);
+    const j=await r.json(); const c=j&&j[0];
+    _ghCache.data={ sha:(c.sha||'').slice(0,7), msg:(c.commit&&c.commit.message||'').split('\n')[0],
+      when:c.commit&&c.commit.author&&c.commit.author.date, author:c.commit&&c.commit.author&&c.commit.author.name };
+    _ghCache.err=null;
+  }catch(e){ _ghCache.err=e.message; }
+  return _ghCache;
+}
+async function renderGitCard(ths, prod){
+  const box=mstrEl('ctrGit'); if(!box) return;
+  const gh=await fetchGitHub();
+  const previews=(ths||[]).filter(t=>t.app&&t.app.status==='preview_ready');
+  const tok=(settings.githubToken||'').trim();
+  let html='';
+  if(gh.data){
+    html+='<div class="git-row"><span class="git-k">último commit</span><span class="git-v">'+esc(gh.data.msg.slice(0,54))+'</span></div>'+
+          '<div class="git-row"><span class="git-k">quando</span><span class="git-v">'+(gh.data.when?fmtAgo(new Date(gh.data.when).getTime())+' atrás · '+esc(gh.data.sha):'—')+'</span></div>';
+  } else {
+    html+='<div class="git-row"><span class="git-k">GitHub</span><span class="git-v" style="color:#ff9fb4">'+esc(gh.err||'carregando…')+'</span></div>';
+  }
+  html+='<div class="git-row"><span class="git-k">branch</span><span class="git-v">master (produção)</span></div>';
+  html+='<div class="git-row"><span class="git-k">preview pendente</span><span class="git-v">'+(previews.length?('⏳ sim — '+esc((previews[0].title||'').slice(6,40))):'não')+'</span></div>';
+  if(prod&&prod.prodBuild) html+='<div class="git-row"><span class="git-k">no ar (Pages)</span><span class="git-v">'+esc(prod.prodBuild.split('·')[0].trim())+' · '+esc(prod.prodCommit||'')+'</span></div>';
+  if(!tok) html+='<div class="git-tok" id="gitTokHint">🔑 Opcional: cole um token do GitHub em Configurações pra subir o limite e ver repos privados.</div>';
+  box.innerHTML=html;
+  const th=mstrEl('gitTokHint'); if(th) th.onclick=()=>{ openSettings(); };
+}
+/* MAPA VIVO — estética da rede neural (paleta do tema), estado por cor, pulso quando roda */
 function renderGraph(mh, running){
   const g=mstrEl('ctrGraph'); if(!g) return;
-  const W=340,H=180, cx=54, cy=H/2;
-  const fns=[{n:'Maestro',on:!!mh,y:28},{n:'Openclaw',on:!!(settings.agentUrl||'').trim(),y:72},{n:'Voz',on:true,y:116},{n:'Busca',on:true,y:156}];
+  const nu=(window.KairosTheme&&KairosTheme.active().neural)||{node:'#22e0ff',node2:'#ff3df0',axon:'#af87ff',spark:'#96e1ff',link:'#6e8cff'};
+  const ON=nu.node, ACC=nu.node2||nu.accent||ON, AX=nu.axon||ON, SPK=nu.spark||ON, OFF='#5a6296';
+  const W=360,H=230, hub={x:64,y:H/2};
+  const fns=[
+    {n:'Maestro', on:!!mh, x:190, y:34},
+    {n:'Openclaw', on:!!(settings.agentUrl||'').trim(), x:190, y:92},
+    {n:'Voz', on:true, x:190, y:150},
+    {n:'Busca', on:true, x:190, y:200}
+  ];
   let s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
-  fns.forEach(f=>{ s+='<line x1="'+cx+'" y1="'+cy+'" x2="170" y2="'+f.y+'" stroke="'+(f.on?'rgba(61,240,154,.4)':'rgba(139,147,196,.25)')+'" stroke-width="1.5"/>'; });
-  (running||[]).slice(0,3).forEach((t,i)=>{ const ty=18+i*22; s+='<line x1="170" y1="28" x2="290" y2="'+ty+'" stroke="rgba(245,221,138,.45)" stroke-width="1.2"/><circle cx="290" cy="'+ty+'" r="4" fill="#ffdd8a"><animate attributeName="opacity" values="1;.4;1" dur="1.2s" repeatCount="indefinite"/></circle>'; });
-  fns.forEach(f=>{ s+='<circle cx="170" cy="'+f.y+'" r="6" fill="'+(f.on?'#3df09a':'#8b93c4')+'"/><text x="182" y="'+(f.y+4)+'" fill="#cdd6ff" font-size="11">'+f.n+'</text>'; });
-  s+='<circle cx="'+cx+'" cy="'+cy+'" r="15" fill="rgba(34,224,255,.2)" stroke="#22e0ff" stroke-width="2"/><text x="'+cx+'" y="'+(cy+5)+'" font-size="13" text-anchor="middle">🤖</text>';
+  s+='<defs><filter id="ng" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+  /* sinapses hub→funções (ativas ondulam a opacidade — vivas) */
+  fns.forEach((f,i)=>{
+    const mx=(hub.x+f.x)/2, ctrl=' Q'+mx+' '+((hub.y+f.y)/2+(i%2?14:-14))+' ';
+    s+='<path d="M'+hub.x+' '+hub.y+ctrl+f.x+' '+f.y+'" fill="none" stroke="'+(f.on?AX:OFF)+'" stroke-opacity="'+(f.on?'.55':'.22')+'" stroke-width="1.6">'+
+       (f.on?'<animate attributeName="stroke-opacity" values=".55;.25;.55" dur="'+(2.2+i*.4)+'s" repeatCount="indefinite"/>':'')+'</path>';
+  });
+  /* tarefas rodando penduradas no Maestro, com pulso viajando na sinapse */
+  (running||[]).slice(0,3).forEach((t,i)=>{
+    const ty=22+i*30, tx=305;
+    s+='<path id="tk'+i+'" d="M190 34 Q250 '+((34+ty)/2)+' '+tx+' '+ty+'" fill="none" stroke="'+SPK+'" stroke-opacity=".5" stroke-width="1.3"/>';
+    s+='<circle r="3.4" fill="'+SPK+'" filter="url(#ng)"><animateMotion dur="1.6s" repeatCount="indefinite"><mpath href="#tk'+i+'"/></animateMotion></circle>';
+    s+='<circle cx="'+tx+'" cy="'+ty+'" r="5" fill="'+SPK+'"><animate attributeName="opacity" values="1;.35;1" dur="1.1s" repeatCount="indefinite"/></circle>';
+    s+='<text x="'+(tx-14)+'" y="'+(ty+16)+'" fill="'+SPK+'" font-size="9" opacity=".85">'+esc((t.title||'tarefa').slice(0,14))+'</text>';
+  });
+  /* nós das funções: cor = estado (aceso/apagado) */
+  fns.forEach(f=>{
+    s+='<circle cx="'+f.x+'" cy="'+f.y+'" r="7" fill="'+(f.on?ON:OFF)+'"'+(f.on?' filter="url(#ng)"':'')+'>'+
+       (f.on?'<animate attributeName="r" values="7;8.2;7" dur="2.6s" repeatCount="indefinite"/>':'')+'</circle>';
+    s+='<text x="'+(f.x+14)+'" y="'+(f.y+4)+'" fill="#dfe6ff" font-size="12.5" font-weight="600">'+f.n+'</text>';
+  });
+  /* núcleo (o agente) */
+  s+='<circle cx="'+hub.x+'" cy="'+hub.y+'" r="24" fill="none" stroke="'+ACC+'" stroke-opacity=".4" stroke-width="1"><animate attributeName="r" values="24;28;24" dur="3s" repeatCount="indefinite"/></circle>';
+  s+='<circle cx="'+hub.x+'" cy="'+hub.y+'" r="17" fill="'+ON+'" fill-opacity=".14" stroke="'+ON+'" stroke-width="2" filter="url(#ng)"/>';
+  s+='<text x="'+hub.x+'" y="'+(hub.y+5)+'" font-size="15" text-anchor="middle">🤖</text>';
+  s+='<text x="'+hub.x+'" y="'+(hub.y+38)+'" fill="#dfe6ff" font-size="10.5" text-anchor="middle" opacity=".8">KAIROS</text>';
   s+='</svg>'; g.innerHTML=s;
 }
 async function maestroCtl(path,label){
@@ -3037,6 +3282,7 @@ async function saveSettings(){
   settings.agentUrl=($('#agentUrl')&&$('#agentUrl').value.trim())||'';
   settings.agentKey=($('#agentKey')&&$('#agentKey').value.trim())||'';
   settings.maestroUrl=($('#maestroUrl')&&$('#maestroUrl').value.trim())||'';
+  settings.githubToken=($('#githubToken')&&$('#githubToken').value.trim())||'';
   settings.serperKey=($('#serperKey')&&$('#serperKey').value.trim())||'';
   LS.set('kairos_settings',settings);
   syncVault();
@@ -4096,6 +4342,8 @@ const KairosTheme = (() => {
       scanlines:{ enabled:true, opacity:0.16, spacing:3 },
       flicker:{ enabled:true, amount:0.05 },
       backdrop:{ effect:'none' },  /* CRT clássico: sem chuva, só fósforo */
+      neural:{ node:'#ffb000', node2:'#ffd580', node3:'#9c6b10', link:'#9c6b10',
+               axon:'#ff9d1c', spark:'#ffe1a6', halo:'#7a4a05', soma:'#fff3d6', accent:'#ffd580' },
       hud:{ borderColor:'rgba(255,176,0,.35)', background:'rgba(12,6,0,.6)',
             statusColors:{ running:'#ffd580', done:'#ffcf5e',
                            error:'#ff5533', idle:'#6b5636' } },
@@ -4111,9 +4359,11 @@ const KairosTheme = (() => {
       cursor:{ char:'▌', blinkMs:500 },
       typing:{ cps:48 },
       scanlines:{ enabled:true, opacity:0.06, spacing:4 },
-      backdrop:{ effect:'matrix-rain', color:'#22d3ee',
+      backdrop:{ effect:'neural', color:'#22d3ee',
                  glyphs:'01<>{}/=+*#$', density:0.55, speed:1.3,
                  fade:0.1, opacity:0.4 },
+      neural:{ node:'#22e0ff', node2:'#ff3df0', node3:'#8b5cff', link:'#6e8cff',
+               axon:'#af87ff', spark:'#96e1ff', halo:'#8b5cff', soma:'#decfff', accent:'#e91e63' },
       hud:{ borderColor:'rgba(34,211,238,.35)', background:'rgba(5,6,15,.6)',
             statusColors:{ running:'#f5c969', done:'#4ade80',
                            error:'#ff5b8a', idle:'#4a5a8a' } },
@@ -4173,6 +4423,22 @@ const KairosTheme = (() => {
     t.backdrop.speed = num(t.backdrop.speed, .2, 3, 1);
     t.backdrop.fade = num(t.backdrop.fade, .02, .4, .08);
     t.backdrop.opacity = num(t.backdrop.opacity, .05, 1, .45);
+    /* rede neural (fundo ambiente + mapa da Central): chave OPCIONAL do tema.
+       Cores inválidas caem fora; o que faltar deriva das cores do próprio tema —
+       assim um tema custom "só de cores" já ganha rede neural coerente de graça. */
+    const rawNeural = (raw && raw.neural && typeof raw.neural==='object') ? raw.neural : {};
+    t.neural = {};
+    for(const k of ['node','node2','node3','link','axon','spark','halo','soma','accent'])
+      if(isColor(rawNeural[k])) t.neural[k]=rawNeural[k];
+    t.neural.node   = t.neural.node   || ((raw&&raw.backdrop&&isColor(raw.backdrop.color))?raw.backdrop.color:C.fg);
+    t.neural.node2  = t.neural.node2  || C.accent;
+    t.neural.node3  = t.neural.node3  || C.dim;
+    t.neural.link   = t.neural.link   || C.dim;
+    t.neural.axon   = t.neural.axon   || C.accent;
+    t.neural.spark  = t.neural.spark  || C.accent;
+    t.neural.halo   = t.neural.halo   || C.dim;
+    t.neural.soma   = t.neural.soma   || C.fg;
+    t.neural.accent = t.neural.accent || C.accent;
     if(!isColor(t.hud.borderColor)) t.hud.borderColor=DEFAULTS.hud.borderColor;
     if(!isColor(t.hud.background)) t.hud.background=DEFAULTS.hud.background;
     for(const k of Object.keys(DEFAULTS.hud.statusColors))
@@ -4324,6 +4590,73 @@ const TermFX = (() => {
           ctx.fillText(GLYPHS[(Math.random()*GLYPHS.length)|0], i*cw, c.y);
           c.y += c.v*fs*.28;
           if(c.y > innerHeight+40) c.y = Math.random()*-300;
+        }
+      }
+      return {
+        start(){ if(run) return; run=true; resize();
+                 ctx.fillStyle=themeBg; ctx.fillRect(0,0,innerWidth,innerHeight);
+                 raf=requestAnimationFrame(frame); },
+        stop(){ run=false; cancelAnimationFrame(raf);
+                ctx.clearRect(0,0,cv.width,cv.height); },
+        resize
+      };
+    },
+    /* REDE NEURAL — versão intensa pro cinema: nós + sinapses + pulsos viajando
+       pelas conexões. Paleta = tema (neural/backdrop). Mesmo padrão de perf da chuva. */
+    'neural': (cv, cfg, themeBg) => {
+      const ctx = cv.getContext('2d');
+      const nu = (KairosTheme.active().neural)||{};
+      const cNode = nu.node||cfg.color, cLink = nu.link||cfg.color,
+            cSpark = nu.spark||nu.accent||cfg.color;
+      let raf=0, run=false, nodes=[], pulses=[], level=0, ema=33, last=0, t=0;
+      function resize(){
+        const dpr = Math.min(devicePixelRatio||1, level>=2?1:1.5);
+        cv.width=innerWidth*dpr; cv.height=innerHeight*dpr;
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        const n=Math.round((innerWidth*innerHeight)/16000*cfg.density)|0;
+        nodes=[]; pulses=[];
+        for(let i=0;i<Math.max(14,Math.min(70,n));i++)
+          nodes.push({ x:Math.random()*innerWidth, y:Math.random()*innerHeight,
+                       vx:(Math.random()-.5)*.35*cfg.speed, vy:(Math.random()-.5)*.35*cfg.speed,
+                       r:1.2+Math.random()*2.2, ph:Math.random()*6.28 });
+      }
+      function frame(ts){
+        if(!run) return;
+        raf=requestAnimationFrame(frame);
+        if(document.hidden) return;
+        const target=level>=1?42:33;
+        if(ts-last<target) return;
+        const dt=Math.min(160,ts-last||target); last=ts; t+=.016*cfg.speed;
+        ema=ema*.95+dt*.05;
+        if(ema>target*1.8 && level<3){ level++; ema=target; resize(); }
+        ctx.fillStyle=KairosTheme.hexToRgba(themeBg,cfg.fade*1.6);
+        ctx.fillRect(0,0,innerWidth,innerHeight);
+        const cd=Math.min(innerWidth,innerHeight)*.28;
+        for(let i=0;i<nodes.length;i++){
+          const p=nodes[i];
+          p.x+=p.vx; p.y+=p.vy;
+          if(p.x<0||p.x>innerWidth)p.vx*=-1; if(p.y<0||p.y>innerHeight)p.vy*=-1;
+          for(let j=i+1;j<nodes.length;j++){
+            const q=nodes[j], d=Math.hypot(p.x-q.x,p.y-q.y);
+            if(d<cd){
+              ctx.strokeStyle=KairosTheme.hexToRgba(cLink,(1-d/cd)*.5);
+              ctx.lineWidth=.8;
+              ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke();
+              /* de vez em quando um pulso viaja pela sinapse */
+              if(level<2 && pulses.length<10 && Math.random()<.004*cfg.speed)
+                pulses.push({a:p,b:q,t:0,sp:.02+Math.random()*.03});
+            }
+          }
+          const bl=.6+Math.sin(t*2+p.ph)*.4;
+          ctx.beginPath(); ctx.arc(p.x,p.y,p.r*(0.8+bl*.5),0,7);
+          ctx.fillStyle=KairosTheme.hexToRgba(cNode,.35+bl*.6); ctx.fill();
+        }
+        for(let k=pulses.length-1;k>=0;k--){
+          const u=pulses[k]; u.t+=u.sp*cfg.speed;
+          if(u.t>=1){ pulses.splice(k,1); continue; }
+          const px=u.a.x+(u.b.x-u.a.x)*u.t, py=u.a.y+(u.b.y-u.a.y)*u.t;
+          ctx.beginPath(); ctx.arc(px,py,2.4,0,7);
+          ctx.fillStyle=KairosTheme.hexToRgba(cSpark,.95); ctx.fill();
         }
       }
       return {
@@ -4593,6 +4926,92 @@ const TermFX = (() => {
 })();
 window.TermFX = TermFX;
 window.KairosTheme = KairosTheme; // API pública: list/get/set/import/export
+/* rede neural do app segue o tema ativo (Matrix=verde, Âmbar=âmbar, Neon=ciano/magenta) */
+try{ if(window.NeuralBG){ NeuralBG.applyTheme(KairosTheme.active()); KairosTheme._watch(t=>NeuralBG.applyTheme(t)); } }catch(_){}
+
+/* ================= TUTORIAL — Central de Aulas + Tour Spotlight =================
+   Botão "?" fixo abre a central. Tour destaca os botões REAIS um a um (recorte
+   de luz + balão). Roda sozinho na 1ª abertura; reiniciável pelo "?". Tudo
+   data-driven: pra criar aula/passo novo é só adicionar objeto nos arrays. */
+const Tutorial=(()=>{
+  const LESSONS=[
+    {t:'🗂️ As 4 abas', b:['O topo do app tem <b>4 abas</b> — elas escolhem PRA QUEM vai o próximo comando (voz ou texto):','<b>Kairos</b> = conversa normal (grátis). <b>Openclaw</b> = agente econômico na VPS (Gemini). <b>Maestro</b> = voz vira trabalho de verdade no terminal. <b>Central</b> = painel que mostra tudo.','A aba acesa é a ativa. Só tocar pra trocar.']},
+    {t:'🎙️ Comandar por voz', b:['Toque no <b>microfone</b> (canto de baixo), fale, e solte. O que você falou vira comando da aba ativa.','No Maestro, cada fala vira uma <b>tarefa</b> que aparece ao vivo (passo a passo, cronômetro, custo).','Dica: "usando opus, …" na fala troca o modelo só naquela tarefa. O padrão é o haiku (centavos).']},
+    {t:'⚙️ Maestro: tarefas e arquivos', b:['Cada comando cria uma <b>thread</b> (bolinha âmbar = rodando, verde = pronto). Toque num chip pra reabrir a tarefa.','Os <b>arquivos gerados</b> aparecem com VER (abre na tela) e BAIXAR (salva no celular).','<b>■ PARAR TUDO</b> trava o Maestro inteiro (kill-switch). <b>▶ LIBERAR</b> destrava. Por voz: "parar tudo" / "liberar execução".']},
+    {t:'🛠️ Melhorar o app por voz', b:['Na aba Maestro, ligue <b>🛠️ Editar o app</b> e fale a melhoria (ex.: "deixa o botão maior").','O Maestro edita o código, testa o build e te dá um <b>link de preview</b> — nada vai ao ar ainda.','Só publica quando VOCÊ falar <b>"pode publicar"</b>. Pra desistir: <b>"descarta"</b>. Pra desfazer depois de publicado: <b>"volta pro anterior"</b>.']},
+    {t:'🎬 Terminal Cinema e temas', b:['O botão <b>🎬 CINEMA</b> abre o terminal em tela cheia — as tarefas rodando viram um show (Matrix, CRT, Neon).','Troque o tema nas <b>Configurações</b> ou tocando no nome do tema dentro do cinema.','O fundo do app inteiro (a rede neural) muda de cor junto com o tema.']},
+    {t:'🛰️ Central: tudo à vista', b:['A aba <b>Central</b> mostra num olhar: o que o agente TEM (ferramentas acesas/apagadas), o que está FAZENDO agora, o custo de hoje e o mapa vivo.','Ferramenta apagada? <b>Toque nela</b> — abre a configuração certa.','O cartão <b>GitHub</b> mostra o último commit e se há preview esperando decisão.']},
+    {t:'🧠 A rede neural', b:['O fundo do app é uma <b>rede neural viva</b>: ela pulsa quando o agente ouve, pensa ou fala.','Quando o Maestro está <b>trabalhando de verdade</b>, as sinapses aceleram e cada ação dispara um pulso do núcleo.','Não é enfeite: é o jeito do app te mostrar que algo está acontecendo — mesmo sem ler nada.']},
+  ];
+  const TOUR=[
+    {sel:'#agentTabs', t:'As 4 abas', p:'Escolha com quem falar: Kairos, Openclaw, Maestro ou Central. A acesa é a ativa.'},
+    {sel:'#micBtn', t:'Fale aqui', p:'Toque, fale e solte. Sua voz vira comando da aba ativa.'},
+    {sel:'.atab[data-agent="maestro"]', t:'O Maestro', p:'Voz vira trabalho: criar arquivos, rodar tarefas, tudo ao vivo com custo em centavos.', tab:'maestro'},
+    {sel:'#thrAppEdit', t:'Editar o app', p:'Ligado, sua fala vira melhoria do próprio app — com preview antes e produção só com "pode publicar".', tab:'maestro'},
+    {sel:'#mstrCine', t:'Terminal Cinema', p:'A tela cheia estilo Matrix pra ver (e filmar) o agente trabalhando.', tab:'maestro'},
+    {sel:'.atab[data-agent="central"]', t:'A Central', p:'O painel que mostra tudo: ferramentas, tarefas ao vivo, custo do dia, GitHub e o mapa.', tab:'central'},
+    {sel:'#helpBtn', t:'Sempre que precisar', p:'Este botão reabre as aulas e este tour. Bom passeio! 🚀'},
+  ];
+  const root=()=>document.getElementById('tutRoot');
+  let ti=0, holeEl=null, tipEl=null;
+  function esc2(s){ return String(s); } /* conteúdo é nosso, já com <b> intencional */
+  function close(){ root().innerHTML=''; killTour(); }
+  function menu(){
+    root().innerHTML='<div class="tut-overlay" id="tutOv"><div class="tut-card"><h3>Central de Aulas</h3>'+
+      '<p style="margin-top:4px">Aulas rápidas de como usar o Kairos. Toque numa aula, ou refaça o tour guiado.</p>'+
+      '<div class="tut-list">'+
+      '<button class="tut-item" data-a="tour">🔦 Tour guiado pelo app<small>destaca cada botão de verdade, um por vez</small></button>'+
+      LESSONS.map((l,i)=>'<button class="tut-item" data-a="'+i+'">'+l.t+'<small>aula '+(i+1)+' de '+LESSONS.length+'</small></button>').join('')+
+      '</div><div class="tut-nav"><button class="tut-btn back" data-a="close">Fechar</button></div></div></div>';
+    root().querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{ const a=b.dataset.a;
+      if(a==='close') close(); else if(a==='tour'){ close(); startTour(); } else lesson(+a); });
+    const ov=document.getElementById('tutOv'); if(ov) ov.onclick=e=>{ if(e.target.id==='tutOv') close(); };
+  }
+  function lesson(i){
+    const l=LESSONS[i]; if(!l) return menu();
+    root().innerHTML='<div class="tut-overlay" id="tutOv"><div class="tut-card">'+
+      '<div class="tut-step">Aula '+(i+1)+' / '+LESSONS.length+'</div><h3>'+l.t+'</h3>'+
+      l.b.map(p=>'<p>'+esc2(p)+'</p>').join('')+
+      '<div class="tut-nav">'+(i>0?'<button class="tut-btn back" data-a="b">← Voltar</button>':'')+
+      '<button class="tut-btn next" data-a="n">'+(i<LESSONS.length-1?'Avançar →':'Concluir ✓')+'</button>'+
+      '<button class="tut-btn skip" data-a="s">Pular</button></div></div></div>';
+    root().querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{ const a=b.dataset.a;
+      if(a==='b') lesson(i-1); else if(a==='n'){ i<LESSONS.length-1?lesson(i+1):menu(); } else menu(); });
+  }
+  function killTour(){ if(holeEl){holeEl.remove();holeEl=null;} if(tipEl){tipEl.remove();tipEl=null;} }
+  function startTour(){ ti=0; stepTour(); }
+  function stepTour(){
+    killTour();
+    if(ti>=TOUR.length){ LS.set('kairos_tour_done',true); toast('Tour concluído! O "?" reabre quando quiser.'); return; }
+    const st=TOUR[ti];
+    if(st.tab && typeof setAgent==='function') setAgent(st.tab);
+    setTimeout(()=>{
+      const el=document.querySelector(st.sel);
+      if(!el || el.offsetParent===null){ ti++; stepTour(); return; } // alvo invisível: pula
+      const r=el.getBoundingClientRect(), pad=6;
+      holeEl=document.createElement('div'); holeEl.className='tour-hole';
+      holeEl.style.cssText='left:'+(r.left-pad)+'px;top:'+(r.top-pad)+'px;width:'+(r.width+pad*2)+'px;height:'+(r.height+pad*2)+'px';
+      document.body.appendChild(holeEl);
+      tipEl=document.createElement('div'); tipEl.className='tour-tip';
+      tipEl.innerHTML='<div class="tut-step">'+(ti+1)+' / '+TOUR.length+'</div><b>'+st.t+'</b><p>'+st.p+'</p>'+
+        '<div class="tut-nav">'+(ti>0?'<button class="tut-btn back" data-a="b">←</button>':'')+
+        '<button class="tut-btn next" data-a="n">'+(ti<TOUR.length-1?'Avançar →':'Terminar ✓')+'</button>'+
+        '<button class="tut-btn skip" data-a="s">Pular</button></div>';
+      document.body.appendChild(tipEl);
+      const th=tipEl.getBoundingClientRect().height||150;
+      const below=r.bottom+th+20<innerHeight;
+      tipEl.style.left=Math.max(12,Math.min(innerWidth-tipEl.offsetWidth-12, r.left))+'px';
+      tipEl.style.top=(below? r.bottom+14 : Math.max(12, r.top-th-14))+'px';
+      tipEl.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{ const a=b.dataset.a;
+        if(a==='b'){ ti--; stepTour(); } else if(a==='n'){ ti++; stepTour(); } else { LS.set('kairos_tour_done',true); killTour(); } });
+    }, st.tab?380:60);
+  }
+  const hb=document.getElementById('helpBtn'); if(hb) hb.onclick=menu;
+  /* 1ª vez no app: roda o tour sozinho (depois que a UI assentar) */
+  if(!LS.get('kairos_tour_done',false)) setTimeout(()=>{ if(!LS.get('kairos_tour_done',false)) startTour(); }, 2600);
+  return { menu, startTour };
+})();
+window.Tutorial=Tutorial;
 </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 /* Kairos AI — service worker: network-first (sempre pega a versão nova online) */
-const CACHE = 'kairos-ai-v14';
+const CACHE = 'kairos-ai-v15';
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {

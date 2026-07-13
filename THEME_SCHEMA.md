@@ -67,7 +67,13 @@ um tema — é só um JSON.
     "errorFlash":   { "enabled": true, "color": "#ff4d4d", "durationMs": 900 }
   },
 
-  "sound": { "enabled": false, "blipHz": 880, "okHz": 660, "errHz": 180, "gain": 0.03 }
+  "sound": { "enabled": false, "blipHz": 880, "okHz": 660, "errHz": 180, "gain": 0.03 },
+
+  "neural": {
+    "node": "#00ff41", "node2": "#86ffb0", "node3": "#1fae4f",
+    "link": "#1fae4f", "axon": "#00d938", "spark": "#b4ffcf",
+    "halo": "#0d7a35", "soma": "#eafff2", "accent": "#86ffb0"
+  }
 }
 ```
 
@@ -86,7 +92,8 @@ um tema — é só um JSON.
 | `typing.cps` | Velocidade da digitação (chars/segundo). Acelera sozinho se a fila cresce. |
 | `scanlines` | Linhas CRT: opacidade e espaçamento px. |
 | `flicker` | Tremida de fósforo (CRT). `amount` = queda de opacidade 0–0.2. |
-| `backdrop.effect` | Nome do efeito de fundo no **registro extensível** `TermFX.backdrops` (`matrix-rain`, `none`; futuros: registrar factory nova). |
+| `backdrop.effect` | Nome do efeito de fundo no **registro extensível** `TermFX.backdrops` (`matrix-rain`, `neural`, `none`; futuros: registrar factory nova). |
+| `neural.*` | **Opcional** — paleta da REDE NEURAL do app (fundo ambiente + mapa da Central + efeito `neural` do cinema). Chaves: `node/node2/node3` (nós), `link` (conexões), `axon` (dendritos), `spark` (faíscas/pulsos), `halo`, `soma` (núcleo), `accent`. O que faltar deriva das cores do próprio tema — um tema "só de cores" já ganha rede neural coerente de graça. |
 | `backdrop.glyphs` | `katakana`, `binary` ou string custom de caracteres. |
 | `backdrop.density/speed/fade/opacity` | Colunas, velocidade, trilha e opacidade do canvas. |
 | `hud` | Borda/fundo dos painéis (status+timer em cima, modelo+custo embaixo) e cor do LED por status. |
