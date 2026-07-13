@@ -710,6 +710,80 @@
   .mstr-app .ap-badge{display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.4px}
   .ap-badge.ready{background:rgba(34,224,255,.18);color:#8fe9ff}.ap-badge.published{background:rgba(61,240,154,.18);color:#7bf0bf}
   .ap-badge.build_failed{background:rgba(255,61,120,.2);color:#ff9fb4}.ap-badge.discarded{background:rgba(139,147,196,.18);color:#aab2dd}
+
+  /* ============================================================
+     TERMINAL CINEMA (ao vivo) — 100% dirigido por variáveis --ct-*
+     A engine de temas (KairosTheme) seta as vars a partir do objeto
+     de tema; este CSS NUNCA hardcodeia cor/fonte do terminal.
+     ============================================================ */
+  .ct-overlay{position:fixed;inset:0;z-index:1500;display:flex;flex-direction:column;
+    background:var(--ct-bg,#000);color:var(--ct-fg,#00ff41);
+    font-family:var(--ct-font,ui-monospace,Menlo,Consolas,monospace);
+    padding:calc(var(--safe-t) + 10px) 14px calc(var(--safe-b) + 10px);overflow:hidden}
+  .ct-canvas{position:absolute;inset:0;z-index:0;opacity:var(--ct-bd-op,.45);pointer-events:none}
+  .ct-scan{position:absolute;inset:0;z-index:3;pointer-events:none;display:var(--ct-scan-disp,block);
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,var(--ct-scan-op,.1)) 0 1px,transparent 1px var(--ct-scan-sp,3px));
+    mix-blend-mode:multiply}
+  .ct-overlay.flicker .ct-inner{animation:ctFlick 4.2s steps(1,end) infinite}
+  @keyframes ctFlick{0%,93%,100%{opacity:1}94%{opacity:calc(1 - var(--ct-flick,.04))}95%{opacity:1}97%{opacity:calc(1 - var(--ct-flick,.04)*.6)}98%{opacity:1}}
+  .ct-flash{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;transition:opacity .18s}
+  .ct-flash.on{opacity:1}
+  .ct-inner{position:relative;z-index:2;display:flex;flex-direction:column;height:100%;min-height:0}
+  /* HUD topo: status + título + timer */
+  .ct-hud{display:flex;align-items:center;gap:10px;flex:0 0 auto;
+    font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+    color:var(--ct-dim,#0f7a2f)}
+  .ct-hud-top{padding:6px 9px;border:1px solid var(--ct-hud-brd,rgba(0,255,65,.3));border-radius:10px;
+    background:var(--ct-hud-bg,rgba(0,10,2,.55));backdrop-filter:blur(3px)}
+  .ct-dot{width:9px;height:9px;border-radius:50%;background:var(--ct-status-c,#5c6470);flex:0 0 auto;
+    box-shadow:0 0 8px var(--ct-status-c,#5c6470);transition:background .3s}
+  .ct-overlay.running .ct-dot{animation:mstrPulse 1s ease-in-out infinite}
+  .ct-status-lbl{color:var(--ct-status-c,#5c6470)}
+  .ct-title{flex:1;text-align:center;color:var(--ct-accent,#86ffb0);white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;text-shadow:var(--ct-glow,none);min-width:0}
+  .ct-timer{font-variant-numeric:tabular-nums;color:var(--ct-fg,#00ff41);text-shadow:var(--ct-glow,none)}
+  /* LOG central: typewriter, ancorado embaixo */
+  .ct-log-wrap{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;
+    overflow:hidden;padding:12px 2px;-webkit-mask-image:linear-gradient(180deg,transparent,#000 12%)}
+  .ct-log{overflow-y:auto;max-height:100%;scrollbar-width:none}
+  .ct-log::-webkit-scrollbar{display:none}
+  .ct-line{font-size:var(--ct-size,13px);line-height:var(--ct-lh,1.55);font-weight:var(--ct-weight,500);
+    white-space:pre-wrap;word-break:break-word;text-shadow:var(--ct-glow,none);color:var(--ct-fg,#00ff41)}
+  .ct-line .ct-t{color:var(--ct-dim,#0f7a2f);font-size:.78em;margin-right:7px;text-shadow:none}
+  .ct-line.ck-user{color:var(--ct-k-user,inherit)}
+  .ct-line.ck-tool{color:var(--ct-k-tool,inherit)}
+  .ct-line.ck-think{color:var(--ct-k-think,inherit);font-style:italic}
+  .ct-line.ck-done{color:var(--ct-k-done,inherit)}
+  .ct-line.ck-error{color:var(--ct-k-error,inherit)}
+  .ct-line.ck-start{color:var(--ct-k-start,inherit)}
+  .ct-cursor{display:inline-block;color:var(--ct-fg,#00ff41);text-shadow:var(--ct-glow,none);
+    animation:ctBlink var(--ct-blink,530ms) steps(1,end) infinite;margin-left:1px}
+  @keyframes ctBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
+  .ct-overlay.rm .ct-cursor{animation:none}
+  /* HUD rodapé: modelo + custo + ações */
+  .ct-hud-bot{padding:7px 9px;border:1px solid var(--ct-hud-brd,rgba(0,255,65,.3));border-radius:10px;
+    background:var(--ct-hud-bg,rgba(0,10,2,.55));backdrop-filter:blur(3px);flex-wrap:wrap}
+  .ct-model{color:var(--ct-dim,#0f7a2f);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:44vw}
+  .ct-cost{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ct-warn,#ffd24a);text-shadow:var(--ct-glow,none)}
+  .ct-actions{display:flex;gap:7px;margin-top:8px;flex:0 0 auto}
+  .ct-btn{font-family:inherit;font-size:11px;font-weight:800;letter-spacing:1px;padding:9px 12px;border-radius:9px;
+    cursor:pointer;border:1px solid var(--ct-hud-brd,rgba(0,255,65,.3));background:var(--ct-hud-bg,rgba(0,10,2,.55));
+    color:var(--ct-fg,#00ff41);text-transform:uppercase;flex:1;text-align:center;text-decoration:none}
+  .ct-btn:active{transform:scale(.96)}
+  .ct-btn.off{opacity:.45}
+  .ct-btn.prev{color:var(--ct-accent,#86ffb0);border-color:var(--ct-accent,#86ffb0);font-weight:900}
+  .ct-btn.close{flex:0 0 auto;min-width:46px}
+  /* botão que abre o cinema, no painel Maestro */
+  .mstr-btn.cine{border-color:rgba(34,224,255,.5);background:rgba(34,224,255,.12);color:#8fe9ff}
+  .mstr-btn.cine:hover{background:rgba(34,224,255,.22)}
+  /* seletor de tema nas Configurações */
+  .theme-grid{display:flex;gap:8px;flex-wrap:wrap}
+  .theme-card{flex:1;min-width:96px;border-radius:12px;padding:10px 8px;cursor:pointer;text-align:center;
+    border:1px solid var(--glass-brd);background:rgba(8,10,26,.55);transition:.15s;font-family:inherit}
+  .theme-card.sel{border-color:var(--cyan);box-shadow:0 0 12px rgba(34,224,255,.3)}
+  .theme-card .tc-pv{height:34px;border-radius:8px;margin-bottom:7px;display:flex;align-items:center;justify-content:center;
+    font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;overflow:hidden}
+  .theme-card .tc-name{font-size:11px;font-weight:700;color:#cdd6ff}
 </style>
 </head>
 <body class="online">
@@ -771,6 +845,7 @@
         <span class="mstr-status idle" id="mstrStatus">ocioso</span>
         <span class="mstr-timer" id="mstrTimer">0.0s</span>
         <div class="mstr-ctl">
+          <button class="mstr-btn cine" id="mstrCine" type="button" title="Terminal ao vivo em tela cheia (modo cinema)">🎬 CINEMA</button>
           <button class="mstr-btn kill" id="mstrKill" type="button" title="Armar kill-switch (/kill)">■ PARAR</button>
           <button class="mstr-btn resume" id="mstrResume" type="button" title="Liberar executor (/resume)">▶ LIBERAR</button>
         </div>
@@ -992,6 +1067,33 @@
 </aside>
 
 <!-- SETTINGS MODAL -->
+<!-- TERMINAL CINEMA (camada visual sobre o Maestro — zero lógica própria;
+     filho direto do body pra ficar acima de qualquer stacking context) -->
+<div class="ct-overlay" id="cineTerm" hidden>
+  <canvas class="ct-canvas" id="ctCanvas"></canvas>
+  <div class="ct-flash" id="ctFlash"></div>
+  <div class="ct-inner">
+    <div class="ct-hud ct-hud-top">
+      <span class="ct-dot" id="ctDot"></span>
+      <span class="ct-status-lbl" id="ctStatus">OCIOSO</span>
+      <span class="ct-title" id="ctTitle">KAIROS · MAESTRO</span>
+      <span class="ct-timer" id="ctTimer">00:00.0</span>
+    </div>
+    <div class="ct-log-wrap"><div class="ct-log" id="ctLog"></div></div>
+    <div class="ct-hud ct-hud-bot">
+      <span class="ct-model" id="ctModel">modelo —</span>
+      <span class="ct-cost" id="ctCost">$0.0000</span>
+    </div>
+    <div class="ct-actions">
+      <a class="ct-btn prev" id="ctPreview" target="_blank" rel="noopener" hidden>👀 Preview</a>
+      <button class="ct-btn" id="ctFx" type="button" title="Liga/desliga animação de fundo">FX ON</button>
+      <button class="ct-btn" id="ctTheme" type="button" title="Trocar tema">TEMA</button>
+      <button class="ct-btn close" id="ctClose" type="button">✕</button>
+    </div>
+  </div>
+  <div class="ct-scan"></div>
+</div>
+
 <div class="modal" id="settings">
   <div class="sheet">
     <div class="grab"></div>
@@ -1084,6 +1186,14 @@
       <div class="hint" style="margin-top:6px">Cole a URL https do seu <b>Maestro</b> na VPS (túnel Cloudflare). É <b>separado</b> do agente OpenCLAW acima. Com a aba <b>Maestro</b> ativa, sua voz/texto vira comando de terminal no sandbox. Vazio = aba Maestro fica desativada.</div>
       <button id="testMaestroBtn" type="button" style="margin-top:8px;width:100%;padding:10px;border-radius:12px;border:1px solid rgba(245,201,105,.4);background:rgba(245,201,105,.12);color:#f5d98a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">⚡ Testar conexão com o Maestro</button>
       <div id="maestroTestResult" style="font-size:12px;color:#7a83a8;margin-top:6px;text-align:center"></div>
+    </div>
+    <div class="field" style="border-top:1px solid rgba(34,224,255,.25);padding-top:18px;margin-top:6px">
+      <label style="color:#8fe9ff">🎬 Tema do Terminal ao Vivo <span style="color:#7a83a8;font-weight:400">(modo cinema do Maestro)</span></label>
+      <div class="theme-grid" id="themeGrid"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+        <button id="termFxToggle" type="button" style="flex:1;padding:10px;border-radius:11px;border:1px solid var(--glass-brd);background:var(--glass);color:#cdd6ff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">✨ Animação de fundo: LIGADA</button>
+      </div>
+      <div class="hint">A troca é instantânea (não precisa salvar). Cada tema é um objeto JSON — no futuro você vai poder criar e importar temas seus.</div>
     </div>
     <button class="save" id="saveBtn">Salvar</button>
     <button type="button" id="updateBtn" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(34,224,255,.4);background:rgba(34,224,255,.1);color:#bfefff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🔄 Atualizar app (buscar versão nova)</button>
@@ -1296,7 +1406,7 @@ let currentSpeechText='';                     // texto que está sendo falado ag
 let persona = LS.get('kairos_persona', null); // identidade do agente (nome + personalidade), definida pelo Matheus
 function personaReady(){ return !!(persona && persona.created && persona.name); }
 const PROACTIVE_MS = 5*60*1000;               // a cada 5 min o agente puxa conversa
-const APP_BUILD = 'v32 · 12/07 · Maestro edita o app por voz'; // mostrado nas Configurações pra confirmar a versão
+const APP_BUILD = 'v33 · 12/07 · Terminal cinema + engine de temas'; // mostrado nas Configurações pra confirmar a versão
 const RATE_STEPS = [['1x',1],['1.25x',1.25],['1.5x',1.5]];
 /* Migração única: desliga proatividade e normaliza velocidade */
 if(!LS.get('kairos_mig2', false)){
@@ -2369,6 +2479,7 @@ function mstrEventsRender(events){
     const cls=['tool','think','done','error','user','start'].includes(e.kind)?e.kind:'';
     return '<div class="ev '+cls+'"><span class="evt">'+hh+'</span><span>'+esc(e.text||e.kind||'')+'</span></div>'; }).join('');
   box.scrollTop=box.scrollHeight;
+  try{ if(window.TermFX) TermFX.feed(events); }catch(_){ } // camada visual (terminal cinema) — só observa
 }
 function renderThreadList(){
   const box=mstrEl('thrList'); if(!box) return;
@@ -2398,6 +2509,7 @@ function renderThreadDetail(t){
   maestroRenderFiles(t.files||[]);
   renderAppBlock(t);
   if(t.costUsd!=null) mstrLastCost=Number(t.costUsd); if(t.model) mstrLastModel=t.model; updateAgentInfo();
+  try{ if(window.TermFX) TermFX.sync(t); }catch(_){ } // camada visual (terminal cinema) — só observa
 }
 async function openThread(id){
   activeThreadId=id; LS.set('kairos_maestro_thread',id); renderThreadList();
@@ -2429,6 +2541,7 @@ function thrNew(){ activeThreadId=null; LS.set('kairos_maestro_thread',''); mstr
   const tm=mstrEl('mstrTimer'); if(tm) tm.textContent='0.0s';
   mstrLive('Nova tarefa: mande um comando por voz ou texto.'); renderThreadList();
   const txt=$('#txt'); if(txt) txt.focus();
+  try{ if(window.TermFX) TermFX.reset(); }catch(_){ } // camada visual (terminal cinema) — só observa
 }
 
 /* ===== MODO "EDITAR O APP" (devops por voz: preview → produção com confirmação) ===== */
@@ -3920,6 +4033,566 @@ cloudBoot();
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   KAIROS THEME ENGINE + TERMINAL CINEMA  (camada 100% visual)
+   ───────────────────────────────────────────────────────────────────
+   • KairosTheme  — engine de temas data-driven. Um TEMA é um objeto
+     JSON (schema v1, ver THEME_SCHEMA.md) que descreve TODA a
+     aparência do terminal ao vivo. O renderizador lê o objeto e seta
+     variáveis CSS (--ct-*) + parâmetros de canvas. Trocar de tema =
+     trocar o objeto. Zero código novo por tema.
+   • TermFX       — o terminal cinema em si (overlay fullscreen).
+     Recebe dados dos hooks (feed/sync/reset) que já existem no fluxo
+     do Maestro. NÃO chama rede, NÃO altera lógica: só observa e pinta.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ---------- 1. SCHEMA + DEFAULTS (a fundação do produto) ---------- */
+const KairosTheme = (() => {
+  const SCHEMA_VERSION = 1;
+  /* Tema-base: todo tema é deep-merged sobre isto, então um tema
+     parcial (só cores, por ex.) é válido. */
+  const DEFAULTS = {
+    schema: SCHEMA_VERSION,
+    id: 'default', name: 'Default', author: 'Kairos',
+    colors: {
+      bg:'#000000', fg:'#00ff41', dim:'#1fae4f', accent:'#86ffb0',
+      ok:'#00ff41', err:'#ff4d4d', warn:'#ffd24a',
+      kinds:{ user:'#aef7c4', tool:'#00d938', think:'#2fbf6b',
+              done:'#7dffa8', error:'#ff6b6b', start:'#45e07a' }
+    },
+    font: { family:"'Courier New',ui-monospace,Menlo,Consolas,monospace",
+            size:13, lineHeight:1.55, weight:500 },
+    glow: { enabled:true, blur:8, strength:0.85 },
+    cursor: { char:'█', blinkMs:530 },
+    prompt: '> ',
+    typing: { cps:42, jitter:0.3 },
+    scanlines: { enabled:true, opacity:0.10, spacing:3 },
+    flicker: { enabled:false, amount:0.04 },
+    backdrop: { effect:'matrix-rain', color:'#00ff41', glyphs:'katakana',
+                density:0.75, speed:1.0, fade:0.08, opacity:0.45 },
+    hud: { borderColor:'rgba(0,255,65,.3)', background:'rgba(0,10,2,.55)',
+           statusColors:{ running:'#ffd24a', done:'#00ff41',
+                          error:'#ff4d4d', idle:'#5c6470' } },
+    fx: { successFlash:{ enabled:true, color:'#00ff41', durationMs:900 },
+          errorFlash:  { enabled:true, color:'#ff4d4d', durationMs:900 } },
+    sound: { enabled:false, blipHz:880, okHz:660, errHz:180, gain:0.03 }
+  };
+
+  /* ---------- 3 temas prontos = 3 objetos, zero código ---------- */
+  const BUILTINS = [
+    { schema:1, id:'matrix', name:'Matrix', author:'Kairos' }, // = DEFAULTS
+    { schema:1, id:'amber', name:'Âmbar CRT', author:'Kairos',
+      colors:{ bg:'#0a0500', fg:'#ffb000', dim:'#9c6b10', accent:'#ffd580',
+               ok:'#ffcf5e', err:'#ff5533', warn:'#ffd580',
+               kinds:{ user:'#ffe1a6', tool:'#ff9d1c', think:'#c08a2e',
+                       done:'#ffd580', error:'#ff7755', start:'#e8a53c' } },
+      font:{ size:13.5, weight:600 },
+      glow:{ enabled:true, blur:11, strength:0.9 },
+      cursor:{ char:'▮', blinkMs:420 },
+      typing:{ cps:34 },
+      scanlines:{ enabled:true, opacity:0.16, spacing:3 },
+      flicker:{ enabled:true, amount:0.05 },
+      backdrop:{ effect:'none' },  /* CRT clássico: sem chuva, só fósforo */
+      hud:{ borderColor:'rgba(255,176,0,.35)', background:'rgba(12,6,0,.6)',
+            statusColors:{ running:'#ffd580', done:'#ffcf5e',
+                           error:'#ff5533', idle:'#6b5636' } },
+      fx:{ successFlash:{ enabled:true, color:'#ffb000', durationMs:800 },
+           errorFlash:{ enabled:true, color:'#ff5533', durationMs:800 } } },
+    { schema:1, id:'neon', name:'Kairos Neon', author:'Kairos',
+      colors:{ bg:'#05060f', fg:'#22d3ee', dim:'#4a5a8a', accent:'#e91e63',
+               ok:'#4ade80', err:'#ff5b8a', warn:'#f5c969',
+               kinds:{ user:'#8fe9ff', tool:'#e91e63', think:'#7c8dcf',
+                       done:'#4ade80', error:'#ff5b8a', start:'#22d3ee' } },
+      font:{ size:13 },
+      glow:{ enabled:true, blur:9, strength:0.8 },
+      cursor:{ char:'▌', blinkMs:500 },
+      typing:{ cps:48 },
+      scanlines:{ enabled:true, opacity:0.06, spacing:4 },
+      backdrop:{ effect:'matrix-rain', color:'#22d3ee',
+                 glyphs:'01<>{}/=+*#$', density:0.55, speed:1.3,
+                 fade:0.1, opacity:0.4 },
+      hud:{ borderColor:'rgba(34,211,238,.35)', background:'rgba(5,6,15,.6)',
+            statusColors:{ running:'#f5c969', done:'#4ade80',
+                           error:'#ff5b8a', idle:'#4a5a8a' } },
+      fx:{ successFlash:{ enabled:true, color:'#4ade80', durationMs:900 },
+           errorFlash:{ enabled:true, color:'#e91e63', durationMs:900 } } }
+  ];
+
+  /* ---------- helpers de validação (temas importados são dados
+       não-confiáveis: cores checadas, números clampados) ---------- */
+  const isColor = v => typeof v==='string' && v.length<64 &&
+    (window.CSS && CSS.supports ? CSS.supports('color', v)
+      : /^#[0-9a-f]{3,8}$/i.test(v) || /^rgba?\(/.test(v));
+  const num = (v, lo, hi, dflt) => { v=Number(v);
+    return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : dflt; };
+  const safeStr = (v, dflt, max) => typeof v==='string'
+    ? v.replace(/[;{}<>]/g,'').slice(0, max||120) : dflt;
+
+  function deepMerge(base, over){
+    const out = Array.isArray(base) ? base.slice() : Object.assign({}, base);
+    if(!over || typeof over!=='object') return out;
+    for(const k of Object.keys(over)){
+      const b=base?base[k]:undefined, o=over[k];
+      out[k] = (b && o && typeof b==='object' && typeof o==='object' &&
+                !Array.isArray(b)) ? deepMerge(b,o) : o;
+    }
+    return out;
+  }
+
+  /* normaliza + valida um tema cru → tema resolvido e seguro */
+  function resolve(raw){
+    const t = deepMerge(DEFAULTS, raw||{});
+    t.id = safeStr(t.id,'custom',40).replace(/[^a-z0-9_-]/gi,'') || 'custom';
+    t.name = safeStr(t.name,'Tema',40);
+    t.author = safeStr(t.author,'—',40);
+    const C = t.colors, D = DEFAULTS.colors;
+    for(const k of ['bg','fg','dim','accent','ok','err','warn'])
+      if(!isColor(C[k])) C[k]=D[k];
+    for(const k of Object.keys(D.kinds))
+      if(!isColor(C.kinds[k])) C.kinds[k]=D.kinds[k];
+    t.font.family = safeStr(t.font.family, DEFAULTS.font.family, 160);
+    t.font.size = num(t.font.size, 9, 22, 13);
+    t.font.lineHeight = num(t.font.lineHeight, 1.1, 2.2, 1.55);
+    t.font.weight = num(t.font.weight, 300, 900, 500);
+    t.glow.blur = num(t.glow.blur, 0, 24, 8);
+    t.glow.strength = num(t.glow.strength, 0, 1, .85);
+    t.cursor.char = safeStr(t.cursor.char,'█',4) || '█';
+    t.cursor.blinkMs = num(t.cursor.blinkMs, 120, 2000, 530);
+    t.prompt = safeStr(t.prompt,'> ',8);
+    t.typing.cps = num(t.typing.cps, 8, 200, 42);
+    t.scanlines.opacity = num(t.scanlines.opacity, 0, .5, .1);
+    t.scanlines.spacing = num(t.scanlines.spacing, 2, 12, 3);
+    t.flicker.amount = num(t.flicker.amount, 0, .2, .04);
+    t.backdrop.effect = safeStr(t.backdrop.effect,'none',32);
+    if(!isColor(t.backdrop.color)) t.backdrop.color = C.fg;
+    t.backdrop.glyphs = safeStr(t.backdrop.glyphs,'katakana',64);
+    t.backdrop.density = num(t.backdrop.density, .1, 1, .7);
+    t.backdrop.speed = num(t.backdrop.speed, .2, 3, 1);
+    t.backdrop.fade = num(t.backdrop.fade, .02, .4, .08);
+    t.backdrop.opacity = num(t.backdrop.opacity, .05, 1, .45);
+    if(!isColor(t.hud.borderColor)) t.hud.borderColor=DEFAULTS.hud.borderColor;
+    if(!isColor(t.hud.background)) t.hud.background=DEFAULTS.hud.background;
+    for(const k of Object.keys(DEFAULTS.hud.statusColors))
+      if(!isColor(t.hud.statusColors[k]))
+        t.hud.statusColors[k]=DEFAULTS.hud.statusColors[k];
+    t.sound.gain = num(t.sound.gain, 0, .15, .03);
+    return t;
+  }
+
+  function hexToRgba(hex, a){
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+    if(!m) return hex; // já é rgba()/nome — usa direto
+    const n = parseInt(m[1],16);
+    return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')';
+  }
+
+  /* ---------- aplica o tema = seta variáveis CSS no overlay --------
+     O CSS do terminal só conhece --ct-*; é aqui que o objeto vira
+     aparência. Nenhuma outra parte do app é tocada.               */
+  function applyVars(t, el){
+    const s = el.style, C = t.colors;
+    s.setProperty('--ct-bg', C.bg);
+    s.setProperty('--ct-fg', C.fg);
+    s.setProperty('--ct-dim', C.dim);
+    s.setProperty('--ct-accent', C.accent);
+    s.setProperty('--ct-warn', C.warn);
+    s.setProperty('--ct-font', t.font.family);
+    s.setProperty('--ct-size', t.font.size+'px');
+    s.setProperty('--ct-lh', t.font.lineHeight);
+    s.setProperty('--ct-weight', t.font.weight);
+    s.setProperty('--ct-glow', t.glow.enabled
+      ? '0 0 '+t.glow.blur+'px '+hexToRgba(C.fg, t.glow.strength) : 'none');
+    s.setProperty('--ct-blink', t.cursor.blinkMs+'ms');
+    s.setProperty('--ct-scan-disp', t.scanlines.enabled?'block':'none');
+    s.setProperty('--ct-scan-op', t.scanlines.opacity);
+    s.setProperty('--ct-scan-sp', t.scanlines.spacing+'px');
+    s.setProperty('--ct-flick', t.flicker.amount);
+    s.setProperty('--ct-bd-op', t.backdrop.opacity);
+    s.setProperty('--ct-hud-brd', t.hud.borderColor);
+    s.setProperty('--ct-hud-bg', t.hud.background);
+    for(const k of Object.keys(C.kinds))
+      s.setProperty('--ct-k-'+k, C.kinds[k]);
+    el.classList.toggle('flicker', !!t.flicker.enabled);
+  }
+
+  /* ---------- storage: tema ativo + temas custom (import) ---------- */
+  let customs = LS.get('kairos_term_custom', []);
+  if(!Array.isArray(customs)) customs = [];
+  let activeId = LS.get('kairos_term_theme', 'matrix');
+  const all = () => BUILTINS.concat(customs);
+  const findRaw = id => all().find(x=>x.id===id) || BUILTINS[0];
+  let onChange = null;
+
+  return {
+    SCHEMA_VERSION, DEFAULTS,
+    list(){ return all().map(x=>({ id:x.id, name:x.name||x.id,
+      author:x.author||'—', builtin:BUILTINS.some(b=>b.id===x.id) })); },
+    get(id){ return resolve(findRaw(id)); },
+    active(){ return resolve(findRaw(activeId)); },
+    activeId(){ return activeId; },
+    set(id){ if(!all().some(x=>x.id===id)) return false;
+      activeId=id; LS.set('kairos_term_theme',id);
+      if(onChange) onChange(this.active()); return true; },
+    /* arquitetura pronta pro futuro marketplace: um tema compartilhado
+       é só um JSON — import valida, guarda e já aparece no seletor. */
+    import(json){ const raw = typeof json==='string'?JSON.parse(json):json;
+      if(!raw || raw.schema!==SCHEMA_VERSION)
+        throw new Error('Tema inválido: schema esperado v'+SCHEMA_VERSION);
+      const t = resolve(raw);
+      if(BUILTINS.some(b=>b.id===t.id)) t.id=t.id+'-custom';
+      customs = customs.filter(c=>c.id!==t.id).concat([raw]);
+      LS.set('kairos_term_custom', customs); return t; },
+    export(id){ return JSON.stringify(resolve(findRaw(id||activeId)),null,2); },
+    remove(id){ customs=customs.filter(c=>c.id!==id);
+      LS.set('kairos_term_custom',customs);
+      if(activeId===id) this.set('matrix'); },
+    resolve, applyVars, hexToRgba,
+    _watch(fn){ onChange=fn; }
+  };
+})();
+
+/* ---------- 2. TERMINAL CINEMA (renderizador) ---------- */
+const TermFX = (() => {
+  const el = id => document.getElementById(id);
+  const overlay=el('cineTerm'), canvas=el('ctCanvas'), log=el('ctLog'),
+        flashEl=el('ctFlash');
+  const rm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let fxOn = LS.get('kairos_term_fx', true) && !rm;
+  let theme = KairosTheme.active();
+  let open = false;
+
+  /* estado espelhado do Maestro (só leitura, vem dos hooks) */
+  const st = { threadId:null, running:false, startAt:0, endAt:0,
+               status:'idle', appStatus:null, seen:new Set() };
+
+  /* ───── som opcional (definido no tema; builtins = off) ───── */
+  let actx=null;
+  function beep(hz,dur){
+    if(!theme.sound.enabled || !fxOn) return;
+    try{
+      actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+      const o=actx.createOscillator(), g=actx.createGain();
+      o.frequency.value=hz; o.type='square';
+      g.gain.setValueAtTime(theme.sound.gain, actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime+(dur||.09));
+      o.connect(g); g.connect(actx.destination);
+      o.start(); o.stop(actx.currentTime+(dur||.09));
+    }catch(_){}
+  }
+
+  /* ───── REGISTRO DE EFEITOS DE FUNDO (extensível por dados) ─────
+     Um tema escolhe pelo nome (backdrop.effect). Pra criar um efeito
+     novo no futuro: TermFX.backdrops['nome'] = factory(canvas,cfg). */
+  const backdrops = {
+    'none': () => ({ start(){}, stop(){}, resize(){} }),
+    'matrix-rain': (cv, cfg, themeBg) => {
+      const ctx = cv.getContext('2d');
+      let raf=0, run=false, cols=[], fs=15, cw=0, level=0, ema=16, last=0;
+      const GLYPHS = cfg.glyphs==='katakana'
+        ? 'アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789'
+        : (cfg.glyphs==='binary' ? '01' : cfg.glyphs);
+      function resize(){
+        const dpr = Math.min(devicePixelRatio||1, level>=2?1:1.5);
+        cv.width = innerWidth*dpr; cv.height = innerHeight*dpr;
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        /* densidade 0..1 → espaçamento de coluna; degrade alarga */
+        cw = fs / Math.max(.15, cfg.density - level*.2);
+        cols = [];
+        for(let x=0; x<innerWidth/cw; x++)
+          cols.push({ y: Math.random()*-innerHeight,
+                      v: (2+Math.random()*3)*cfg.speed });
+        ctx.font = fs+'px monospace';
+      }
+      function frame(ts){
+        if(!run) return;
+        raf = requestAnimationFrame(frame);
+        if(document.hidden) return;
+        const target = level>=1 ? 42 : 33;       /* ~30fps, ~24 degradado */
+        if(ts-last < target) return;
+        const dt = ts-last; last = ts;
+        /* auto-degradação: frame caro sustentado → menos colunas */
+        ema = ema*.95 + dt*.05;
+        if(ema > target*1.8 && level<3){ level++; ema=target; resize(); }
+        ctx.fillStyle = KairosTheme.hexToRgba(themeBg, cfg.fade);
+        ctx.fillRect(0,0,innerWidth,innerHeight);
+        ctx.fillStyle = cfg.color;
+        for(let i=0;i<cols.length;i++){
+          const c=cols[i];
+          ctx.fillText(GLYPHS[(Math.random()*GLYPHS.length)|0], i*cw, c.y);
+          c.y += c.v*fs*.28;
+          if(c.y > innerHeight+40) c.y = Math.random()*-300;
+        }
+      }
+      return {
+        start(){ if(run) return; run=true; resize();
+                 ctx.fillStyle=themeBg; ctx.fillRect(0,0,innerWidth,innerHeight);
+                 raf=requestAnimationFrame(frame); },
+        stop(){ run=false; cancelAnimationFrame(raf);
+                ctx.clearRect(0,0,cv.width,cv.height); },
+        resize
+      };
+    }
+  };
+  let bd = null;
+  function startBackdrop(){
+    stopBackdrop();
+    if(!fxOn || rm) return;
+    const f = backdrops[theme.backdrop.effect] || backdrops['none'];
+    bd = f(canvas, theme.backdrop, theme.colors.bg);
+    bd.start();
+  }
+  function stopBackdrop(){ if(bd){ bd.stop(); bd=null; } }
+  addEventListener('resize', ()=>{ if(open && bd && bd.resize) bd.resize(); });
+
+  /* ───── TYPEWRITER (digitação char a char) ───── */
+  const typer = { q:[], cur:null, pos:0, raf:0, last:0, acc:0 };
+  const cursorEl = document.createElement('span');
+  cursorEl.className='ct-cursor';
+  function fmtHM(at){ const d=new Date(at||Date.now());
+    return String(d.getHours()).padStart(2,'0')+':'+
+           String(d.getMinutes()).padStart(2,'0'); }
+  function mkLine(item){
+    const div=document.createElement('div');
+    div.className='ct-line'+(item.kind?' ck-'+item.kind:'');
+    const t=document.createElement('span'); t.className='ct-t';
+    t.textContent=fmtHM(item.at);
+    const tx=document.createElement('span'); tx.className='ct-tx';
+    div.appendChild(t); div.appendChild(tx);
+    log.appendChild(div);
+    while(log.children.length>90) log.removeChild(log.firstChild);
+    return tx;
+  }
+  function typeLoop(ts){
+    typer.raf = requestAnimationFrame(typeLoop);
+    if(!open) return;
+    const dt = Math.min(100, ts-(typer.last||ts)); typer.last=ts;
+    if(!typer.cur){
+      const next = typer.q.shift();
+      if(!next){ cancelAnimationFrame(typer.raf); typer.raf=0;
+                 parkCursor(); return; }
+      typer.cur = { tx: mkLine(next), text: theme.prompt+(next.text||''),
+                    instant: next.instant };
+      typer.pos = 0; typer.cur.tx.appendChild(cursorEl);
+    }
+    const c = typer.cur;
+    if(c.instant || rm){ setTx(c, c.text.length); finishLine(); return; }
+    /* acelera se a fila cresce — nunca fica atrás da realidade */
+    const cps = theme.typing.cps * (1 + Math.min(typer.q.length,10)*.8);
+    typer.acc += dt/1000*cps;
+    const n = Math.min(c.text.length, typer.pos + Math.floor(typer.acc));
+    if(n>typer.pos){ typer.acc-=(n-typer.pos); setTx(c,n); typer.pos=n; }
+    if(typer.pos>=c.text.length) finishLine();
+  }
+  function setTx(c,n){ c.tx.firstChild
+      ? c.tx.replaceChild(document.createTextNode(c.text.slice(0,n)), c.tx.firstChild)
+      : c.tx.appendChild(document.createTextNode(c.text.slice(0,n)));
+    c.tx.appendChild(cursorEl); log.scrollTop=log.scrollHeight; }
+  function finishLine(){ beep(theme.sound.blipHz,.05);
+    typer.cur=null; typer.acc=0; }
+  function parkCursor(){ const lastLine=log.lastElementChild;
+    if(lastLine) lastLine.querySelector('.ct-tx').appendChild(cursorEl); }
+  function enqueue(item){ typer.q.push(item);
+    if(open && !typer.raf){ typer.last=0; typer.raf=requestAnimationFrame(typeLoop); } }
+
+  /* ───── HUD ───── */
+  const STATUS_PT={ idle:'OCIOSO', sending:'ENVIANDO', running:'RODANDO',
+                    done:'CONCLUÍDO', error:'ERRO', blocked:'TRAVADO' };
+  function setStatus(stt){
+    st.status=stt;
+    const c = theme.hud.statusColors[
+      stt==='running'?'running':stt==='done'?'done':
+      (stt==='error'||stt==='blocked')?'error':'idle'];
+    overlay.style.setProperty('--ct-status-c', c);
+    el('ctStatus').textContent = STATUS_PT[stt]||stt.toUpperCase();
+    overlay.classList.toggle('running', stt==='running');
+  }
+  let timerId=null;
+  function fmtTimer(ms){ ms=Math.max(0,ms|0);
+    const m=(ms/60000)|0, s=((ms%60000)/1000);
+    return String(m).padStart(2,'0')+':'+
+           (s<10?'0':'')+s.toFixed(1); }
+  function tickTimer(){
+    const ms = st.running ? Date.now()-st.startAt
+             : (st.endAt&&st.startAt ? st.endAt-st.startAt : 0);
+    el('ctTimer').textContent = fmtTimer(ms);
+  }
+  function startTimer(){ clearInterval(timerId);
+    timerId=setInterval(()=>{ if(open) tickTimer(); },100); }
+
+  function flash(kind){
+    const f = kind==='ok'?theme.fx.successFlash:theme.fx.errorFlash;
+    if(!f.enabled || rm) return;
+    flashEl.style.background =
+      'radial-gradient(80% 60% at 50% 45%,'+
+      KairosTheme.hexToRgba(f.color,.28)+',transparent 75%)';
+    flashEl.classList.add('on');
+    beep(kind==='ok'?theme.sound.okHz:theme.sound.errHz,.22);
+    setTimeout(()=>flashEl.classList.remove('on'), f.durationMs);
+  }
+
+  /* ───── API que os hooks alimentam (dados → visual) ───── */
+  function feed(events){
+    if(!events || !events.length) return;
+    const fresh=[];
+    for(const e of events){
+      const k=(e.at||0)+'|'+(e.kind||'')+'|'+(e.text||'');
+      if(st.seen.has(k)) continue;
+      st.seen.add(k);
+      fresh.push({ at:e.at, kind:e.kind, text:e.text||e.kind||'' });
+    }
+    /* backlog grande (abriu no meio da thread): imprime o histórico
+       na hora e digita só o final — cinema sem enrolação */
+    if(fresh.length>15)
+      fresh.forEach((f,i)=>{ if(i<fresh.length-4) f.instant=true; });
+    fresh.forEach(enqueue);
+  }
+  function sync(t){
+    if(!t) return;
+    if(t.id && t.id!==st.threadId){
+      /* trocou de thread: limpa e re-alimenta (o feed do hook veio
+         antes do reset e teria sido perdido) */
+      reset(); st.threadId=t.id; feed(t.events||[]);
+    }
+    el('ctTitle').textContent = (t.title||'KAIROS · MAESTRO').toUpperCase();
+    if(t.model) el('ctModel').textContent = t.model;
+    if(t.totalCostUsd!=null)
+      el('ctCost').textContent = '$'+Number(t.totalCostUsd).toFixed(4);
+    const lastUser=[...(t.events||[])].reverse().find(e=>e.kind==='user');
+    st.startAt = lastUser?lastUser.at:(t.createdAt||Date.now());
+    const wasRunning = st.running;
+    st.running = t.status==='running';
+    st.endAt = t.updatedAt||Date.now();
+    if(wasRunning && !st.running){
+      if(t.status==='done') flash('ok');
+      else if(t.status==='error'||t.status==='blocked') flash('err');
+    }
+    setStatus(t.status||'idle');
+    /* preview do "editar o app" integrado ao visual */
+    const a=t.app, pv=el('ctPreview');
+    if(a && a.status==='preview_ready'){
+      pv.hidden=false;
+      pv.href = maestroBase()+(a.previewPath||'/preview/');
+      if(st.appStatus!=='preview_ready')
+        enqueue({ at:Date.now(), kind:'done',
+                  text:'preview pronto — toque em PREVIEW ou fale "pode publicar"' });
+    } else {
+      pv.hidden=true;
+      if(a && a.status==='published' && st.appStatus!=='published')
+        enqueue({ at:Date.now(), kind:'done', text:'publicado em produção ✔' });
+    }
+    st.appStatus = a?a.status:null;
+    tickTimer();
+  }
+  function reset(){
+    st.threadId=null; st.seen.clear(); st.appStatus=null;
+    st.running=false; st.startAt=0; st.endAt=0;
+    typer.q.length=0; typer.cur=null;
+    log.innerHTML='';
+    el('ctTitle').textContent='KAIROS · MAESTRO';
+    el('ctModel').textContent='modelo —';
+    el('ctCost').textContent='$0.0000';
+    el('ctPreview').hidden=true;
+    setStatus('idle');
+    enqueue({ at:Date.now(), kind:'start', text:'terminal pronto. fale um comando…' });
+  }
+
+  /* ───── troca de tema ao vivo ───── */
+  function applyTheme(t){
+    theme=t;
+    KairosTheme.applyVars(t, overlay);
+    overlay.classList.toggle('rm', rm);
+    setStatus(st.status);
+    if(open) startBackdrop();
+    renderThemeGrid();
+  }
+  KairosTheme._watch(applyTheme);
+
+  /* ───── abrir / fechar ───── */
+  function openTerm(){
+    if(open) return;
+    open=true; overlay.hidden=false;
+    applyTheme(KairosTheme.active());
+    updateFxBtn();
+    startTimer(); tickTimer();
+    if(!log.children.length && !typer.q.length)
+      enqueue({ at:Date.now(), kind:'start', text:'terminal pronto. fale um comando…' });
+    else if(typer.q.length && !typer.raf)
+      typer.raf=requestAnimationFrame(typeLoop);
+    startBackdrop();
+  }
+  function closeTerm(){
+    open=false; overlay.hidden=true;
+    stopBackdrop(); clearInterval(timerId); timerId=null;
+    cancelAnimationFrame(typer.raf); typer.raf=0;
+  }
+  document.addEventListener('visibilitychange', ()=>{
+    if(!open) return;
+    if(document.hidden) stopBackdrop(); else startBackdrop();
+  });
+
+  /* ───── botões ───── */
+  function updateFxBtn(){
+    const b=el('ctFx');
+    b.textContent = fxOn?'FX ON':'FX OFF';
+    b.classList.toggle('off', !fxOn);
+    const s=document.getElementById('termFxToggle');
+    if(s) s.textContent = '✨ Animação de fundo: '+(fxOn?'LIGADA':'DESLIGADA');
+  }
+  function toggleFx(){
+    fxOn=!fxOn; LS.set('kairos_term_fx', fxOn);
+    updateFxBtn();
+    if(open){ if(fxOn) startBackdrop(); else stopBackdrop(); }
+  }
+  function cycleTheme(){
+    const ids=KairosTheme.list().map(x=>x.id);
+    const i=ids.indexOf(KairosTheme.activeId());
+    KairosTheme.set(ids[(i+1)%ids.length]);
+    toast('Tema: '+KairosTheme.active().name);
+  }
+
+  /* seletor visual nas Configurações — cards gerados dos objetos */
+  function renderThemeGrid(){
+    const grid=document.getElementById('themeGrid'); if(!grid) return;
+    grid.innerHTML='';
+    const r=KairosTheme;
+    for(const item of r.list()){
+      const th=r.get(item.id);
+      const card=document.createElement('button');
+      card.type='button';
+      card.className='theme-card'+(item.id===r.activeId()?' sel':'');
+      const pv=document.createElement('div'); pv.className='tc-pv';
+      pv.style.background=th.colors.bg;
+      pv.style.color=th.colors.fg;
+      pv.style.textShadow=th.glow.enabled
+        ? '0 0 6px '+r.hexToRgba(th.colors.fg,.8) : 'none';
+      pv.textContent=th.prompt+'ok'+th.cursor.char;
+      const nm=document.createElement('div'); nm.className='tc-name';
+      nm.textContent=item.name;
+      card.appendChild(pv); card.appendChild(nm);
+      card.onclick=()=>{ r.set(item.id); toast('Tema: '+item.name); };
+      grid.appendChild(card);
+    }
+  }
+
+  /* bindings (elementos já existem no DOM) */
+  el('ctClose').onclick=closeTerm;
+  el('ctFx').onclick=toggleFx;
+  el('ctTheme').onclick=cycleTheme;
+  const cineBtn=document.getElementById('mstrCine');
+  if(cineBtn) cineBtn.onclick=openTerm;
+  const fxTog=document.getElementById('termFxToggle');
+  if(fxTog) fxTog.onclick=toggleFx;
+  renderThemeGrid(); updateFxBtn();
+  applyTheme(KairosTheme.active());
+
+  return { feed, sync, reset, open:openTerm, close:closeTerm,
+           backdrops, get theme(){ return theme; } };
+})();
+window.TermFX = TermFX;
+window.KairosTheme = KairosTheme; // API pública: list/get/set/import/export
 </script>
 </body>
 </html>
