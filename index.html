@@ -562,7 +562,9 @@
   /* ===== PAINEL AO VIVO DO MAESTRO ===== */
   .mstr-panel{flex:0 0 auto;margin:0 2px 8px;padding:11px 12px;border-radius:16px;
     border:1px solid rgba(245,201,105,.32);background:linear-gradient(180deg,rgba(245,201,105,.10),rgba(8,10,26,.55));
-    box-shadow:0 6px 26px rgba(0,0,0,.3)}
+    box-shadow:0 6px 26px rgba(0,0,0,.3);
+    /* nunca deixa o painel de status empurrar o chat (balões) pra fora da tela */
+    max-height:38vh;overflow-y:auto}
   .mstr-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
   .mstr-badge{font-size:11px;font-weight:800;letter-spacing:1px;color:#f5d98a}
   .mstr-status{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px}
@@ -2593,26 +2595,36 @@ async function sendMaestro(text){
   setState('thinking'); setStatus('Maestro: enviando…');
   mstrResetSteps(); mstrMeta(''); maestroRenderFiles([]); mstrEventsRender([]);
   mstrSetStatus('sending','enviando'); mstrStep('send','active'); mstrLive('enviando comando…');
+  const ac=new AbortController();
+  const killTimer=setTimeout(()=>ac.abort(),25000); // nunca deixa "enviando..." travado pra sempre
   try{
     const body={text, tts:false, async:true};
     if(activeThreadId) body.threadId=activeThreadId; // continua a thread ativa (--resume no servidor)
-    const r=await fetch(base+'/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const r=await fetch(base+'/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ac.signal});
+    clearTimeout(killTimer);
     const j=await r.json().catch(()=>({}));
     setState(''); setStatus('');
-    if(j && j.threadId){
+    if(r.ok && j && j.threadId){
       activeThreadId=j.threadId; LS.set('kairos_maestro_thread',activeThreadId); announced[j.threadId]='running';
       mstrStep('send','done'); mstrSetStatus('running','rodando'); mstrStep('run','active'); mstrLive('rodando no sandbox…');
       if(mstrEl('mstrBadge')) mstrEl('mstrBadge').textContent='⚙️ '+(j.title||'tarefa');
       await mstrTick(); mstrStartLive();
-    } else if(j && j.action){ // comando de controle (kill/resume) tratado direto
+    } else if(r.ok && j && j.action){ // comando de controle (kill/resume) tratado direto
       mstrSetStatus('idle','ocioso'); mstrLive('▶ '+(j.shortText||j.action)); if(j.shortText) speak(j.shortText);
     } else {
-      mstrSetStatus('err','erro'); mstrLive('⚠ '+((j&&(j.error||j.shortText))||'resposta inesperada do Maestro'));
+      // qualquer resposta que não seja um sucesso reconhecido vira balão visível — nunca falha em silêncio
+      const msg=(j&&(j.error||j.shortText))||('o Maestro respondeu '+r.status+' sem um formato esperado');
+      mstrStep('run','err'); mstrSetStatus('err','erro'); mstrLive('⚠ '+msg);
+      addBubble('ai','⚠ '+msg,true);
+      toast('Maestro: '+msg,true);
     }
   }catch(e){
+    clearTimeout(killTimer);
+    const msg=(e&&e.name==='AbortError')?'o Maestro demorou demais pra responder (25s) — tente de novo.':('Não alcancei o Maestro: '+e.message+' (confira a URL https e se o túnel está no ar)');
     setState(''); setStatus(''); mstrStep('run','err'); mstrSetStatus('err','erro');
-    mstrLive('⚠ Não alcancei o Maestro: '+e.message+'\n(Confira a URL https e se o túnel está no ar.)');
-    toast('Maestro: '+e.message,true);
+    mstrLive('⚠ '+msg);
+    addBubble('ai','⚠ '+msg,true);
+    toast('Maestro: '+msg,true);
   }
 }
 function mstrEventsRender(events){
@@ -4984,7 +4996,9 @@ const Tutorial=(()=>{
     killTour();
     if(ti>=TOUR.length){ LS.set('kairos_tour_done',true); toast('Tour concluído! O "?" reabre quando quiser.'); return; }
     const st=TOUR[ti];
-    if(st.tab && typeof setAgent==='function') setAgent(st.tab);
+    // nunca troca a aba do usuário à força se já existe uma conversa/tarefa em andamento no Maestro
+    // (o tour é só didático — não pode desviar quem já está no meio de um comando)
+    if(st.tab && typeof setAgent==='function' && !activeThreadId) setAgent(st.tab);
     setTimeout(()=>{
       const el=document.querySelector(st.sel);
       if(!el || el.offsetParent===null){ ti++; stepTour(); return; } // alvo invisível: pula
