@@ -1150,6 +1150,7 @@
     </div>
     <div class="ct-actions">
       <a class="ct-btn prev" id="ctPreview" target="_blank" rel="noopener" hidden>👀 Preview</a>
+      <button class="ct-btn" id="ctModelSel" type="button" title="Modelo das próximas tarefas (haiku → sonnet → opus → fable)">HAIKU</button>
       <button class="ct-btn" id="ctFx" type="button" title="Liga/desliga animação de fundo">FX ON</button>
       <button class="ct-btn" id="ctTheme" type="button" title="Trocar tema">TEMA</button>
       <button class="ct-btn close" id="ctClose" type="button">✕</button>
@@ -2569,6 +2570,14 @@ async function send(text){
    {text, tts:false} -> mostra painel ao vivo (status, cronômetro, passos, custo) ->
    fala o shortText com a mesma voz do app. Botões PARAR (/kill) e LIBERAR (/resume). */
 function maestroBase(){ return (settings.maestroUrl||'').trim().replace(/\/+$/,''); }
+/* plano Max: /health com headroom ok = Claude Code coberto pela assinatura -> custo real $0 */
+let mstrPlanMax=false;
+function fmtCost(v,dec){ return mstrPlanMax ? '$0.00' : '$'+Number(v||0).toFixed(dec==null?4:dec); }
+async function mstrFetchHealth(){ const base=maestroBase(); if(!base) return;
+  try{ const r=await fetch(base+'/health'); const j=await r.json(); mstrPlanMax=!!(j&&j.ok&&j.headroom!==false); }catch(_){ } }
+/* preferência de modelo das próximas tarefas (troca no botão do cinema) */
+const MSTR_MODELS=['haiku','sonnet','opus','fable'];
+function mstrModelPref(){ const m=LS.get('kairos_maestro_model','haiku'); return MSTR_MODELS.includes(m)?m:'haiku'; }
 let mstrTimerId=null, mstrT0=0, mstrBusy=false, mstrHealthId=null;
 function mstrEl(id){ return document.getElementById(id); }
 function mstrSetStatus(cls,label){ const el=mstrEl('mstrStatus'); if(el){ el.className='mstr-status '+cls; el.textContent=label; } }
