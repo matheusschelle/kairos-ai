@@ -767,12 +767,6 @@
     background:var(--ct-hud-bg,rgba(0,10,2,.55));backdrop-filter:blur(3px);flex-wrap:wrap}
   .ct-model{color:var(--ct-dim,#0f7a2f);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:44vw}
   .ct-cost{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ct-warn,#ffd24a);text-shadow:var(--ct-glow,none)}
-  .ct-send{display:flex;gap:7px;margin-top:8px;flex:0 0 auto}
-  .ct-send input{flex:1;min-width:0;background:var(--ct-hud-bg,rgba(0,10,2,.55));
-    border:1px solid var(--ct-hud-brd,rgba(0,255,65,.3));border-radius:9px;padding:9px 12px;
-    color:var(--ct-fg,#00ff41);font-family:inherit;font-size:13px;outline:none}
-  .ct-send input::placeholder{color:var(--ct-dim,#0f7a2f)}
-  .ct-send .ct-btn.send{flex:0 0 auto;min-width:46px}
   .ct-actions{display:flex;gap:7px;margin-top:8px;flex:0 0 auto}
   .ct-btn{font-family:inherit;font-size:11px;font-weight:800;letter-spacing:1px;padding:9px 12px;border-radius:9px;
     cursor:pointer;border:1px solid var(--ct-hud-brd,rgba(0,255,65,.3));background:var(--ct-hud-bg,rgba(0,10,2,.55));
@@ -1153,10 +1147,6 @@
     <div class="ct-hud ct-hud-bot">
       <span class="ct-model" id="ctModel">modelo —</span>
       <span class="ct-cost" id="ctCost">$0.0000</span>
-    </div>
-    <div class="ct-send">
-      <input id="ctInput" type="text" placeholder="Escreva pro Maestro…" autocomplete="off" enterkeyhint="send">
-      <button class="ct-btn send" id="ctSend" type="button">➤</button>
     </div>
     <div class="ct-actions">
       <a class="ct-btn prev" id="ctPreview" target="_blank" rel="noopener" hidden>👀 Preview</a>
