@@ -4948,6 +4948,14 @@ const TermFX = (() => {
   el('ctClose').onclick=closeTerm;
   el('ctFx').onclick=toggleFx;
   el('ctTheme').onclick=cycleTheme;
+  const ctTxt=el('ctTxt');
+  function sendFromCine(){
+    const v=(ctTxt.value||'').trim(); if(!v) return;
+    ctTxt.value=''; send(v);
+  }
+  el('ctSend').onclick=sendFromCine;
+  ctTxt.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); sendFromCine(); } });
+  el('ctMic').onclick=()=>{ primeTTS(); toggleMic(); };
   const cineBtn=document.getElementById('mstrCine');
   if(cineBtn) cineBtn.onclick=openTerm;
   const fxTog=document.getElementById('termFxToggle');
