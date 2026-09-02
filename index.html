@@ -1788,6 +1788,7 @@ function setState(s){ // '', 'listening', 'thinking', 'speaking'
   if(sv) sv.textContent=s==='listening'?'Ouvindo…':s==='thinking'?'Processando…':s==='speaking'?'Falando…':'Aguardando';
   const mv=$('#modVoiceSt');
   if(mv) mv.textContent=s==='listening'?'Ouvindo':s==='thinking'?'Processando':s==='speaking'?'Falando':'Aguardando';
+  const cm=$('#ctMic'); if(cm) cm.classList.toggle('on', s==='listening'); // acende no modo cinema pra ficar claro que a gravação continua
 }
 function setStatus(t){ $('#statusline').textContent=t||''; }
 function toast(msg,alert){ const t=$('#toast'); t.textContent=msg; t.classList.toggle('alert',!!alert);
