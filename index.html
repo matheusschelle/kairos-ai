@@ -1278,6 +1278,12 @@
       </div>
       <div class="hint">A troca é instantânea (não precisa salvar). Cada tema é um objeto JSON — no futuro você vai poder criar e importar temas seus.</div>
     </div>
+    <div class="field" style="border-top:1px solid rgba(255,61,240,.25);padding-top:18px;margin-top:6px">
+      <label style="color:#ff3df0">🎬 Higgsfield API <span style="color:#7a83a8;font-weight:400">(vídeo &amp; imagem IA)</span></label>
+      <input id="hfKeyId" type="password" placeholder="Key ID (HF_API_KEY_ID)" autocomplete="off">
+      <input id="hfKeySecret" type="password" placeholder="Key Secret (HF_API_KEY_SECRET)" autocomplete="off" style="margin-top:8px">
+      <div class="hint" style="margin-top:6px">Credenciais em <a href="https://console.higgsfield.ai" target="_blank">console.higgsfield.ai</a>. Use <b>/hf-imagem [prompt]</b> ou <b>/hf-video [prompt]</b> pra gerar. Guardadas <b>só neste aparelho</b> — nunca vão ao código.</div>
+    </div>
     <button class="save" id="saveBtn">Salvar</button>
     <button type="button" id="updateBtn" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(34,224,255,.4);background:rgba(34,224,255,.1);color:#bfefff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🔄 Atualizar app (buscar versão nova)</button>
     <div style="text-align:center;font-size:10.5px;color:#5a6296;margin-top:10px" id="buildTag">versão —</div>
@@ -1463,7 +1469,8 @@ let settings = LS.get('kairos_settings',{
   name:'Matheus', photo:'', apiKey:'', model:'llama-3.3-70b-versatile', voice:'', rate:1,
   elevenKey:'', elevenVoice:'', agentUrl:'', agentKey:'', serperKey:'', seVoice:'google',
   alexaUrl:'https://python-roving-distance.ngrok-free.dev/alexa-bot',
-  maestroUrl:'', githubToken:''
+  maestroUrl:'', githubToken:'',
+  higgsfieldKeyId:'', higgsfieldKeySecret:''
 });
 // URL fixa do Maestro (Tailscale Funnel). Migra automático quem tinha o quick tunnel antigo do Cloudflare.
 const MAESTRO_FIXED_URL='https://kairos-maestro.tail250cee.ts.net';
@@ -1808,6 +1815,8 @@ function refreshHome(){
   if($('#maestroUrl')) $('#maestroUrl').value=settings.maestroUrl||'';
   if($('#githubToken')) $('#githubToken').value=settings.githubToken||'';
   if($('#serperKey')) $('#serperKey').value=settings.serperKey||'';
+  if($('#hfKeyId')) $('#hfKeyId').value=settings.higgsfieldKeyId||'';
+  if($('#hfKeySecret')) $('#hfKeySecret').value=settings.higgsfieldKeySecret||'';
   if(settings.photo){
     if($('#sbAvatar')) $('#sbAvatar').innerHTML=`<img src="${settings.photo}">`;
     if($('#photoPv')) $('#photoPv').innerHTML=`<img src="${settings.photo}">`;
@@ -2072,10 +2081,148 @@ function downloadPDF(text){
 /* Mostra a resposta da IA: texto limpo + imagens; devolve o texto pra falar */
 function renderAiReply(reply){
   const { cleaned, prompts } = parseImagePrompts(reply);
-  const shown = cleaned || (prompts.length?'Prontinho, gerei pra você 👇':'');
+  // Parse Higgsfield tags [HF-IMAGEM: ...] e [HF-VIDEO: ...]
+  const hfPrompts=[];
+  const hfCleaned=(cleaned||'').replace(/\[HF-(IMAGEM|VIDEO):\s*([^\]]+)\]/gi,(m,type,p)=>{
+    hfPrompts.push({type:type.toLowerCase()==='video'?'video':'image', prompt:p.trim()}); return '';
+  }).replace(/\n{3,}/g,'\n\n').trim();
+  const shown = hfCleaned || (prompts.length||hfPrompts.length?'Prontinho, gerei pra você 👇':'');
   if(shown) addBubble('ai',shown,true);
   prompts.forEach(p=>addImageBubble(p));
-  return cleaned || shown;
+  hfPrompts.forEach(({type,prompt})=>addHiggsfieldBubble(prompt,type));
+  return hfCleaned || shown;
+}
+
+/* ============================================================
+   HIGGSFIELD API — geração de imagem e vídeo
+   Docs: https://docs.higgsfield.ai
+   Auth: Authorization: Key {KEY_ID}:{KEY_SECRET}
+   Modelo async: POST → request_id → poll /requests/{id}/status
+   ============================================================ */
+const HF_BASE='https://api.higgsfield.ai';
+const HF_VIDEO_MODELS={
+  'kling-2.5-turbo':  '/kling-video/v2.5-turbo/pro/text-to-video',
+  'kling-img2video':  '/kling-video/v2.5-turbo/pro/image-to-video',
+  'hailuo-2.3':       '/minimax/hailuo-2.3/standard/text-to-video',
+  'hailuo-img2video': '/minimax/hailuo-2.3/standard/image-to-video',
+};
+const HF_IMAGE_ENDPOINT='/higgsfield-ai/soul/standard';
+
+function hfAuthHeader(){
+  const id=(settings.higgsfieldKeyId||'').trim();
+  const sec=(settings.higgsfieldKeySecret||'').trim();
+  if(!id||!sec) throw new Error('Credenciais Higgsfield não configuradas. Abra Configurações e preencha Key ID e Key Secret.');
+  return `Key ${id}:${sec}`;
+}
+
+async function hfPost(endpoint,body){
+  let auth;
+  try{ auth=hfAuthHeader(); }catch(e){ throw e; }
+  const r=await fetch(HF_BASE+endpoint,{
+    method:'POST',
+    headers:{'Authorization':auth,'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  if(r.status===401) throw new Error('Higgsfield: credenciais inválidas (401). Confira o Key ID e Key Secret em Configurações.');
+  if(!r.ok){
+    let detail='';
+    try{ const j=await r.json(); detail=j.detail||j.message||''; }catch(_){}
+    throw new Error(`Higgsfield erro ${r.status}${detail?' — '+detail:''}`);
+  }
+  return r.json();
+}
+
+async function hfPollStatus(requestId,maxAttempts,intervalMs){
+  maxAttempts=maxAttempts||60; intervalMs=intervalMs||3000;
+  let auth;
+  try{ auth=hfAuthHeader(); }catch(e){ throw e; }
+  for(let i=0;i<maxAttempts;i++){
+    await new Promise(res=>setTimeout(res,intervalMs));
+    const r=await fetch(`${HF_BASE}/requests/${requestId}/status`,{headers:{'Authorization':auth}});
+    if(!r.ok) throw new Error(`Higgsfield status erro ${r.status}`);
+    const j=await r.json();
+    const st=(j.status||'').toLowerCase();
+    if(st==='completed') return j;
+    if(st==='failed')  throw new Error('Higgsfield: geração falhou — '+(j.error||'erro desconhecido'));
+    if(st==='nsfw')    throw new Error('Higgsfield: conteúdo bloqueado (NSFW).');
+    if(st==='canceled')throw new Error('Higgsfield: job cancelado.');
+    // queued | in_progress → continua polling
+  }
+  throw new Error('Higgsfield: timeout ('+Math.round(maxAttempts*intervalMs/1000)+'s). Tente novamente.');
+}
+
+async function hfCancelRequest(requestId){
+  try{
+    const r=await fetch(`${HF_BASE}/requests/${requestId}/cancel`,{method:'POST',headers:{'Authorization':hfAuthHeader()}});
+    return r.ok;
+  }catch(_){ return false; }
+}
+
+async function generateWithHiggsfield({prompt,model,type,imageUrl,duration,numImages,resolution,aspectRatio}){
+  if(!prompt) throw new Error('Prompt obrigatório.');
+  type=type||'video';
+  let endpoint,body;
+  if(type==='image'){
+    endpoint=HF_IMAGE_ENDPOINT;
+    body={prompt,num_images:Math.min(4,Math.max(1,numImages||1)),resolution:resolution||'2K',aspect_ratio:aspectRatio||'4:3'};
+  } else {
+    const mdl=model||'kling-2.5-turbo';
+    const ep=HF_VIDEO_MODELS[mdl];
+    if(!ep) throw new Error(`Modelo inválido: "${mdl}". Disponíveis: ${Object.keys(HF_VIDEO_MODELS).join(', ')}`);
+    endpoint=ep;
+    body={prompt,duration:duration||5,cfg_scale:0.5};
+    if(imageUrl) body.image_url=imageUrl;
+  }
+  const init=await hfPost(endpoint,body);
+  if(!init.request_id) throw new Error('Higgsfield não retornou request_id.');
+  return {requestId:init.request_id,statusUrl:init.status_url,cancelUrl:init.cancel_url,type};
+}
+
+async function addHiggsfieldBubble(prompt,type){
+  if(!prompt) return;
+  type=type||'video';
+  const tag=type==='image'?'🖼️':'🎬';
+  const m=document.createElement('div'); m.className='msg ai';
+  m.innerHTML=`<div class="who">KAIROS · HIGGSFIELD</div><div class="img-gen"><div class="img-load">${tag} Gerando ${type==='image'?'imagem':'vídeo'}…<br><small style="color:#7a83a8;font-size:11px">Aguarde 30s–2min.</small></div></div>`;
+  $('#msgs').appendChild(m); $('#msgs').scrollTop=$('#msgs').scrollHeight;
+  const box=m.querySelector('.img-gen');
+  let reqId=null;
+  try{
+    const {requestId}=await generateWithHiggsfield({prompt,type});
+    reqId=requestId;
+    box.querySelector('.img-load').innerHTML=`${tag} Processando… <small style="display:block;color:#7a83a8;font-size:11px;margin-top:4px">Job: ${requestId}</small>`;
+    const result=await hfPollStatus(requestId);
+    box.innerHTML='';
+    if(type==='image'){
+      const imgs=result.images||[];
+      if(!imgs.length) throw new Error('Nenhuma imagem retornada.');
+      imgs.forEach(img=>{
+        const el=new Image(); el.src=img.url; el.alt=prompt;
+        el.style='max-width:100%;border-radius:12px;margin-bottom:6px;display:block';
+        box.appendChild(el);
+        const act=document.createElement('div'); act.className='msg-actions';
+        const dl=document.createElement('button'); dl.className='ma-btn'; dl.textContent='⬇ Baixar';
+        dl.onclick=async()=>{ try{ const b=await fetch(img.url).then(r=>r.blob()); downloadFile('higgsfield-imagem.png',b,'image/png',true); }catch(e){ toast('Erro: '+e.message,true); } };
+        act.appendChild(dl); box.appendChild(act);
+      });
+    } else {
+      const vid=result.video;
+      if(!vid||!vid.url) throw new Error('Nenhum vídeo retornado.');
+      const video=document.createElement('video');
+      video.src=vid.url; video.controls=true;
+      video.style='max-width:100%;border-radius:12px;display:block';
+      box.appendChild(video);
+      const act=document.createElement('div'); act.className='msg-actions';
+      const dl=document.createElement('button'); dl.className='ma-btn'; dl.textContent='⬇ Baixar vídeo';
+      dl.onclick=async()=>{ try{ const b=await fetch(vid.url).then(r=>r.blob()); downloadFile('higgsfield-video.mp4',b,'video/mp4',true); }catch(e){ toast('Erro: '+e.message,true); } };
+      act.appendChild(dl); box.appendChild(act);
+    }
+  }catch(e){
+    box.innerHTML=`<div style="color:#ff6b7a;padding:8px 0">❌ ${escapeHtml(e.message)}</div>`;
+    if(reqId) hfCancelRequest(reqId).catch(()=>{});
+    toast(e.message.slice(0,90),true);
+  }
+  $('#msgs').scrollTop=$('#msgs').scrollHeight;
 }
 
 /* ---------- WEB SEARCH ---------- */
@@ -2486,6 +2633,23 @@ async function send(text){
   const hasImg=!!attachedImg;
   if(!text&&!hasImg) return;
   if(!online){ toast('Agente offline. Ligue o agente (power) pra conversar.'); return; }
+
+  // ===== HIGGSFIELD: /hf-imagem e /hf-video =====
+  const hfImgMatch=text.match(/^\/hf-imagem\s+(.+)/i);
+  const hfVidMatch=text.match(/^\/hf-video\s+(.+)/i);
+  if(hfImgMatch||hfVidMatch){
+    if(!(settings.higgsfieldKeyId&&settings.higgsfieldKeySecret)){ toast('Configure as chaves Higgsfield em Configurações → "Higgsfield API".',true); openSettings(); return; }
+    if(!currentId) newSession();
+    const s=curSession(); showChat(true);
+    addBubble('user',text,true);
+    s.msgs.push({role:'user',content:text});
+    if(s.title==='Nova conversa'){ s.title=text.slice(0,42); renderSessions(); }
+    saveSessions(); refreshHome();
+    const hfType=hfImgMatch?'image':'video';
+    const hfPrompt=(hfImgMatch||hfVidMatch)[1].trim();
+    addHiggsfieldBubble(hfPrompt,hfType);
+    return;
+  }
 
   // Central é só painel — não recebe comando; manda pro Maestro por padrão.
   if(activeAgent==='central'){ toast('A aba Central é painel. Abrindo o Maestro pra você comandar.'); setAgent('maestro'); }
@@ -3319,6 +3483,8 @@ async function saveSettings(){
   settings.maestroUrl=($('#maestroUrl')&&$('#maestroUrl').value.trim())||'';
   settings.githubToken=($('#githubToken')&&$('#githubToken').value.trim())||'';
   settings.serperKey=($('#serperKey')&&$('#serperKey').value.trim())||'';
+  settings.higgsfieldKeyId=($('#hfKeyId')&&$('#hfKeyId').value.trim())||'';
+  settings.higgsfieldKeySecret=($('#hfKeySecret')&&$('#hfKeySecret').value.trim())||'';
   LS.set('kairos_settings',settings);
   syncVault();
   // se apagou a URL do Maestro e estava na aba Maestro, volta pro Kairos

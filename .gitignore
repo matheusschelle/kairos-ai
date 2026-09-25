@@ -6,6 +6,11 @@
 Thumbs.db
 *.log
 
+# env / secrets — NUNCA commitar
+.env
+.env.local
+.env.*.local
+
 # temp
 _check.js
 node_modules/
