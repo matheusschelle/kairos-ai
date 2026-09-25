@@ -2101,12 +2101,25 @@ function renderAiReply(reply){
    ============================================================ */
 const HF_BASE='https://api.higgsfield.ai';
 const HF_VIDEO_MODELS={
+  // Seedance 2.5 (ByteDance) — recomendado: até 30s, áudio nativo, 9:16
+  'seedance-2.5':     '/bytedance/seedance-2.5/text-to-video',
+  // Kling 2.5 Turbo — 5 ou 10s, alta qualidade
   'kling-2.5-turbo':  '/kling-video/v2.5-turbo/pro/text-to-video',
   'kling-img2video':  '/kling-video/v2.5-turbo/pro/image-to-video',
+  'kling-std-i2v':    '/kling-video/v2.5-turbo/standard/image-to-video',
+  // Minimax Hailuo 2.3
   'hailuo-2.3':       '/minimax/hailuo-2.3/standard/text-to-video',
   'hailuo-img2video': '/minimax/hailuo-2.3/standard/image-to-video',
 };
+// Parâmetros específicos por modelo
+const HF_MODEL_PARAMS={
+  'seedance-2.5':{ duration:5, resolution:'720p', aspect_ratio:'9:16', output_format:'mp4', generate_audio:true },
+  'kling-2.5-turbo':{ duration:5, cfg_scale:0.5 },
+  'hailuo-2.3':{ duration:6, cfg_scale:0.5 },
+};
 const HF_IMAGE_ENDPOINT='/higgsfield-ai/soul/standard';
+// Prompt base do universo Kairos (extraído do kairos-agi-core)
+const HF_KAIROS_BASE_STYLE='original Kairos Digital universe, vertical 9:16, deep black, electric blue, Kairos violet and magenta, luminous hourglass motif, premium cinematic sci-fi, no readable text, no third-party logos, no watermark';
 
 function hfAuthHeader(){
   const id=(settings.higgsfieldKeyId||'').trim();
@@ -2158,7 +2171,7 @@ async function hfCancelRequest(requestId){
   }catch(_){ return false; }
 }
 
-async function generateWithHiggsfield({prompt,model,type,imageUrl,duration,numImages,resolution,aspectRatio}){
+async function generateWithHiggsfield({prompt,model,type,imageUrl,duration,numImages,resolution,aspectRatio,generateAudio,outputFormat}){
   if(!prompt) throw new Error('Prompt obrigatório.');
   type=type||'video';
   let endpoint,body;
@@ -2166,32 +2179,49 @@ async function generateWithHiggsfield({prompt,model,type,imageUrl,duration,numIm
     endpoint=HF_IMAGE_ENDPOINT;
     body={prompt,num_images:Math.min(4,Math.max(1,numImages||1)),resolution:resolution||'2K',aspect_ratio:aspectRatio||'4:3'};
   } else {
-    const mdl=model||'kling-2.5-turbo';
+    const mdl=model||'seedance-2.5';
     const ep=HF_VIDEO_MODELS[mdl];
     if(!ep) throw new Error(`Modelo inválido: "${mdl}". Disponíveis: ${Object.keys(HF_VIDEO_MODELS).join(', ')}`);
     endpoint=ep;
-    body={prompt,duration:duration||5,cfg_scale:0.5};
-    if(imageUrl) body.image_url=imageUrl;
+    const defaults=HF_MODEL_PARAMS[mdl]||{duration:5};
+    body={prompt};
+    // Parâmetros Seedance 2.5
+    if(mdl==='seedance-2.5'){
+      body.duration=Math.min(30,Math.max(4,duration||defaults.duration));
+      body.resolution=resolution||defaults.resolution||'720p';
+      body.aspect_ratio=aspectRatio||defaults.aspect_ratio||'9:16';
+      body.output_format=outputFormat||defaults.output_format||'mp4';
+      body.generate_audio=(generateAudio!==undefined)?generateAudio:defaults.generate_audio;
+    } else {
+      body.duration=duration||defaults.duration||5;
+      body.cfg_scale=defaults.cfg_scale||0.5;
+      if(imageUrl) body.image_url=imageUrl;
+    }
   }
   const init=await hfPost(endpoint,body);
   if(!init.request_id) throw new Error('Higgsfield não retornou request_id.');
   return {requestId:init.request_id,statusUrl:init.status_url,cancelUrl:init.cancel_url,type};
 }
 
-async function addHiggsfieldBubble(prompt,type){
+async function addHiggsfieldBubble(prompt,type,opts){
   if(!prompt) return;
   type=type||'video';
+  opts=opts||{};
+  const isSeedance=(opts.model||'seedance-2.5')==='seedance-2.5';
+  const dur=opts.duration||5;
   const tag=type==='image'?'🖼️':'🎬';
+  // Seedance 2.5 clips longos podem demorar até 5 min
+  const maxAttempts=isSeedance&&dur>10?120:60;
   const m=document.createElement('div'); m.className='msg ai';
-  m.innerHTML=`<div class="who">KAIROS · HIGGSFIELD</div><div class="img-gen"><div class="img-load">${tag} Gerando ${type==='image'?'imagem':'vídeo'}…<br><small style="color:#7a83a8;font-size:11px">Aguarde 30s–2min.</small></div></div>`;
+  m.innerHTML=`<div class="who">KAIROS · HIGGSFIELD</div><div class="img-gen"><div class="img-load">${tag} Gerando ${type==='image'?'imagem':'vídeo'}${isSeedance?' (Seedance 2.5)':''}…<br><small style="color:#7a83a8;font-size:11px">Aguarde ${isSeedance&&dur>10?'2–5 min':'30s–2min'}.</small></div></div>`;
   $('#msgs').appendChild(m); $('#msgs').scrollTop=$('#msgs').scrollHeight;
   const box=m.querySelector('.img-gen');
   let reqId=null;
   try{
-    const {requestId}=await generateWithHiggsfield({prompt,type});
+    const {requestId}=await generateWithHiggsfield({prompt,type,...opts});
     reqId=requestId;
     box.querySelector('.img-load').innerHTML=`${tag} Processando… <small style="display:block;color:#7a83a8;font-size:11px;margin-top:4px">Job: ${requestId}</small>`;
-    const result=await hfPollStatus(requestId);
+    const result=await hfPollStatus(requestId,maxAttempts,3000);
     box.innerHTML='';
     if(type==='image'){
       const imgs=result.images||[];
@@ -2634,10 +2664,12 @@ async function send(text){
   if(!text&&!hasImg) return;
   if(!online){ toast('Agente offline. Ligue o agente (power) pra conversar.'); return; }
 
-  // ===== HIGGSFIELD: /hf-imagem e /hf-video =====
+  // ===== HIGGSFIELD: /hf-imagem, /hf-video, /hf-cena =====
   const hfImgMatch=text.match(/^\/hf-imagem\s+(.+)/i);
   const hfVidMatch=text.match(/^\/hf-video\s+(.+)/i);
-  if(hfImgMatch||hfVidMatch){
+  // /hf-cena [dur=N] prompt — Seedance 2.5, estilo Kairos, 9:16, áudio nativo
+  const hfCenaMatch=text.match(/^\/hf-cena(?:\s+dur=(\d+))?\s+(.+)/i);
+  if(hfImgMatch||hfVidMatch||hfCenaMatch){
     if(!(settings.higgsfieldKeyId&&settings.higgsfieldKeySecret)){ toast('Configure as chaves Higgsfield em Configurações → "Higgsfield API".',true); openSettings(); return; }
     if(!currentId) newSession();
     const s=curSession(); showChat(true);
@@ -2645,9 +2677,17 @@ async function send(text){
     s.msgs.push({role:'user',content:text});
     if(s.title==='Nova conversa'){ s.title=text.slice(0,42); renderSessions(); }
     saveSessions(); refreshHome();
-    const hfType=hfImgMatch?'image':'video';
-    const hfPrompt=(hfImgMatch||hfVidMatch)[1].trim();
-    addHiggsfieldBubble(hfPrompt,hfType);
+    if(hfCenaMatch){
+      const dur=Math.min(30,Math.max(4,parseInt(hfCenaMatch[1]||'30')));
+      const rawPrompt=hfCenaMatch[2].trim();
+      // Aplica o estilo base Kairos automaticamente
+      const finalPrompt=`${HF_KAIROS_BASE_STYLE}. ${rawPrompt}`;
+      addHiggsfieldBubble(finalPrompt,'video',{model:'seedance-2.5',duration:dur,aspect_ratio:'9:16',generate_audio:true});
+    } else {
+      const hfType=hfImgMatch?'image':'video';
+      const hfPrompt=(hfImgMatch||hfVidMatch)[1].trim();
+      addHiggsfieldBubble(hfPrompt,hfType);
+    }
     return;
   }
 
